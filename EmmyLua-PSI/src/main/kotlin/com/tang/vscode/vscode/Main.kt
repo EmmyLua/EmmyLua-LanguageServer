@@ -12,40 +12,48 @@ import java.util.concurrent.Executors
  * Created by Client on 2018/3/20.
  */
 fun main(args: Array<String>) {
-    val port = System.getProperty("emmy.vscode.port")
+    val port = System.getProperty("emmy.port")
     try {
-
-        val serverSocket = AsynchronousServerSocketChannel.open().bind(InetSocketAddress("localhost", 5007))
-        val threadPool = Executors.newCachedThreadPool()
-
-        /*var inputStream = System.`in`
-        var outputStream = System.out
-        if (port != null) {
-            val socket = Socket("localhost", Integer.parseInt(port))
-            inputStream = socket.getInputStream()
-            outputStream = socket.getOutputStream()
-        }*/
-
-        while (true) {
-            val socketChannel = serverSocket.accept().get()
-            threadPool.execute {
-                val inputStream = Channels.newInputStream(socketChannel)
-                val outputStream = Channels.newOutputStream(socketChannel)
-
-                try {
-                    val server = LuaLanguageServer()
-                    val launcher = Launcher.createLauncher(server, LuaLanguageClient::class.java, inputStream, outputStream)
-                    server.connect(launcher.remoteProxy)
-                    launcher.startListening()
-                } catch (e: Exception) {
-                    socketChannel.close()
-                    e.printStackTrace(System.err)
-                }
-            }
-        }
+        if (port != null) startSocketServer(port.toInt())
+        else start()
     } catch (e: Exception) {
-        System.err.println("EmmyLua language server failed to connect.")
         e.printStackTrace(System.err)
         System.exit(1)
+    }
+}
+
+private fun start() {
+    val inputStream = System.`in`
+    val outputStream = System.out
+    try {
+        val server = LuaLanguageServer()
+        val launcher = Launcher.createLauncher(server, LuaLanguageClient::class.java, inputStream, outputStream)
+        server.connect(launcher.remoteProxy)
+        launcher.startListening()
+    } catch (e: Exception) {
+        e.printStackTrace(System.err)
+    }
+}
+
+private fun startSocketServer(port: Int) {
+    val serverSocket = AsynchronousServerSocketChannel.open().bind(InetSocketAddress("localhost", port))
+    val threadPool = Executors.newCachedThreadPool()
+
+    while (true) {
+        val socketChannel = serverSocket.accept().get()
+        threadPool.execute {
+            val inputStream = Channels.newInputStream(socketChannel)
+            val outputStream = Channels.newOutputStream(socketChannel)
+
+            try {
+                val server = LuaLanguageServer()
+                val launcher = Launcher.createLauncher(server, LuaLanguageClient::class.java, inputStream, outputStream)
+                server.connect(launcher.remoteProxy)
+                launcher.startListening()
+            } catch (e: Exception) {
+                socketChannel.close()
+                e.printStackTrace(System.err)
+            }
+        }
     }
 }
