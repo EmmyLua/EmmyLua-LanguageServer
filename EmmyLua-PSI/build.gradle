@@ -27,7 +27,7 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDirs "src/main/gen/"
+            srcDirs "src/main/gen/", "src/main/kotlin/"
         }
     }
 }
@@ -41,4 +41,7 @@ compileTestKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+}
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
 }
