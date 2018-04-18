@@ -3,6 +3,5 @@
 *.iml
 *.skeleton
 jflex*.jar
-gen
 out
 build
