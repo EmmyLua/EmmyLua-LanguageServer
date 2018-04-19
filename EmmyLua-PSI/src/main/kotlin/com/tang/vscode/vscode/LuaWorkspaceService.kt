@@ -7,6 +7,7 @@ import org.eclipse.lsp4j.DidChangeWatchedFilesParams
 import org.eclipse.lsp4j.SymbolInformation
 import org.eclipse.lsp4j.WorkspaceSymbolParams
 import org.eclipse.lsp4j.services.WorkspaceService
+import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
 
@@ -59,5 +60,14 @@ class LuaWorkspaceService : WorkspaceService {
         val ws = Workspace(URI(uri))
         _wsList.add(ws)
         return ws
+    }
+
+    fun addRoot(uri: String) {
+        val workspace = getWorkspace(root)
+        val u = URI(uri)
+        val folder = File(u.path)
+        folder.listFiles().forEach { file ->
+            workspace.addFile(file.toURI().toString(), file.readText())
+        }
     }
 }

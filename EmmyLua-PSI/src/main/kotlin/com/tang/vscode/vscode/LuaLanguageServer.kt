@@ -1,5 +1,8 @@
 package com.tang.vscode.vscode
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.JsonPrimitive
 import com.intellij.core.LanguageParserDefinitions
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
 import com.tang.intellij.lua.lang.LuaLanguage
@@ -40,7 +43,16 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
         workspaceService.root = params.rootUri
+
         initIntellijEnv()
+
+        val json = params.initializationOptions as JsonObject
+        val stdFolder = json["stdFolder"] as? JsonPrimitive
+        if (stdFolder != null && stdFolder.isString)
+            workspaceService.addRoot(stdFolder.asString)
+        val workspaceFolders = json["workspaceFolders"] as? JsonArray
+        workspaceFolders?.forEach { workspaceService.addRoot(it.asString) }
+
 
         val res = InitializeResult()
         val capabilities = ServerCapabilities()
