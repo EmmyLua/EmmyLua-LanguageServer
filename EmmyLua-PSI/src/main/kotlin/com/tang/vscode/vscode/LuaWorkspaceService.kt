@@ -38,7 +38,7 @@ class LuaWorkspaceService : WorkspaceService {
             addWorkspace(value)
         }
 
-    fun eachWorkspace(processor: (ws: IWorkspace) -> Boolean) {
+    private fun eachWorkspace(processor: (ws: IWorkspace) -> Boolean) {
         for (ws in _wsList) {
             if (!processor(ws))
                 break
@@ -78,10 +78,11 @@ class LuaWorkspaceService : WorkspaceService {
             allFiles.addAll(folder.listFiles().filter { it.isFile && it.extension == "lua" })
         }
 
-        allFiles.forEach { file ->
+        allFiles.forEachIndexed { index, file ->
             val uri = URI("file:///${file.invariantSeparatorsPath}")
             workspace.addFile(uri.toString(), file.readText())
-            monitor.setProgress(file.canonicalPath)
+            monitor.setProgress("Emmy load file: ${file.canonicalPath}", (index  + 1) / allFiles.size.toFloat())
         }
+        monitor.done()
     }
 }

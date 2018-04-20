@@ -82,8 +82,12 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         client?.registerCapability(RegistrationParams(registrations))
 
         workspaceService.loadWorkspace(object : IProgressMonitor {
-            override fun setProgress(text: String) {
-                client?.progressReport(ProgressReport(text))
+            override fun done() {
+                client?.progressReport(ProgressReport("Finished!", 1f))
+            }
+
+            override fun setProgress(text: String, percent: Float) {
+                client?.progressReport(ProgressReport(text, percent))
             }
         })
     }

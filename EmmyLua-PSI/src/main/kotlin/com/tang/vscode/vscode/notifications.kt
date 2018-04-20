@@ -8,4 +8,4 @@ enum class AnnotatorType {
 
 data class Annotator(val ranges: List<Range>, val type: AnnotatorType)
 
-data class ProgressReport(val text: String)
+data class ProgressReport(val text: String, val percent: Float)
