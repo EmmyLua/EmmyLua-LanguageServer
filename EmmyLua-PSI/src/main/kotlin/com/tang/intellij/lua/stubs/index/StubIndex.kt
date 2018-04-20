@@ -14,11 +14,11 @@ abstract class StubIndex<Psi : PsiElement> {
 
     fun get(key: String, project: Project, scope: GlobalSearchScope): Collection<Psi> {
         val list = mutableListOf<Psi>()
-        project.process {
-            if (it is LuaPsiFile) {
-                index(it)
+        project.process { file ->
+            if (file is LuaPsiFile) {
+                index(file)
 
-                it.getSink().process(this.key, key, Processor {
+                file.getSink().process(this.key, key, Processor {
                     list.add(it)
                     true
                 })

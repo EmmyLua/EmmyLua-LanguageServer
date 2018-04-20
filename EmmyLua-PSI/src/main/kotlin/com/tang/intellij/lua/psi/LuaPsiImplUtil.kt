@@ -101,23 +101,13 @@ fun isStatic(classMethodDef: LuaClassMethodDef): Boolean {
  * @return LuaType
  */
 fun guessParentType(classMethodDef: LuaClassMethodDef, context: SearchContext): ITy {
-    /*return CachedValuesManager.getManager(classMethodDef.project).getParameterizedCachedValue(classMethodDef, GET_CLASS_METHOD, { ctx ->
-        val stub = classMethodDef.stub
-        var type: ITy = Ty.UNKNOWN
-        if (stub != null) {
-            stub.classNames.forEach {
-               type = type.union(createSerializedClass(it))
-            }
-        } else {
-            val expr = classMethodDef.classMethodName.expr
-            val ty = expr.guessType(ctx)
-            val perfect = TyUnion.getPerfectClass(ty)
-            if (perfect is ITyClass)
-                type = perfect
-        }
-        CachedValueProvider.Result.create(type, classMethodDef)
-    }, false, context) ?: Ty.UNKNOWN*/
-    TODO()
+    var type: ITy = Ty.UNKNOWN
+    val expr = classMethodDef.classMethodName.expr
+    val ty = expr.guessType(context)
+    val perfect = TyUnion.getPerfectClass(ty)
+    if (perfect is ITyClass)
+        type = perfect
+    return type
 }
 
 fun getNameIdentifier(funcDef: LuaFuncDef): PsiElement? {
