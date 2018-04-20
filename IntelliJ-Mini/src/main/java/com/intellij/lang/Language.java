@@ -39,7 +39,12 @@ public abstract class Language extends UserDataHolderBase {
     private static final Map<Class<? extends Language>, Language> ourRegisteredLanguages = ContainerUtil.newConcurrentMap();
     private static final ConcurrentMap<String, List<Language>> ourRegisteredMimeTypes = ContainerUtil.newConcurrentMap();
     private static final Map<String, Language> ourRegisteredIDs = ContainerUtil.newConcurrentMap();
-    public static final Language ANY = null;
+    public static final Language ANY = new Language("any") {
+        @Override
+        public String toString() {
+            return super.toString();
+        }
+    };
 
     private final Language myBaseLanguage;
     private final String myID;
