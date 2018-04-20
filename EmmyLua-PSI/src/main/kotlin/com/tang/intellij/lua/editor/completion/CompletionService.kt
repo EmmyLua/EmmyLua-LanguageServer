@@ -13,8 +13,10 @@ import com.tang.intellij.lua.parser.LuaParser
 import org.eclipse.lsp4j.CompletionItem
 
 class CompletionResultSetImpl(private val consumer: Consumer<CompletionItem>) : CompletionResultSet() {
-    override fun addElement(item: CompletionItem?) {
-        consumer.consume(item)
+    private val set = mutableSetOf<String>()
+    override fun addElement(item: CompletionItem) {
+        if (set.add(item.label))
+            consumer.consume(item)
     }
 }
 
