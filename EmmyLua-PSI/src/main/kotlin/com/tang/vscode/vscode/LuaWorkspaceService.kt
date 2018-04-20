@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture
 class LuaWorkspaceService : WorkspaceService {
     private var _root: String = ""
     private val _wsList = mutableListOf<IWorkspace>()
+    private val _rootWSFolders = mutableListOf<String>()
 
     override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams) {
 
@@ -63,11 +64,24 @@ class LuaWorkspaceService : WorkspaceService {
     }
 
     fun addRoot(uri: String) {
+        _rootWSFolders.add(uri)
+    }
+
+    fun loadWorkspace(monitor: IProgressMonitor) {
         val workspace = getWorkspace(root)
-        val u = URI(uri)
-        val folder = File(u.path)
-        folder.listFiles().forEach { file ->
-            workspace.addFile(file.toURI().toString(), file.readText())
+        val allFiles = mutableListOf<File>()
+        val arr = _rootWSFolders.toTypedArray()
+        _rootWSFolders.clear()
+        arr.forEach { uri->
+            val u = URI(uri)
+            val folder = File(u.path)
+            allFiles.addAll(folder.listFiles().filter { it.isFile && it.extension == "lua" })
+        }
+
+        allFiles.forEach { file ->
+            val uri = URI("file:///${file.invariantSeparatorsPath}")
+            workspace.addFile(uri.toString(), file.readText())
+            monitor.setProgress(file.canonicalPath)
         }
     }
 }

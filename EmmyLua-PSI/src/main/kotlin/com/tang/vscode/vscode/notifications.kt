@@ -7,3 +7,5 @@ enum class AnnotatorType {
 }
 
 data class Annotator(val ranges: List<Range>, val type: AnnotatorType)
+
+data class ProgressReport(val text: String)

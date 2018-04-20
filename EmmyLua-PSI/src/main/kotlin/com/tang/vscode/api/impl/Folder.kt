@@ -4,6 +4,7 @@ import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import java.net.URI
+import java.net.URLDecoder
 
 open class Folder(uri: URI)
     : VirtualFileBase(uri), IFolder {
@@ -22,9 +23,10 @@ open class Folder(uri: URI)
     }
 
     override fun findFile(uri: String): IVirtualFile? {
+        val formattedUri = URI(URLDecoder.decode(uri, "UTF-8")).toString()
         var f: IVirtualFile? = null
         walkFiles {
-            if (it.matchUri(uri)) {
+            if (it.matchUri(formattedUri)) {
                 f = it
                 return@walkFiles false
             }

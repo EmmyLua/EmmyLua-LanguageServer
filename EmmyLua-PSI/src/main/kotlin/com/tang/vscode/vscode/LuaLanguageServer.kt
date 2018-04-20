@@ -80,6 +80,12 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         val registration = Registration(id, "workspace/didChangeWatchedFiles", options)
         val registrations = listOf(registration)
         client?.registerCapability(RegistrationParams(registrations))
+
+        workspaceService.loadWorkspace(object : IProgressMonitor {
+            override fun setProgress(text: String) {
+                client?.progressReport(ProgressReport(text))
+            }
+        })
     }
 
     override fun getWorkspaceService(): WorkspaceService {
