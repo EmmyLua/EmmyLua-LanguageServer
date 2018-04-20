@@ -23,6 +23,8 @@ class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile
         TODO()
     }
 
+    override fun getName() = virtualFile?.name
+
     override fun getOriginalFile(): PsiFile = this
 
     override fun isValid(): Boolean {
