@@ -14,7 +14,7 @@ abstract class StubIndex<Psi : PsiElement> {
 
     private var lock = false
 
-    fun get(key: String, project: Project, scope: GlobalSearchScope): Collection<Psi> {
+    fun get(key: String, project: Project, scope: GlobalSearchScope): MutableList<Psi> {
         val list = mutableListOf<Psi>()
         if (lock)
             return list

@@ -1,5 +1,7 @@
 package com.tang.intellij.lua.stubs.index
 
+import com.intellij.openapi.project.Project
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
 import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.indexing.IndexId
@@ -14,6 +16,9 @@ class LuaClassMemberIndex : StubIndex<LuaClassMember>() {
     override val key: IndexId<String, LuaClassMember>
         get() = StubKeys.CLASS_MEMBER
 
+    fun get(s: Int, project: Project, scope: GlobalSearchScope): MutableCollection<LuaClassMember> {
+        TODO()
+    }
     companion object {
         fun process(key: String, context: SearchContext, processor: Processor<LuaClassMember>): Boolean {
             val all = LuaClassMemberIndex.instance.get(key, context.project, context.getScope())

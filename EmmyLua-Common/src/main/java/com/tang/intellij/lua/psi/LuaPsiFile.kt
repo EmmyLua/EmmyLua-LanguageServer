@@ -7,6 +7,8 @@ import com.intellij.psi.PsiFile
 import com.intellij.util.Processor
 import com.intellij.util.indexing.IndexId
 import com.tang.intellij.lua.stubs.IndexSink
+import com.tang.intellij.lua.stubs.LuaFileStub
+
 //import com.tang.vscode.api.impl.LuaFile
 
 class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile, LuaTypeGuessable {
@@ -34,6 +36,8 @@ class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile
     override fun isPhysical(): Boolean {
         return true
     }
+
+    val stub: LuaFileStub? = null
 
     private val indexMap = mutableMapOf<String, MutableMap<String, MutableList<PsiElement>>>()
     private val sink = IndexSinkImpl()

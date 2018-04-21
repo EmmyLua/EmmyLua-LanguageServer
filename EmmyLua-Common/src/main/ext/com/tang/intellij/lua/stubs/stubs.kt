@@ -12,6 +12,9 @@ import com.tang.intellij.lua.ty.TyClass
 
 abstract class FakeStubElement<T : PsiElement> : StubElement<T> {
     override fun getPsi(): T? = null
+    override fun getChildrenStubs(): MutableList<StubElement<PsiElement>> {
+        TODO()
+    }
 }
 
 interface LuaExprStubElement<out T> {
@@ -39,7 +42,7 @@ interface LuaExprStub<T : LuaExpr> : StubElement<T>
 
 open class LuaExprStubImpl<T : LuaExpr> : LuaStubBase<T>(), LuaExprStub<T>
 
-class LuaExprPlaceStub(parent: StubElement<*>?) : LuaExprStubImpl<LuaExpr>()
+interface LuaExprPlaceStub : LuaExprStub<LuaExpr>
 
 interface LuaNameDefStub : StubElement<LuaNameDef>, LuaDocTyStub {
     val name: String
@@ -65,7 +68,7 @@ interface LuaNameExprStub : StubElement<LuaNameExpr>, LuaExprStub<LuaNameExpr>, 
 interface LuaTableExprStub : StubElement<LuaTableExpr>, LuaExprStub<LuaTableExpr> {
     val tableTypeName: String
 }
-class LuaLiteralExprStub : LuaStubBase<LuaLiteralExpr>(), LuaExprStub<LuaLiteralExpr>
+interface LuaLiteralExprStub : StubElement<LuaLiteralExpr>, LuaExprStub<LuaLiteralExpr>
 
 interface LuaIndexExprStub : LuaExprStub<LuaIndexExpr>, LuaClassMemberStub<LuaIndexExpr> {
     val classNames: Array<String>
@@ -74,14 +77,14 @@ interface LuaIndexExprStub : LuaExprStub<LuaIndexExpr>, LuaClassMemberStub<LuaIn
     val isAssign: Boolean
 }
 
-class LuaClosureExprStub : LuaStubBase<LuaClosureExpr>(), LuaExprStub<LuaClosureExpr>
+interface LuaClosureExprStub : StubElement<LuaClosureExpr>, LuaExprStub<LuaClosureExpr>
 
 interface LuaFuncStub : LuaFuncBodyOwnerStub<LuaFuncDef>, LuaClassMemberStub<LuaFuncDef> {
     val name: String
     val module: String
 }
 
-class LuaPlaceholderStub : FakeStubElement<PsiElement>()
+interface LuaPlaceholderStub : StubElement<PsiElement>
 
 interface LuaClassMethodStub : LuaFuncBodyOwnerStub<LuaClassMethod> {
     val classNames: Array<String>
@@ -113,4 +116,6 @@ interface LuaDocTableFieldDefStub : LuaClassMemberStub<LuaDocTableField> {
     val name: String
     val parentTypeName: String
 }
-class LuaDocTypeDefStub : FakeStubElement<LuaDocTypeDef>()
+interface LuaDocTypeDefStub : StubElement<LuaDocTypeDef>
+
+interface LuaFileStub : StubElement<LuaPsiFile>

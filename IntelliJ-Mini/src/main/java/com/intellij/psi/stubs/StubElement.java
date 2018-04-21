@@ -4,11 +4,17 @@
 package com.intellij.psi.stubs;
 
 import com.intellij.psi.PsiElement;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 /**
  * @author max
  */
 public interface StubElement<T extends PsiElement> {
 
-  T getPsi();
+    T getPsi();
+
+    @NotNull
+    List<StubElement> getChildrenStubs();
 }
