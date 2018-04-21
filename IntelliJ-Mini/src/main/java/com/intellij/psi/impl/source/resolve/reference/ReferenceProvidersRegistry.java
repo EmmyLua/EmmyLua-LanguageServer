@@ -1,5 +1,6 @@
 package com.intellij.psi.impl.source.resolve.reference;
 
+import com.intellij.openapi.progress.ProgressIndicatorProvider;
 import com.intellij.patterns.ElementPattern;
 import com.intellij.psi.*;
 import com.intellij.util.ProcessingContext;
@@ -30,6 +31,13 @@ public class ReferenceProvidersRegistry {
     }
 
     public static PsiReference[] getReferencesFromProviders(PsiElement context, Class<?> clazz) {
+        return getReferencesFromProviders(context);
+    }
+
+    @NotNull
+    public static PsiReference[] getReferencesFromProviders(@NotNull PsiElement context, @NotNull PsiReferenceService.Hints hints) {
+        ProgressIndicatorProvider.checkCanceled();
+        //return getInstance().doGetReferencesFromProviders(context, hints);
         return getReferencesFromProviders(context);
     }
 

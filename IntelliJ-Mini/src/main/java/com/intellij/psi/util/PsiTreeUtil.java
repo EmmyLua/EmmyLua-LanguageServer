@@ -475,10 +475,10 @@ public class PsiTreeUtil {
         return getChildOfType(element, aClass);
     }
 
-    /*
     @NotNull
     public static <T extends PsiElement> List<T> getStubChildrenOfTypeAsList(@Nullable PsiElement element, @NotNull Class<T> aClass) {
-        if (element == null) return Collections.emptyList();
+        return getChildrenOfTypeAsList(element, aClass);
+        /*if (element == null) return Collections.emptyList();
         StubElement<?> stub = element instanceof StubBasedPsiElement ? ((StubBasedPsiElement) element).getStub() : null;
         if (stub == null) {
             return getChildrenOfTypeAsList(element, aClass);
@@ -491,8 +491,8 @@ public class PsiTreeUtil {
                 result.add(aClass.cast(child));
             }
         }
-        return result;
-    }*/
+        return result;*/
+    }
 
     public static boolean instanceOf(Object object, Class<?>... classes) {
         if (object != null && classes != null) {

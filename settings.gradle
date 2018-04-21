@@ -1,2 +1,2 @@
 
-include "IntelliJ-Mini", "EmmyLua-PSI"
+include "IntelliJ-Mini", "EmmyLua-PSI", "EmmyLua-Common"

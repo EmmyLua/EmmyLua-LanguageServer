@@ -18,8 +18,12 @@ package com.intellij.psi.search;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class GlobalSearchScope extends SearchScope {
+
+    @Nullable
+    public static final GlobalSearchScope EMPTY_SCOPE = new GlobalSearchScope();
 
     public static GlobalSearchScope allScope(Project project) {
         return new GlobalSearchScope();
