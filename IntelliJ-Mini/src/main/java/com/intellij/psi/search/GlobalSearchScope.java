@@ -29,6 +29,21 @@ public class GlobalSearchScope extends SearchScope {
         return new GlobalSearchScope();
     }
 
+    @Nullable private final Project myProject;
+
+    protected GlobalSearchScope(@Nullable Project project) {
+        myProject = project;
+    }
+
+    protected GlobalSearchScope() {
+        this(null);
+    }
+
+    @Nullable
+    public Project getProject() {
+        return myProject;
+    }
+
     @NotNull
     @Override
     public SearchScope intersectWith(@NotNull SearchScope scope2) {
