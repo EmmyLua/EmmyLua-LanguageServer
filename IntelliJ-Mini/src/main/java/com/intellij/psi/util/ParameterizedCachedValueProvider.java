@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.intellij.util;
+package com.intellij.psi.util;
 
-public interface ParameterizedCachedValue<T, P> {
+import org.jetbrains.annotations.Nullable;
 
-  T getValue(P param);
-
-  ParameterizedCachedValueProvider<T,P> getValueProvider();
-
-  boolean hasUpToDateValue();
+public interface ParameterizedCachedValueProvider<T, P> {
+  @Nullable
+  CachedValueProvider.Result<T> compute(P param);
 }

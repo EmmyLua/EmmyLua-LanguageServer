@@ -1,4 +1,4 @@
-package com.intellij.util;
+package com.intellij.psi.util;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;

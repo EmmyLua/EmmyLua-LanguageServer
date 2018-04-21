@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.intellij.util;
+package com.intellij.psi.util;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.ArrayUtil;
