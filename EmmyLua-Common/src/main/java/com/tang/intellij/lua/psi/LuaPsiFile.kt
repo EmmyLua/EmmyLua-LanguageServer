@@ -9,7 +9,7 @@ import com.intellij.util.indexing.IndexId
 import com.tang.intellij.lua.stubs.IndexSink
 //import com.tang.vscode.api.impl.LuaFile
 
-class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile {
+class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile, LuaTypeGuessable {
 
     //var virtualFile: LuaFile? = null
 

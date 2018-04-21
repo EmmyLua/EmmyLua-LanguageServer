@@ -34,6 +34,10 @@ public class GlobalSearchScope extends SearchScope {
         throw new Error();
     }
 
+    public static GlobalSearchScope projectScope(Project project) {
+        throw new Error();
+    }
+
     @Nullable private final Project myProject;
 
     protected GlobalSearchScope(@Nullable Project project) {
