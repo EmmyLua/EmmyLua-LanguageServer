@@ -104,7 +104,7 @@ private fun inferReturnTyInner(owner: LuaFuncBodyOwner, searchContext: SearchCon
             override fun visitLocalDef(o: LuaLocalDef) {}
             override fun visitLocalFuncDef(o: LuaLocalFuncDef) {}
         })
-        CachedValueProvider.Result.create(type, owner)
+        //CachedValueProvider.Result.create(type, owner)
         type
     }) ?: Ty.UNKNOWN
 }
