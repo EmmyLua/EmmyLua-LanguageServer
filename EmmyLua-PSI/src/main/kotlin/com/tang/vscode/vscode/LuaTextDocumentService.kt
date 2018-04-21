@@ -83,7 +83,7 @@ class LuaTextDocumentService(private val workspaceService: LuaWorkspaceService) 
                     if (reference != null) {
                         val result = reference.resolve()
                         if (result != null) {
-                            val sourceFile = (result.containingFile as? LuaPsiFile)?.virtualFile
+                            val sourceFile = (result.containingFile as? LuaPsiFile)?.virtualFile as? LuaFile
                             if (sourceFile != null) {
                                 var textRange = result.textRange
                                 if (result is PsiNameIdentifierOwner)
@@ -196,7 +196,7 @@ class LuaTextDocumentService(private val workspaceService: LuaWorkspaceService) 
                                 var textRange = ref.rangeInElement
                                 val parentRange = ref.element.textRange
                                 textRange = textRange.shiftRight(parentRange.startOffset)
-                                list.add(Location(params.textDocument.uri, textRange.toRange(file.virtualFile!!)))
+                                list.add(Location(params.textDocument.uri, textRange.toRange(file.virtualFile as LuaFile)))
                             }
                         }
                     }

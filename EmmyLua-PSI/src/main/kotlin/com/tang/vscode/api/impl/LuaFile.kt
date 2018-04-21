@@ -1,6 +1,7 @@
 package com.tang.vscode.api.impl
 
 import com.intellij.lang.PsiBuilderFactory
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
@@ -17,7 +18,7 @@ import java.net.URI
 
 internal data class Line(val line: Int, val startOffset:Int, val stopOffset: Int, val str: String)
 
-class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile {
+class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFile {
     private var _text: String = ""
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
@@ -49,12 +50,14 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile {
         onChanged()
     }
 
-    override var text: String
-        get() = _text
-        set(value) {
-            _text = value
-            onChanged()
-        }
+    override fun getText(): String {
+        return _text
+    }
+
+    fun setText(str: String) {
+        _text = str
+        onChanged()
+    }
 
     private fun updateLines() {
         _lines.clear()

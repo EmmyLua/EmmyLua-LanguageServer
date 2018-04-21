@@ -22,8 +22,9 @@ abstract class VirtualFileBase(override val uri: URI) : IVirtualFile {
         get() = parentFolder!!
         set(value) { parentFolder = value }
 
-    override val name: String
-        get() = file.name
+    override fun getName(): String {
+        return file.name
+    }
 
     override fun matchUri(uri: String): Boolean {
         return uri == this.uri.toString()

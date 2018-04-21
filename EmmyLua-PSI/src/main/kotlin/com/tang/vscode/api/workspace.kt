@@ -20,7 +20,7 @@ interface IFolder : IVirtualFile {
 
 interface IVirtualFile {
     val isFolder: Boolean
-    val name: String
+    fun getName(): String
     val uri: URI
     val workspace: IWorkspace
     val parent: IFolder
@@ -28,7 +28,7 @@ interface IVirtualFile {
 }
 
 interface ILuaFile : IVirtualFile {
-    val text: String
+    fun getText(): String
     val diagnostics: List<Diagnostic>
     val psi: PsiFile?
     fun getLine(offset: Int): Pair<Int, Int>

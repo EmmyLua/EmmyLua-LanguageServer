@@ -2,6 +2,7 @@ package com.tang.intellij.lua.psi
 
 import com.intellij.extapi.psi.ASTDelegatePsiElement
 import com.intellij.lang.ASTNode
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.util.Processor
@@ -13,7 +14,7 @@ import com.tang.intellij.lua.stubs.LuaFileStub
 
 class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile, LuaTypeGuessable {
 
-    //var virtualFile: LuaFile? = null
+    var virtualFile: VirtualFile? = null
 
     override fun getNode(): ASTNode = myNode
 
@@ -25,7 +26,7 @@ class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile
         TODO()
     }
 
-    override fun getName() = ""//virtualFile?.name
+    override fun getName() = virtualFile?.name!!
 
     override fun getOriginalFile(): PsiFile = this
 
