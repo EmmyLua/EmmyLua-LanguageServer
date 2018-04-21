@@ -17,6 +17,7 @@ package com.intellij.psi.search;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +28,10 @@ public class GlobalSearchScope extends SearchScope {
 
     public static GlobalSearchScope allScope(Project project) {
         return new GlobalSearchScope();
+    }
+
+    public static GlobalSearchScope fileScope(PsiFile file) {
+        throw new Error();
     }
 
     @Nullable private final Project myProject;

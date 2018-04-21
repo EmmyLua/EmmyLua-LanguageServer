@@ -16,7 +16,6 @@
 
 package com.tang.intellij.lua.ext
 
-import com.intellij.openapi.progress.ProgressManager
 import com.tang.intellij.lua.psi.LuaTypeGuessable
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITy
@@ -28,4 +27,6 @@ interface ILuaTypeInfer {
             return Ty.UNKNOWN
         }
     }
+
+    fun inferType(target: LuaTypeGuessable, context: SearchContext): ITy
 }

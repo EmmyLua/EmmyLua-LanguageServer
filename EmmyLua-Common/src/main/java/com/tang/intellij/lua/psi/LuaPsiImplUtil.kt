@@ -18,31 +18,41 @@
 
 package com.tang.intellij.lua.psi
 
+import com.intellij.extapi.psi.StubBasedPsiElementBase
+import com.intellij.icons.AllIcons
 import com.intellij.navigation.ItemPresentation
 import com.intellij.openapi.util.Computable
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiNameIdentifierOwner
-import com.intellij.psi.PsiReference
+import com.intellij.openapi.util.Key
+import com.intellij.psi.*
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.SearchScope
+import com.intellij.psi.stubs.StubElement
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.ParameterizedCachedValue
 import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.comment.LuaCommentUtil
+import com.tang.intellij.lua.comment.psi.LuaDocAccessModifier
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.ext.recursionGuard
+import com.tang.intellij.lua.lang.LuaIcons
 import com.tang.intellij.lua.lang.type.LuaString
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.stubs.LuaClassMemberStub
+import com.tang.intellij.lua.stubs.LuaFuncBodyOwnerStub
 import com.tang.intellij.lua.ty.*
 import java.util.*
+import javax.swing.Icon
 
 fun setName(owner: PsiNameIdentifierOwner, name: String): PsiElement {
-    /*val oldId = owner.nameIdentifier
+    val oldId = owner.nameIdentifier
     if (oldId != null) {
         val newId = LuaElementFactory.createIdentifier(owner.project, name)
         oldId.replace(newId)
         return newId
     }
-    return owner*/
-    TODO()
+    return owner
 }
 
 fun getNameIdentifier(nameDef: LuaNameDef): PsiElement {
@@ -56,12 +66,11 @@ fun getNameIdentifier(nameDef: LuaNameDef): PsiElement {
  * @return SearchScope
  */
 fun getUseScope(nameDef: LuaNameDef): SearchScope {
-    //return GlobalSearchScope.fileScope(nameDef.containingFile)
-    TODO()
+    return GlobalSearchScope.fileScope(nameDef.containingFile)
 }
 
 fun getReferences(element: LuaPsiElement): Array<PsiReference> {
-    return ReferenceProvidersRegistry.getReferencesFromProviders(element)
+    return ReferenceProvidersRegistry.getReferencesFromProviders(element, PsiReferenceService.Hints.NO_HINTS)
 }
 
 /**
@@ -79,21 +88,42 @@ fun getNameIdentifier(classMethodDef: LuaClassMethodDef): PsiElement? {
 }
 
 fun getName(classMethodDef: LuaClassMethodDef): String? {
-    /*val stub = classMethodDef.stub
+    val stub = classMethodDef.stub
     if (stub != null)
-        return stub.name*/
+        return stub.name
     return getName(classMethodDef as PsiNameIdentifierOwner)
 }
 
 fun isStatic(classMethodDef: LuaClassMethodDef): Boolean {
-    /*val stub = classMethodDef.stub
+    val stub = classMethodDef.stub
     if (stub != null)
-        return stub.isStatic*/
+        return stub.isStatic
 
     return classMethodDef.classMethodName.dot != null
 }
 
-//private val GET_CLASS_METHOD = Key.create<ParameterizedCachedValue<ITy, SearchContext>>("GET_CLASS_METHOD")
+fun getPresentation(classMethodDef: LuaClassMethodDef): ItemPresentation {
+    return object : ItemPresentation {
+        override fun getPresentableText(): String? {
+            val type = classMethodDef.guessClassType(SearchContext(classMethodDef.project))
+            if (type != null) {
+                val c = if (classMethodDef.isStatic) "." else ":"
+                return type.displayName + c + classMethodDef.name + classMethodDef.paramSignature
+            }
+            return classMethodDef.name!! + classMethodDef.paramSignature
+        }
+
+        override fun getLocationString(): String {
+            return classMethodDef.containingFile.name
+        }
+
+        override fun getIcon(b: Boolean): Icon? {
+            return LuaIcons.CLASS_METHOD
+        }
+    }
+}
+
+private val GET_CLASS_METHOD = Key.create<ParameterizedCachedValue<ITy, SearchContext>>("GET_CLASS_METHOD")
 
 /**
  * 寻找对应的类
@@ -102,13 +132,22 @@ fun isStatic(classMethodDef: LuaClassMethodDef): Boolean {
  * @return LuaType
  */
 fun guessParentType(classMethodDef: LuaClassMethodDef, context: SearchContext): ITy {
-    var type: ITy = Ty.UNKNOWN
-    val expr = classMethodDef.classMethodName.expr
-    val ty = expr.guessType(context)
-    val perfect = TyUnion.getPerfectClass(ty)
-    if (perfect is ITyClass)
-        type = perfect
-    return type
+    return CachedValuesManager.getManager(classMethodDef.project).getParameterizedCachedValue(classMethodDef, GET_CLASS_METHOD, { ctx ->
+        val stub = classMethodDef.stub
+        var type: ITy = Ty.UNKNOWN
+        if (stub != null) {
+            stub.classNames.forEach {
+                type = type.union(createSerializedClass(it))
+            }
+        } else {
+            val expr = classMethodDef.classMethodName.expr
+            val ty = expr.guessType(ctx)
+            val perfect = TyUnion.getPerfectClass(ty)
+            if (perfect is ITyClass)
+                type = perfect
+        }
+        CachedValueProvider.Result.create(type, classMethodDef)
+    }, false, context) ?: Ty.UNKNOWN
 }
 
 fun getNameIdentifier(funcDef: LuaFuncDef): PsiElement? {
@@ -116,10 +155,26 @@ fun getNameIdentifier(funcDef: LuaFuncDef): PsiElement? {
 }
 
 fun getName(funcDef: LuaFuncDef): String? {
-    /*val stub = funcDef.stub
+    val stub = funcDef.stub
     if (stub != null)
-        return stub.name*/
+        return stub.name
     return getName(funcDef as PsiNameIdentifierOwner)
+}
+
+fun getPresentation(funcDef: LuaFuncDef): ItemPresentation {
+    return object : ItemPresentation {
+        override fun getPresentableText(): String? {
+            return funcDef.name!! + funcDef.paramSignature
+        }
+
+        override fun getLocationString(): String {
+            return funcDef.containingFile.name
+        }
+
+        override fun getIcon(b: Boolean): Icon? {
+            return AllIcons.Nodes.Function
+        }
+    }
 }
 
 fun guessParentType(funcDef: LuaFuncDef, searchContext: SearchContext): ITyClass {
@@ -209,20 +264,21 @@ fun guessTypeAt(list: LuaExprList, context: SearchContext): ITy {
         //local a, b = getValues12() -- a = 1, b = 2
         //local a, b, c = getValues12(), 3, 4 --a = 1, b = 3, c =  4
         //local a, b, c = getValues12(), getValue34() --a = 1, b = 3, c =  4
+        var index = -1
         if (exprList.size > 1) {
             val nameSize = context.index + 1
-            if (nameSize > exprList.size) {
+            index = if (nameSize > exprList.size) {
                 val valueSize = exprList.size
-                context.index = nameSize - valueSize
-            } else context.index = 0
+                nameSize - valueSize
+            } else 0
         }
-        return expr.guessType(context)
+        return context.withIndex(index) { expr.guessType(context) }
     }
     return Ty.UNKNOWN
 }
 
 fun guessParentType(indexExpr: LuaIndexExpr, context: SearchContext): ITy {
-    val expr = PsiTreeUtil.getChildOfType(indexExpr, LuaExpr::class.java)
+    val expr = PsiTreeUtil.getStubChildOfType(indexExpr, LuaExpr::class.java)
     return expr?.guessType(context) ?: Ty.UNKNOWN
 }
 
@@ -231,6 +287,22 @@ fun getNameIdentifier(indexExpr: LuaIndexExpr): PsiElement? {
     if (id != null)
         return id
     return indexExpr.idExpr
+}
+
+fun getPresentation(indexExpr: LuaIndexExpr): ItemPresentation {
+    return object : ItemPresentation {
+        override fun getPresentableText(): String? {
+            return indexExpr.name
+        }
+
+        override fun getLocationString(): String {
+            return indexExpr.containingFile.name
+        }
+
+        override fun getIcon(b: Boolean): Icon? {
+            return LuaIcons.CLASS_FIELD
+        }
+    }
 }
 
 /**
@@ -247,9 +319,9 @@ fun getIdExpr(indexExpr: LuaIndexExpr): LuaLiteralExpr? {
 }
 
 fun getName(indexExpr: LuaIndexExpr): String? {
-    /*val stub = indexExpr.stub
+    val stub = indexExpr.stub
     if (stub != null)
-        return stub.name*/
+        return stub.name
 
     // var.name
     val id = indexExpr.id
@@ -265,7 +337,7 @@ fun getName(indexExpr: LuaIndexExpr): String? {
 }
 
 fun setName(indexExpr: LuaIndexExpr, name: String): PsiElement {
-    /*if (indexExpr.id != null)
+    if (indexExpr.id != null)
         return setName(indexExpr as PsiNameIdentifierOwner, name)
     val idExpr = indexExpr.idExpr
     if (idExpr != null) {
@@ -275,16 +347,16 @@ fun setName(indexExpr: LuaIndexExpr, name: String): PsiElement {
         val newId = LuaElementFactory.createLiteral(indexExpr.project, newText)
         return idExpr.replace(newId)
     }
-    return indexExpr*/
-    TODO()
+    return indexExpr
 }
 
 fun guessValueType(indexExpr: LuaIndexExpr, context: SearchContext): ITy {
     var ret: ITy = Ty.UNKNOWN
     val assignStat = indexExpr.assignStat
     if (assignStat != null) {
-        context.index = assignStat.getIndexFor(indexExpr)
-        ret = assignStat.valueExprList?.guessTypeAt(context) ?: Ty.UNKNOWN
+        ret = context.withIndex(assignStat.getIndexFor(indexExpr)) {
+            assignStat.valueExprList?.guessTypeAt(context) ?: Ty.UNKNOWN
+        }
     }
     return ret
 }
@@ -294,8 +366,7 @@ fun findField(table: LuaTableExpr, fieldName: String): LuaTableField? {
 }
 
 fun getTableFieldList(table: LuaTableExpr): List<LuaTableField> {
-    //return PsiTreeUtil.getStubChildrenOfTypeAsList(table, LuaTableField::class.java)
-    TODO()
+    return PsiTreeUtil.getStubChildrenOfTypeAsList(table, LuaTableField::class.java)
 }
 
 fun getParamNameDefList(funcBodyOwner: LuaFuncBodyOwner): List<LuaParamNameDef> {
@@ -314,12 +385,12 @@ fun guessReturnType(owner: LuaFuncBodyOwner, searchContext: SearchContext): ITy 
 }
 
 fun getParams(owner: LuaFuncBodyOwner): Array<LuaParamInfo> {
-    /*if (owner is StubBasedPsiElementBase<*>) {
+    if (owner is StubBasedPsiElementBase<*>) {
         val stub = owner.stub
         if (stub is LuaFuncBodyOwnerStub<*>) {
             return stub.params
         }
-    }*/
+    }
     return getParamsInner(owner)
 }
 
@@ -368,9 +439,9 @@ fun getParamSignature(funcBodyOwner: LuaFuncBodyOwner): String {
 }
 
 fun getName(localFuncDef: LuaLocalFuncDef): String? {
-    /*val stub = localFuncDef.stub
+    val stub = localFuncDef.stub
     if (stub != null)
-        return stub.name*/
+        return stub.name
     return getName(localFuncDef as PsiNameIdentifierOwner)
 }
 
@@ -379,14 +450,13 @@ fun getNameIdentifier(localFuncDef: LuaLocalFuncDef): PsiElement? {
 }
 
 fun getUseScope(localFuncDef: LuaLocalFuncDef): SearchScope {
-    //return GlobalSearchScope.fileScope(localFuncDef.containingFile)
-    TODO()
+    return GlobalSearchScope.fileScope(localFuncDef.containingFile)
 }
 
 fun getName(nameDef: LuaNameDef): String {
-    /*val stub = nameDef.stub
+    val stub = nameDef.stub
     if (stub != null)
-        return stub.name*/
+        return stub.name
     return nameDef.id.text
 }
 
@@ -413,7 +483,7 @@ fun guessParentType(tableField: LuaTableField, context: SearchContext): ITy {
     return tbl.guessType(context)
 }
 
-/*fun guessType(tableField: LuaTableField, context: SearchContext): ITy {
+fun guessType(tableField: LuaTableField, context: SearchContext): ITy {
     val stub = tableField.stub
     //from comment
     val docTy = if (stub != null) stub.docTy else tableField.comment?.docTy
@@ -426,12 +496,12 @@ fun guessParentType(tableField: LuaTableField, context: SearchContext): ITy {
         return valueExpr.guessType(context)
     }
     return Ty.UNKNOWN
-}*/
+}
 
 fun getName(tableField: LuaTableField): String? {
-    /*val stub = tableField.stub
+    val stub = tableField.stub
     if (stub != null)
-        return stub.name*/
+        return stub.name
     val id = tableField.id
     if (id != null)
         return id.text
@@ -446,6 +516,22 @@ fun getFieldName(tableField: LuaTableField): String? {
     return getName(tableField)
 }
 
+fun getPresentation(tableField: LuaTableField): ItemPresentation {
+    return object : ItemPresentation {
+        override fun getPresentableText(): String? {
+            return tableField.name
+        }
+
+        override fun getLocationString(): String {
+            return tableField.containingFile.name
+        }
+
+        override fun getIcon(b: Boolean): Icon? {
+            return LuaIcons.CLASS_FIELD
+        }
+    }
+}
+
 /**
  * xx['id']
  */
@@ -457,14 +543,34 @@ fun getIdExpr(tableField: LuaTableField): LuaExpr? {
     return null
 }
 
+fun toString(stubElement: StubBasedPsiElement<out StubElement<*>>): String {
+    return "STUB:[" + stubElement.javaClass.simpleName + "]"
+}
+
+fun getPresentation(nameExpr: LuaNameExpr): ItemPresentation {
+    return object : ItemPresentation {
+        override fun getPresentableText(): String {
+            return nameExpr.name
+        }
+
+        override fun getLocationString(): String {
+            return nameExpr.containingFile.name
+        }
+
+        override fun getIcon(b: Boolean): Icon? {
+            return LuaIcons.CLASS_FIELD
+        }
+    }
+}
+
 fun getNameIdentifier(ref: LuaNameExpr): PsiElement {
     return ref.id
 }
 
 fun getName(nameExpr: LuaNameExpr): String {
-    /*val stub = nameExpr.stub
+    val stub = nameExpr.stub
     if (stub != null)
-        return stub.name*/
+        return stub.name
     return nameExpr.text
 }
 
@@ -472,11 +578,12 @@ fun guessReturnType(returnStat: LuaReturnStat?, index: Int, context: SearchConte
     if (returnStat != null) {
         val returnExpr = returnStat.exprList
         if (returnExpr != null) {
-            context.index = index
-            return if (context.guessTuple())
-                returnExpr.guessType(context)
-            else
-                returnExpr.guessTypeAt(context)
+            return context.withIndex(index) {
+                if (context.guessTuple())
+                    returnExpr.guessType(context)
+                else
+                    returnExpr.guessTypeAt(context)
+            }
         }
     }
     return Ty.UNKNOWN
@@ -487,7 +594,7 @@ fun getNameIdentifier(label: LuaLabelStat): PsiElement? {
 }
 
 fun getVisibility(member: LuaClassMember): Visibility {
-    /*if (member is StubBasedPsiElement<*>) {
+    if (member is StubBasedPsiElement<*>) {
         val stub = member.stub
         if (stub is LuaClassMemberStub) {
             return stub.visibility
@@ -498,27 +605,18 @@ fun getVisibility(member: LuaClassMember): Visibility {
         comment?.findTag(LuaDocAccessModifier::class.java)?.let {
             return Visibility.get(it.text)
         }
-    }*/
+    }
     return Visibility.PUBLIC
 }
 
 fun getVisibility(classMethodDef: LuaClassMethodDef): Visibility {
-    /*val stub = classMethodDef.stub
+    val stub = classMethodDef.stub
     if (stub != null) {
 
-    }*/
+    }
     return getVisibility(classMethodDef as LuaClassMember)
 }
 
 fun getExpr(exprStat: LuaExprStat): LuaExpr {
-    //return PsiTreeUtil.getStubChildOfType(exprStat, LuaExpr::class.java)!!
-    TODO()
-}
-
-fun getPresentation(psi: PsiElement): ItemPresentation {
-    TODO()
-}
-
-fun toString(psi: PsiElement): String {
-    TODO()
+    return PsiTreeUtil.getStubChildOfType(exprStat, LuaExpr::class.java)!!
 }

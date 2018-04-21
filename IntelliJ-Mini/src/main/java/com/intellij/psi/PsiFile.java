@@ -15,6 +15,7 @@
  */
 package com.intellij.psi;
 
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -42,4 +43,8 @@ public interface PsiFile extends PsiNamedElement {
      */
     @NotNull
     PsiFile getOriginalFile();
+
+    @NotNull
+    @NonNls
+    String getName();
 }

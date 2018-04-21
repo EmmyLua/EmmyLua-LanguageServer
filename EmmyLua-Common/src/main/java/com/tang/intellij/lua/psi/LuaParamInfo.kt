@@ -16,9 +16,14 @@
 
 package com.tang.intellij.lua.psi
 
+import com.intellij.psi.stubs.StubInputStream
+import com.intellij.psi.stubs.StubOutputStream
+import com.intellij.util.io.StringRef
 import com.tang.intellij.lua.ty.ITy
 import com.tang.intellij.lua.ty.ITySubstitutor
 import com.tang.intellij.lua.ty.Ty
+
+import java.io.IOException
 
 /**
  * 方法的参数信息
@@ -30,6 +35,13 @@ class LuaParamInfo {
     var isVarArgs: Boolean = false
     var name: String = ""
     var ty: ITy = Ty.UNKNOWN
+
+    constructor(name: String, ty: ITy) {
+        this.name = name
+        this.ty = ty
+    }
+
+    constructor()
 
     override fun equals(other: Any?): Boolean {
         //only check ty
@@ -48,7 +60,7 @@ class LuaParamInfo {
         return pi
     }
 
-    /*companion object {
+    companion object {
 
         @Throws(IOException::class)
         fun deserialize(stubInputStream: StubInputStream): LuaParamInfo {
@@ -65,5 +77,5 @@ class LuaParamInfo {
             stubOutputStream.writeName(param.name)
             Ty.serialize(param.ty, stubOutputStream)
         }
-    }*/
+    }
 }

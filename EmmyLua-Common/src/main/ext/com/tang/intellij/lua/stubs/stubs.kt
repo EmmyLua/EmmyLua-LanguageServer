@@ -3,13 +3,12 @@ package com.tang.intellij.lua.stubs
 import com.intellij.psi.PsiElement
 import com.intellij.psi.stubs.StubElement
 import com.intellij.psi.tree.IElementType
-import com.tang.intellij.lua.comment.psi.LuaDocClassDef
-import com.tang.intellij.lua.comment.psi.LuaDocFieldDef
-import com.tang.intellij.lua.comment.psi.LuaDocTableDef
-import com.tang.intellij.lua.comment.psi.LuaDocTypeDef
+import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
+import com.tang.intellij.lua.ty.TyClass
 
 abstract class FakeStubElement<T : PsiElement> : StubElement<T> {
     override fun getPsi(): T? = null
@@ -23,6 +22,9 @@ abstract class LuaStubBase<T : PsiElement> : FakeStubElement<T>()
 
 interface LuaFuncBodyOwnerStub<T : LuaFuncBodyOwner> : StubElement<T> {
     fun guessReturnTy(searchContext: SearchContext):ITy
+    val returnDocTy:ITy?
+    val params: Array<LuaParamInfo>
+    val overloads: Array<IFunSignature>
 }
 
 interface LuaDocTyStub {
@@ -43,7 +45,10 @@ interface LuaNameDefStub : StubElement<LuaNameDef>, LuaDocTyStub {
     val name: String
     val anonymousType:String
 }
-interface LuaTableFieldStub : StubElement<LuaTableField>, LuaDocTyStub
+interface LuaTableFieldStub : LuaClassMemberStub<LuaTableField> {
+    val typeName: String?
+    val name: String?
+}
 
 interface LuaBinaryExprStub : StubElement<LuaBinaryExpr>, LuaExprStub<LuaBinaryExpr> {
     val opType: IElementType?
@@ -61,15 +66,39 @@ interface LuaTableExprStub : StubElement<LuaTableExpr>, LuaExprStub<LuaTableExpr
     val tableTypeName: String
 }
 class LuaLiteralExprStub : LuaStubBase<LuaLiteralExpr>(), LuaExprStub<LuaLiteralExpr>
-class LuaIndexExprStub(val visibility: Visibility) : LuaStubBase<LuaIndexExpr>(), LuaExprStub<LuaIndexExpr>
+
+interface LuaIndexExprStub : LuaExprStub<LuaIndexExpr>, LuaClassMemberStub<LuaIndexExpr> {
+    val classNames: Array<String>
+    val name: String?
+    val brack: Boolean
+    val isAssign: Boolean
+}
+
 class LuaClosureExprStub : LuaStubBase<LuaClosureExpr>(), LuaExprStub<LuaClosureExpr>
-class LuaFuncStub : FakeStubElement<LuaFuncDef>()
+
+interface LuaFuncStub : LuaFuncBodyOwnerStub<LuaFuncDef>, LuaClassMemberStub<LuaFuncDef> {
+    val name: String
+    val module: String
+}
+
 class LuaPlaceholderStub : FakeStubElement<PsiElement>()
 
-class LuaClassMethodStub : FakeStubElement<LuaClassMethod>()
-class LuaLocalFuncDefStub : FakeStubElement<LuaLocalFuncDef>()
+interface LuaClassMethodStub : LuaFuncBodyOwnerStub<LuaClassMethod> {
+    val classNames: Array<String>
 
-class LuaDocClassStub : FakeStubElement<LuaDocClassDef>()
+    val name: String
+
+    val isStatic: Boolean
+}
+interface LuaLocalFuncDefStub : StubElement<LuaLocalFuncDef>, LuaFuncBodyOwnerStub<LuaLocalFuncDef> {
+    val name: String
+}
+interface LuaDocClassStub : StubElement<LuaDocClassDef> {
+    val className: String
+    val aliasName: String?
+    val superClassName: String?
+    val classType: TyClass
+}
 interface LuaDocFieldDefStub : LuaClassMemberStub<LuaDocFieldDef> {
     val name: String
 
@@ -80,5 +109,8 @@ interface LuaDocFieldDefStub : LuaClassMemberStub<LuaDocFieldDef> {
 interface LuaDocTableDefStub : StubElement<LuaDocTableDef> {
     val className: String
 }
-class LuaDocTableFieldDefStub : FakeStubElement<LuaDocTableDef>()
+interface LuaDocTableFieldDefStub : LuaClassMemberStub<LuaDocTableField> {
+    val name: String
+    val parentTypeName: String
+}
 class LuaDocTypeDefStub : FakeStubElement<LuaDocTypeDef>()
