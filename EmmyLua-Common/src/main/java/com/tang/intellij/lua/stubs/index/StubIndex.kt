@@ -8,13 +8,15 @@ import com.intellij.util.indexing.IndexId
 import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.stubs.index
 
-abstract class StubIndex<Psi : PsiElement> {
+abstract class StubIndex<K, Psi : PsiElement> {
 
-    abstract val key: IndexId<String, Psi>
+    abstract fun getKey(): IndexId<K, Psi>
 
     private var lock = false
 
-    fun get(key: String, project: Project, scope: GlobalSearchScope): MutableList<Psi> {
+    private val indexMap = mutableMapOf<Int, MutableMap<K, MutableList<PsiElement>>>()
+
+    fun get(key: K, project: Project, scope: GlobalSearchScope): MutableList<Psi> {
         val list = mutableListOf<Psi>()
         if (lock)
             return list
@@ -24,17 +26,18 @@ abstract class StubIndex<Psi : PsiElement> {
                 index(file)
                 lock = false
 
-                file.getSink().process(this.key, key, Processor {
-                    list.add(it)
-                    true
-                })
+                indexMap[file.id]?.let {
+                    it[key]?.forEach {
+                        list.add(it as Psi)
+                    }
+                }
             }
             true
         }
         return list
     }
 
-    fun processKeys(project: Project, scope: GlobalSearchScope, processor: Processor<String>) {
+    fun processKeys(project: Project, scope: GlobalSearchScope, processor: Processor<K>) {
         if (lock)
             return
         project.process {
@@ -43,9 +46,15 @@ abstract class StubIndex<Psi : PsiElement> {
                 index(it)
                 lock = false
 
-                it.getSink().processKeys(this.key, processor)
+                //indexSink.processKeys(this.getKey(), processor)
             }
             true
         }
+    }
+
+    fun <Psi : PsiElement, K1> occurrence(file: LuaPsiFile, key: K1, value: Psi) {
+        val map = indexMap.getOrPut(file.id) { mutableMapOf() }
+        val list = map.getOrPut(key as K) { mutableListOf() }
+        list.add(value)
     }
 }

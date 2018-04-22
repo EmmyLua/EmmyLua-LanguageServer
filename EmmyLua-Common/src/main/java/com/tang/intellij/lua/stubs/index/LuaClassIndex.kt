@@ -9,9 +9,9 @@ import com.tang.intellij.lua.comment.psi.LuaDocClassDef
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.StubKeys
 
-class LuaClassIndex : StubIndex<LuaDocClassDef>() {
+class LuaClassIndex : StubIndex<String, LuaDocClassDef>() {
 
-    override val key: IndexId<String, LuaDocClassDef> = StubKeys.CLASS
+    override fun getKey() = StubKeys.CLASS
 
     companion object {
         val instance = LuaClassIndex()

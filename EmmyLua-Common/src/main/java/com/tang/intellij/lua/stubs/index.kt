@@ -24,11 +24,12 @@ fun index(file: LuaPsiFile) {
         return
     file.putUserData(ALREADY_INDEXED, true)
     file.putUserData(IN_PROGRESS, true)
-    index(file, file.getSink())
+    val sink = IndexSinkImpl(file)
+    indexImpl(file, sink)
     file.putUserData(IN_PROGRESS, false)
 }
 
-private fun index(file: LuaPsiFile, sink: IndexSink) {
+private fun indexImpl(file: LuaPsiFile, sink: IndexSink) {
     file.accept(object : PsiRecursiveElementWalkingVisitor() {
         override fun visitElement(element: PsiElement) {
             super.visitElement(element)
@@ -72,8 +73,8 @@ private fun index(field: LuaDocFieldDef, sink: IndexSink) {
         }
 
         if (className != null) {
-            sink.occurrence(StubKeys.CLASS_MEMBER, className, field)
-            sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name", field)
+            sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), field)
+            sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), field)
         }
     }
 }
@@ -101,8 +102,8 @@ private fun index(methodDef: LuaClassMethodDef, sink: IndexSink) {
 
     val name = id.text
     classNameSet.forEach {className ->
-        sink.occurrence(StubKeys.CLASS_MEMBER, className, methodDef)
-        sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name", methodDef)
+        sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), methodDef)
+        sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), methodDef)
     }
 }
 
@@ -120,8 +121,8 @@ private fun index(indexExpr: LuaIndexExpr, sink: IndexSink) {
     context.forStore = false
 
     classNameSet.forEach { className ->
-        sink.occurrence(StubKeys.CLASS_MEMBER, className, indexExpr)
-        sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name", indexExpr)
+        sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), indexExpr)
+        sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), indexExpr)
     }
 }
 
@@ -134,8 +135,8 @@ private fun index(tableField: LuaTableField, sink: IndexSink) {
     val name = tableField.name ?: return
     val className = findTableExprTypeName(tableField) ?: return
 
-    sink.occurrence(StubKeys.CLASS_MEMBER, className, tableField)
-    sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name", tableField)
+    sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), tableField)
+    sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), tableField)
 }
 
 private fun findTableExprTypeName(field: LuaTableField): String? {
@@ -161,8 +162,8 @@ private fun index(luaNameExpr: LuaNameExpr, sink: IndexSink) {
     //val module = if (psiFile is LuaPsiFile) psiFile.moduleName ?: Constants.WORD_G else Constants.WORD_G
     val isGlobal = resolveLocal(luaNameExpr, SearchContext(luaNameExpr.project, psiFile)) == null
     if (isGlobal) {
-        sink.occurrence(StubKeys.CLASS_MEMBER, Constants.WORD_G, luaNameExpr)
-        sink.occurrence(StubKeys.CLASS_MEMBER, "${Constants.WORD_G}*$name", luaNameExpr)
+        sink.occurrence(StubKeys.CLASS_MEMBER, Constants.WORD_G.hashCode(), luaNameExpr)
+        sink.occurrence(StubKeys.CLASS_MEMBER, "${Constants.WORD_G}*$name".hashCode(), luaNameExpr)
     }
 }
 
@@ -175,6 +176,6 @@ private fun index(funcDef: LuaFuncDef, sink: IndexSink) {
     val params = funcDef.params
     val overloads = funcDef.overloads*/
 
-    sink.occurrence(StubKeys.CLASS_MEMBER, moduleName, funcDef)
-    sink.occurrence(StubKeys.CLASS_MEMBER, "$moduleName*${nameRef.text}", funcDef)
+    sink.occurrence(StubKeys.CLASS_MEMBER, moduleName.hashCode(), funcDef)
+    sink.occurrence(StubKeys.CLASS_MEMBER, "$moduleName*${nameRef.text}".hashCode(), funcDef)
 }

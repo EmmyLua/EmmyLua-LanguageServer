@@ -98,6 +98,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         val psi = node.psi
         _myPsi = psi as LuaPsiFile
         _myPsi?.virtualFile = this
+        println(_myPsi!!.name)
         PsiTreeUtil.processElements(psi, {
             if (it is PsiErrorElement) {
                 val diagnostic = Diagnostic()

@@ -19,12 +19,12 @@ package com.tang.intellij.lua.ext
 import com.tang.intellij.lua.psi.LuaTypeGuessable
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITy
-import com.tang.intellij.lua.ty.Ty
+import com.tang.intellij.lua.ty.inferInner
 
 interface ILuaTypeInfer {
     companion object {
         fun infer(target: LuaTypeGuessable, context: SearchContext): ITy {
-            return Ty.UNKNOWN
+            return inferInner(target, context)
         }
     }
 

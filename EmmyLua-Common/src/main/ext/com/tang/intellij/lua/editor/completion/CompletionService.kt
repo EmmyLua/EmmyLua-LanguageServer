@@ -10,6 +10,7 @@ import com.intellij.util.Consumer
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
+import com.tang.intellij.lua.psi.LuaPsiFile
 import org.eclipse.lsp4j.CompletionItem
 
 class CompletionResultSetImpl(private val consumer: Consumer<CompletionItem>) : CompletionResultSet() {
@@ -32,7 +33,8 @@ object CompletionService {
         val parser = LuaParser()
         val builder = PsiBuilderFactory.getInstance().createBuilder(LuaParserDefinition(), LuaLexer(), text)
         val node = parser.parse(LuaParserDefinition.FILE, builder)
-        val tempPsi = node.psi as PsiFile
+        val tempPsi = node.psi as LuaPsiFile
+        tempPsi.virtualFile = psi.virtualFile
         val position = tempPsi.findElementAt(pos)
 
         val parameters = CompletionParameters()

@@ -50,8 +50,7 @@ class LuaSettings {
 
     companion object {
 
-        val instance: LuaSettings
-            get() = TODO()
+        val instance: LuaSettings = LuaSettings()
 
         fun isConstructorName(name: String): Boolean {
             return instance.constructorNames.contains(name.toLowerCase())

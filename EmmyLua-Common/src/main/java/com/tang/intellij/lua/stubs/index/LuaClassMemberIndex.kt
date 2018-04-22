@@ -1,27 +1,26 @@
 package com.tang.intellij.lua.stubs.index
 
-import com.intellij.openapi.project.Project
-import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
 import com.intellij.util.containers.ContainerUtil
-import com.intellij.util.indexing.IndexId
 import com.tang.intellij.lua.comment.psi.LuaDocFieldDef
 import com.tang.intellij.lua.psi.LuaClassMember
+import com.tang.intellij.lua.psi.LuaClassMethod
 import com.tang.intellij.lua.psi.LuaTableField
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.stubs.IndexSink
 import com.tang.intellij.lua.stubs.StubKeys
 import com.tang.intellij.lua.ty.ITyClass
 
-class LuaClassMemberIndex : StubIndex<LuaClassMember>() {
-    override val key: IndexId<String, LuaClassMember>
-        get() = StubKeys.CLASS_MEMBER
+class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
+    override fun getKey() = StubKeys.CLASS_MEMBER
 
-    fun get(s: Int, project: Project, scope: GlobalSearchScope): MutableCollection<LuaClassMember> {
-        TODO()
-    }
     companion object {
+        val instance = LuaClassMemberIndex()
+
         fun process(key: String, context: SearchContext, processor: Processor<LuaClassMember>): Boolean {
-            val all = LuaClassMemberIndex.instance.get(key, context.project, context.getScope())
+            if (context.isDumb)
+                return false
+            val all = LuaClassMemberIndex.instance.get(key.hashCode(), context.project, context.getScope())
             return ContainerUtil.process(all, processor)
         }
 
@@ -52,19 +51,6 @@ class LuaClassMemberIndex : StubIndex<LuaClassMember>() {
             return true
         }
 
-        fun processAll(type: ITyClass, fieldName: String, context: SearchContext, processor: Processor<LuaClassMember>) {
-            process(type.className, fieldName, context, processor)
-        }
-
-        fun processAll(type: ITyClass, context: SearchContext, processor: Processor<LuaClassMember>) {
-            if (process(type.className, context, processor)) {
-                type.lazyInit(context)
-                type.processAlias(Processor {
-                    process(it, context, processor)
-                })
-            }
-        }
-
         fun find(type: ITyClass, fieldName: String, context: SearchContext): LuaClassMember? {
             var perfect: LuaClassMember? = null
             var docField: LuaDocFieldDef? = null
@@ -91,6 +77,34 @@ class LuaClassMemberIndex : StubIndex<LuaClassMember>() {
             return perfect
         }
 
-        val instance = LuaClassMemberIndex()
+        fun processAll(type: ITyClass, fieldName: String, context: SearchContext, processor: Processor<LuaClassMember>) {
+            process(type.className, fieldName, context, processor)
+        }
+
+        fun processAll(type: ITyClass, context: SearchContext, processor: Processor<LuaClassMember>) {
+            if (process(type.className, context, processor)) {
+                type.lazyInit(context)
+                type.processAlias(Processor {
+                    process(it, context, processor)
+                })
+            }
+        }
+
+        fun findMethod(className: String, memberName: String, context: SearchContext, deep: Boolean = true): LuaClassMethod? {
+            var target: LuaClassMethod? = null
+            process(className, memberName, context, Processor {
+                if (it is LuaClassMethod) {
+                    target = it
+                    return@Processor false
+                }
+                true
+            }, deep)
+            return target
+        }
+
+        /*fun indexStub(indexSink: IndexSink, className: String, memberName: String) {
+            indexSink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode())
+            indexSink.occurrence(StubKeys.CLASS_MEMBER, "$className*$memberName".hashCode())
+        }*/
     }
 }

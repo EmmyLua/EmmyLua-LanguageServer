@@ -15,6 +15,7 @@
  */
 package com.intellij.psi;
 
+import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,4 +48,7 @@ public interface PsiFile extends PsiNamedElement {
     @NotNull
     @NonNls
     String getName();
+
+    @NotNull
+    VirtualFile getVirtualFile();
 }

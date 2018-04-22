@@ -23,7 +23,7 @@ import com.tang.intellij.lua.comment.psi.LuaDocClassDef
 import com.tang.intellij.lua.psi.LuaClassMember
 
 object StubKeys {
-    val CLASS_MEMBER: IndexId<String, LuaClassMember> = IndexId.create<String, LuaClassMember>("lua.index.class.member")
+    val CLASS_MEMBER: IndexId<Int, LuaClassMember> = IndexId.create<Int, LuaClassMember>("lua.index.class.member")
     val SHORT_NAME = Key.create<NavigatablePsiElement>("lua.index.short_name")
     val CLASS: IndexId<String, LuaDocClassDef> = IndexId.create<String, LuaDocClassDef>("lua.index.class")
     val SUPER_CLASS: IndexId<String, LuaDocClassDef> = IndexId.create<String, LuaDocClassDef>("lua.index.super_class")
