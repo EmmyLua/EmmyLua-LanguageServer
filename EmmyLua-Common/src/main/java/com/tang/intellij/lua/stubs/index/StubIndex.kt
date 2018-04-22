@@ -40,15 +40,20 @@ abstract class StubIndex<K, Psi : PsiElement> {
     fun processKeys(project: Project, scope: GlobalSearchScope, processor: Processor<K>) {
         if (lock)
             return
-        project.process {
-            if (it is LuaPsiFile) {
+        project.process { file ->
+            var continueRun = true
+            if (file is LuaPsiFile) {
                 lock = true
-                index(it)
+                index(file)
                 lock = false
 
-                //indexSink.processKeys(this.getKey(), processor)
+                indexMap[file.id]?.let {
+                    val iter = it.keys.iterator()
+                    while (iter.hasNext() && continueRun)
+                        continueRun = processor.process(iter.next())
+                }
             }
-            true
+            continueRun
         }
     }
 
