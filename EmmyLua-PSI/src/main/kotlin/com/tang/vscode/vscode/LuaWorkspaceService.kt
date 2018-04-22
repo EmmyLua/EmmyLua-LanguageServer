@@ -67,6 +67,14 @@ class LuaWorkspaceService : WorkspaceService {
         _rootWSFolders.add(uri)
     }
 
+    private fun collectFiles(file: File, list: MutableList<File>) {
+        if (file.isFile && file.extension == "lua") {
+            list.add(file)
+        } else if (file.isDirectory) {
+            file.listFiles().forEach { collectFiles(it, list) }
+        }
+    }
+
     fun loadWorkspace(monitor: IProgressMonitor) {
         val workspace = getWorkspace(root)
         val allFiles = mutableListOf<File>()
@@ -75,7 +83,7 @@ class LuaWorkspaceService : WorkspaceService {
         arr.forEach { uri->
             val u = URI(uri)
             val folder = File(u.path)
-            allFiles.addAll(folder.listFiles().filter { it.isFile && it.extension == "lua" })
+            collectFiles(folder, allFiles)
         }
 
         allFiles.forEachIndexed { index, file ->
