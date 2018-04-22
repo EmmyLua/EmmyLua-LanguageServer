@@ -43,11 +43,24 @@ object CompletionService {
         parameters.originalFile = psi
 
         val result = CompletionResultSetImpl(consumer)
-        result.prefixMatcher = CamelHumpMatcher("")
+        val prefix = findPrefix(text, pos)
+        result.prefixMatcher = CamelHumpMatcher(prefix)
 
         parameters.originalFile.putUserData(CompletionSession.KEY, CompletionSession(parameters, result))
 
         contributor.fillCompletionVariants(parameters, result)
         docContributor.fillCompletionVariants(parameters, result)
+    }
+
+    private fun findPrefix(text: String, pos: Int): String {
+        var i = pos
+        while (i > 0) {
+            val c = text[i - 1]
+            if (!c.isJavaIdentifierPart() && !c.isJavaIdentifierStart()) {
+                break
+            }
+            i--
+        }
+        return text.substring(i, pos)
     }
 }

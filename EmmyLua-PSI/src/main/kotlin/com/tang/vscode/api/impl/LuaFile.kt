@@ -9,6 +9,7 @@ import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
 import com.tang.intellij.lua.psi.LuaPsiFile
+import com.tang.intellij.lua.stubs.IndexSink
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.utils.toRange
 import org.eclipse.lsp4j.Diagnostic
@@ -92,13 +93,13 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
 
     private fun doParser() {
         diagnostics.clear()
+        _myPsi?.let { IndexSink.removeStubs(it) }
         val parser = LuaParser()
         val builder = PsiBuilderFactory.getInstance().createBuilder(LuaParserDefinition(), LuaLexer(), text)
         val node = parser.parse(LuaParserDefinition.FILE, builder)
         val psi = node.psi
         _myPsi = psi as LuaPsiFile
         _myPsi?.virtualFile = this
-        println(_myPsi!!.name)
         PsiTreeUtil.processElements(psi, {
             if (it is PsiErrorElement) {
                 val diagnostic = Diagnostic()

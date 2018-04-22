@@ -57,4 +57,8 @@ abstract class StubIndex<K, Psi : PsiElement> {
         val list = map.getOrPut(key as K) { mutableListOf() }
         list.add(value)
     }
+
+    fun removeStubs(file: LuaPsiFile) {
+        indexMap.remove(file.id)
+    }
 }

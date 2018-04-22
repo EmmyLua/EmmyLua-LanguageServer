@@ -7,8 +7,10 @@ import org.jetbrains.annotations.NotNull;
 
 public class CachedValuesManager {
 
+    public static CachedValuesManager instance = new CachedValuesManager();
+
     public static CachedValuesManager getManager(Project project) {
-        return null;
+        return instance;
     }
 
     public <T, D extends UserDataHolder, P> T getParameterizedCachedValue(@NotNull D dataHolder,

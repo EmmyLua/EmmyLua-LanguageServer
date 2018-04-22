@@ -7,11 +7,18 @@ import com.tang.intellij.lua.stubs.index.LuaClassIndex
 import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.stubs.index.LuaSuperClassIndex
 
-interface IndexSink {
-    fun <Psi : PsiElement, K> occurrence(indexKey: IndexId<K, Psi>, key: K, value: Psi)
+abstract class IndexSink {
+    abstract fun <Psi : PsiElement, K> occurrence(indexKey: IndexId<K, Psi>, key: K, value: Psi)
+    companion object {
+        fun removeStubs(file: LuaPsiFile) {
+            LuaClassIndex.instance.removeStubs(file)
+            LuaClassMemberIndex.instance.removeStubs(file)
+            LuaSuperClassIndex.instance.removeStubs(file)
+        }
+    }
 }
 
-class IndexSinkImpl(val file: LuaPsiFile) : IndexSink {
+class IndexSinkImpl(val file: LuaPsiFile) : IndexSink() {
 
     override fun <Psi : PsiElement, K> occurrence(indexKey: IndexId<K, Psi>, key: K, value: Psi) {
         when (indexKey) {
