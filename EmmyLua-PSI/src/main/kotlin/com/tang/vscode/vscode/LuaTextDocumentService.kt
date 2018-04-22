@@ -196,7 +196,8 @@ class LuaTextDocumentService(private val workspaceService: LuaWorkspaceService) 
                                 var textRange = ref.rangeInElement
                                 val parentRange = ref.element.textRange
                                 textRange = textRange.shiftRight(parentRange.startOffset)
-                                list.add(Location(params.textDocument.uri, textRange.toRange(file.virtualFile as LuaFile)))
+                                val luaFile = ref.element.containingFile.virtualFile as LuaFile
+                                list.add(Location(luaFile.uri.toString(), textRange.toRange(luaFile)))
                             }
                         }
                     }
