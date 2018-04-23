@@ -10,6 +10,7 @@ buildscript {
 
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.2.30"
+    id 'com.github.johnrengelman.plugin-shadow' version '2.0.3'
 }
 
 apply plugin: "java"
@@ -46,9 +47,13 @@ tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
 }
 
-jar {
+shadowJar {
     manifest {
         attributes 'Main-Class': 'com.tang.vscode.vscode.MainKt'
     }
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/*.SF'
+    exclude '**/*.java'
+    exclude '**/*.html'
 }
