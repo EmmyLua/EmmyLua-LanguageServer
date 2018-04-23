@@ -19,6 +19,10 @@ package com.tang.intellij.lua.psi
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
+import com.intellij.psi.util.CachedValue
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Processor
 import com.tang.intellij.lua.Constants
@@ -37,6 +41,7 @@ internal fun resolveFuncBodyOwner(ref: LuaNameExpr, context: SearchContext): Lua
         true
     })
 
+    //global function
     if (ret == null) {
         val module = ref.moduleName ?: Constants.WORD_G
         LuaClassMemberIndex.process(module, refName, context, Processor {
@@ -53,17 +58,14 @@ internal fun resolveFuncBodyOwner(ref: LuaNameExpr, context: SearchContext): Lua
 
 fun resolveLocal(ref: LuaNameExpr, context: SearchContext? = null) = resolveLocal(ref.name, ref, context)
 
-//private val KEY_RESOLVE = Key.create<CachedValue<PsiElement>>("lua.resolve.cache.resolveLocal")
+private val KEY_RESOLVE = Key.create<CachedValue<PsiElement>>("lua.resolve.cache.resolveLocal")
 
 fun resolveLocal(refName:String, ref: PsiElement, context: SearchContext? = null): PsiElement? {
-    /*return CachedValuesManager.getCachedValue(ref, KEY_RESOLVE, {
+    return CachedValuesManager.getCachedValue(ref, KEY_RESOLVE, {
         val element = resolveInFile(refName, ref, context)
         val r = if (element is LuaNameExpr) null else element
         CachedValueProvider.Result.create(r, ref)
-    })*/
-    val element = resolveInFile(refName, ref, context)
-    val r = if (element is LuaNameExpr) null else element
-    return r
+    })
 }
 
 private val KEY_RESOLVE_CACHE = Key.create<PsiElement>("lua.resolve.cache")
@@ -140,6 +142,7 @@ fun resolve(nameExpr: LuaNameExpr, context: SearchContext): PsiElement? {
     //search local
     var resolveResult = resolveInFile(nameExpr.name, nameExpr, context)
 
+    //global
     if (resolveResult == null) {
         val refName = nameExpr.name
         val moduleName = nameExpr.moduleName ?: Constants.WORD_G
@@ -195,8 +198,7 @@ fun resolve(indexExpr: LuaIndexExpr, idString: String, context: SearchContext): 
  * @return PsiFile
  */
 fun resolveRequireFile(pathString: String?, project: Project): LuaPsiFile? {
-    TODO()
-    /*if (pathString == null)
+    if (pathString == null)
         return null
     val fileName = pathString.replace('.', '/')
     val f = LuaFileUtil.findFile(project, fileName)
@@ -205,5 +207,5 @@ fun resolveRequireFile(pathString: String?, project: Project): LuaPsiFile? {
         if (psiFile is LuaPsiFile)
             return psiFile
     }
-    return null*/
+    return null
 }

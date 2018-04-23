@@ -15,6 +15,7 @@ interface IFolder : IVirtualFile {
     fun addFile(uri: String, text: String): ILuaFile
     fun removeFile(file: IVirtualFile)
     fun findFile(uri: String): IVirtualFile?
+    fun getFile(name: String, recursive: Boolean = false): IVirtualFile?
     fun walkFiles(processor: (f: ILuaFile) -> Boolean): Boolean
 }
 

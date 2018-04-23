@@ -17,6 +17,8 @@ package com.intellij.psi;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.UserDataHolderBase;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.impl.PsiManagerImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +35,7 @@ public abstract class PsiManager extends UserDataHolderBase {
      */
     @NotNull
     public static PsiManager getInstance(@NotNull Project project) {
-        return null;
+        return PsiManagerImpl.getInstance();
     }
 
     /**
@@ -59,4 +61,14 @@ public abstract class PsiManager extends UserDataHolderBase {
      * it was not possible to determine the equivalence
      */
     public abstract boolean areElementsEquivalent(@Nullable PsiElement element1, @Nullable PsiElement element2);
+
+    /**
+     * Returns the PSI file corresponding to the specified virtual file.
+     *
+     * @param file the file for which the PSI is requested.
+     * @return the PSI file, or null if {@code file} is a directory, an invalid virtual file,
+     * or the current project is a dummy or default project.
+     */
+    @Nullable
+    public abstract PsiFile findFile(@NotNull VirtualFile file);
 }

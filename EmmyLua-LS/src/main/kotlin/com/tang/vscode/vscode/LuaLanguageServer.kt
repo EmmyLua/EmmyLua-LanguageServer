@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import com.intellij.core.LanguageParserDefinitions
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
+import com.tang.intellij.lua.ext.ILuaFileResolver
 import com.tang.intellij.lua.lang.LuaLanguage
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.reference.LuaReferenceContributor
@@ -39,6 +40,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         LanguageParserDefinitions.INSTANCE.register(LuaLanguage.INSTANCE, LuaParserDefinition())
         documentService.initIntellijEnv()
         ReferenceProvidersRegistry.register(LuaReferenceContributor())
+        ILuaFileResolver.EP_NAME.add(LuaFileResolver())
     }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
