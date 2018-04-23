@@ -10,7 +10,6 @@ import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.vscode.api.ILuaFile
-import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.utils.computeAsync
 import com.tang.vscode.utils.toRange
@@ -24,10 +23,8 @@ import java.util.concurrent.CompletableFuture
  * tangzx
  * Created by Client on 2018/3/20.
  */
-class LuaTextDocumentService(private val workspaceService: LuaWorkspaceService) : TextDocumentService {
+class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextDocumentService {
     private var client: LuaLanguageClient? = null
-
-    private val workspace: IWorkspace get() = workspaceService.getWorkspace(workspaceService.root)
 
     fun connect(client: LuaLanguageClient) {
         this.client = client
