@@ -14,7 +14,7 @@ sourceSets {
 }
 
 dependencies {
-    compile project(":IntelliJ-Mini")
+    compile project(":IntelliJ-Core")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 }
 buildscript {
