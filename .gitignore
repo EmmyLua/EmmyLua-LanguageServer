@@ -3,5 +3,6 @@
 *.iml
 *.skeleton
 jflex*.jar
+*.java~
 out
 build
