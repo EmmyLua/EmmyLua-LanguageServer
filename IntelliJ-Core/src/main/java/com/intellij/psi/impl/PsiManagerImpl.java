@@ -65,6 +65,6 @@ public class PsiManagerImpl extends PsiManagerEx {
     @Nullable
     @Override
     public PsiFile findFile(@NotNull VirtualFile file) {
-        throw new Error();
+        return file.getPsiFile();
     }
 }

@@ -28,6 +28,22 @@ open class Folder(uri: URI, private val myName: String? = null)
         return children.find { it.getName() == name }
     }
 
+    override fun findFile(vararg names: String): IVirtualFile? {
+        var folder: IFolder = this
+        for (i in 0 until names.size) {
+            val name = names[i]
+            val file = folder.findFile(name)
+            if (file is IFolder)
+                folder = file
+            else {
+                if (i == names.lastIndex)
+                    return file
+                else break
+            }
+        }
+        return null
+    }
+
     override fun getFile(name: String, recursive: Boolean): IVirtualFile? {
         var f: IVirtualFile? = null
         walkFiles {

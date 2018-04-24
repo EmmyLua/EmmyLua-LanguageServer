@@ -3,35 +3,26 @@ package com.tang.vscode.vscode
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.tang.intellij.lua.ext.ILuaFileResolver
-import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.LuaFile
 
 class LuaFileResolver : ILuaFileResolver {
     override fun find(project: Project, shortUrl: String, extNames: Array<String>): VirtualFile? {
-        /*val ws = IWorkspace.get(project)
-        val list = shortUrl.split('/')
-        var folder: IFolder = ws
-        var result: VirtualFile? = null
-        result = ws.getFile(shortUrl) as? LuaFile
-        for (index in 0 until list.size) {
-            val s = list[index]
-            if (index == list.lastIndex) {
-                for (extName in extNames) {
-                    val file = folder.getFile("$s$extName")
-                    if (file is LuaFile) {
-                        result = file
-                    }
-                }
-            } else {
-                val child = folder.getFile(s)
-                if (child is IFolder)
-                    folder = child
-                else break
-            }
-        }
+        val ws = IWorkspace.get(project)
+        val arr = shortUrl.split("/")
+        for (extName in extNames) {
+            var file: VirtualFile? = null
+            val varargs = arr.toTypedArray()
+            varargs[varargs.lastIndex] = varargs.last() + extName
 
-        return result*/
+            ws.eachRoot { root ->
+                file = root.findFile(*varargs) as? LuaFile
+
+                file == null
+            }
+            if (file != null)
+                return file
+        }
         return null
     }
 }

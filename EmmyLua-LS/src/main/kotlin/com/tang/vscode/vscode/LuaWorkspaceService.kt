@@ -67,19 +67,19 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             addWSRoot(value)
         }
 
-    private fun eachWorkspace(processor: (ws: IFolder) -> Boolean) {
-        for (ws in _rootList) {
-            if (!processor(ws))
+    override fun eachRoot(processor: (ws: IFolder) -> Boolean) {
+        for (root in _rootList) {
+            if (!processor(root))
                 break
         }
     }
 
     private fun getWSRoot(uri: URI): IFolder {
         var ws: IFolder? = null
-        eachWorkspace {
+        eachRoot {
             if (it.matchUri(uri)) {
                 ws = it
-                return@eachWorkspace false
+                return@eachRoot false
             }
             true
         }

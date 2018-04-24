@@ -131,6 +131,8 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
     override val psi: PsiFile?
         get() = _myPsi
 
+    override fun getPsiFile() = _myPsi
+
     /*override fun findNode(line: Int, character: Int): LuaNode? {
         val lineOffset = character + getLineStart(line)
         return chunkNode?.find(line, lineOffset)

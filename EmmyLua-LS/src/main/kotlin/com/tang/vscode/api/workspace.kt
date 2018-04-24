@@ -11,6 +11,7 @@ import java.net.URI
 interface IWorkspace {
     fun addFile(file: File, text: String? = null): ILuaFile
     fun findFile(uri: String): IVirtualFile?
+    fun eachRoot(processor: (f: IFolder) -> Boolean)
     companion object {
         val KEY = Key.create<IWorkspace>("emmy.workspace")
 
@@ -25,6 +26,7 @@ interface IFolder : IVirtualFile {
     fun addFile(name: String, text: String): ILuaFile
     fun removeFile(file: IVirtualFile)
     fun findFile(name: String): IVirtualFile?
+    fun findFile(vararg names: String): IVirtualFile?
     fun getFile(name: String, recursive: Boolean = false): IVirtualFile?
     fun walkFiles(processor: (f: ILuaFile) -> Boolean): Boolean
     fun createFolder(name: String): IFolder
