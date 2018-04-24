@@ -17,6 +17,8 @@ import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.services.TextDocumentService
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
+import java.io.File
+import java.net.URI
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -137,7 +139,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val uri = params.textDocument.uri
         var file = workspace.findFile(uri)
         if (file == null) {
-            file = workspace.addFile(uri, params.textDocument.text)
+            val u = URI(uri)
+            file = workspace.addFile(File(u.path), params.textDocument.text)
         }
         if (file is LuaFile) {
             val diagnosticsParams = PublishDiagnosticsParams(params.textDocument.uri, file.diagnostics)

@@ -6,10 +6,14 @@ import com.tang.vscode.api.IVirtualFile
 import java.net.URI
 import java.net.URLDecoder
 
-open class Folder(uri: URI)
+open class Folder(uri: URI, private val myName: String? = null)
     : VirtualFileBase(uri), IFolder {
 
     private val children = mutableListOf<IVirtualFile>()
+
+    override fun getName(): String {
+        return myName ?: super.getName()
+    }
 
     override fun addFile(file: IVirtualFile) {
         val fb = file as VirtualFileBase
@@ -21,17 +25,8 @@ open class Folder(uri: URI)
         TODO()
     }
 
-    override fun findFile(uri: String): IVirtualFile? {
-        val formattedUri = URI(URLDecoder.decode(uri, "UTF-8"))
-        var f: IVirtualFile? = null
-        walkFiles {
-            if (it.matchUri(formattedUri)) {
-                f = it
-                return@walkFiles false
-            }
-            true
-        }
-        return f
+    override fun findFile(name: String): IVirtualFile? {
+        return children.find { it.getName() == name }
     }
 
     override fun getFile(name: String, recursive: Boolean): IVirtualFile? {
@@ -65,5 +60,12 @@ open class Folder(uri: URI)
             }
         }
         return true
+    }
+
+    override fun createFolder(name: String): IFolder {
+        val u = uri.resolve("$name/")
+        val folder = Folder(u)
+        addFile(folder)
+        return folder
     }
 }

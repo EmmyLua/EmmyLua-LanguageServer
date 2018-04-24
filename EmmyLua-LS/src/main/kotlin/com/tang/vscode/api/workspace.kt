@@ -5,10 +5,11 @@ import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiFile
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
+import java.io.File
 import java.net.URI
 
 interface IWorkspace {
-    fun addFile(uri: String, text: String): ILuaFile
+    fun addFile(file: File, text: String? = null): ILuaFile
     fun findFile(uri: String): IVirtualFile?
     companion object {
         val KEY = Key.create<IWorkspace>("emmy.workspace")
@@ -23,9 +24,10 @@ interface IFolder : IVirtualFile {
     fun addFile(file: IVirtualFile)
     fun addFile(uri: String, text: String): ILuaFile
     fun removeFile(file: IVirtualFile)
-    fun findFile(uri: String): IVirtualFile?
+    fun findFile(name: String): IVirtualFile?
     fun getFile(name: String, recursive: Boolean = false): IVirtualFile?
     fun walkFiles(processor: (f: ILuaFile) -> Boolean): Boolean
+    fun createFolder(name: String): IFolder
 }
 
 interface IVirtualFile {
