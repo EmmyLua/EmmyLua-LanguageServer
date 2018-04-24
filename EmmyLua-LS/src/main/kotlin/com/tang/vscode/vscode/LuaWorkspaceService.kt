@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.psi.PsiFile
 import com.intellij.util.Processor
+import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
@@ -22,9 +23,10 @@ import java.util.concurrent.CompletableFuture
  * Created by Client on 2018/3/20.
  */
 class LuaWorkspaceService : WorkspaceService, IWorkspace {
-    private var _root: String = ""
+    private var _root: URI = URI("file://")
     private val _rootList = mutableListOf<WorkspaceRoot>()
-    private val _rootWSFolders = mutableListOf<String>()
+    private val _rootWSFolders = mutableListOf<URI>()
+    private val _baseFolders = mutableListOf<IFolder>()
 
     inner class WProject : UserDataHolderBase(), Project {
         override fun process(processor: Processor<PsiFile>) {
@@ -58,7 +60,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         TODO()
     }
 
-    var root: String
+    var root: URI
         get() = _root
         set(value) {
             _root = value
@@ -72,7 +74,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
     }
 
-    private fun getWSRoot(uri: String): WorkspaceRoot {
+    private fun getWSRoot(uri: URI): WorkspaceRoot {
         var ws: WorkspaceRoot? = null
         eachWorkspace {
             if (it.matchUri(uri)) {
@@ -84,13 +86,17 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         return ws ?: addWSRoot(uri)
     }
 
-    private fun addWSRoot(uri: String): WorkspaceRoot {
-        val ws = WorkspaceRoot(URI(uri))
+    private fun addWSRoot(uri: URI): WorkspaceRoot {
+        val ws = WorkspaceRoot(uri)
         _rootList.add(ws)
         return ws
     }
 
     fun addRoot(uri: String) {
+        addRoot(URI(uri))
+    }
+
+    fun addRoot(uri: URI) {
         getWSRoot(uri)
         _rootWSFolders.add(uri)
     }
@@ -109,8 +115,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val arr = _rootWSFolders.toTypedArray()
         _rootWSFolders.clear()
         arr.forEach { uri->
-            val u = URI(uri)
-            val folder = File(u.path)
+            val folder = File(uri.path)
             collectFiles(folder, allFiles)
         }
 
@@ -122,9 +127,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         monitor.done()
     }
 
-    private fun getParentUri(uri: String): String {
-        val last = uri.lastIndexOf('/')
-        return uri.substring(0, last)
+    private fun getParentUri(uri: String): URI {
+        val u = URI(uri)
+        return u.resolve("..")
     }
 
     override fun findFile(uri: String): IVirtualFile? {

@@ -15,6 +15,7 @@ import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageClientAware
 import org.eclipse.lsp4j.services.LanguageServer
 import org.eclipse.lsp4j.services.WorkspaceService
+import java.net.URI
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -44,7 +45,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
-        workspaceService.root = params.rootUri
+        workspaceService.root = URI(params.rootUri)
 
         initIntellijEnv()
 

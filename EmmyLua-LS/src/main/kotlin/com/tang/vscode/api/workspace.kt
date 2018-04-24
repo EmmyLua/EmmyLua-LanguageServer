@@ -33,7 +33,7 @@ interface IVirtualFile {
     fun getName(): String
     val uri: URI
     val parent: IFolder
-    fun matchUri(uri: String): Boolean
+    fun matchUri(uri: URI): Boolean
 }
 
 interface ILuaFile : IVirtualFile {

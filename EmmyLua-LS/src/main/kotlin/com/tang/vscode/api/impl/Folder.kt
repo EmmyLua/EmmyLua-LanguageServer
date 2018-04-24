@@ -9,12 +9,11 @@ import java.net.URLDecoder
 open class Folder(uri: URI)
     : VirtualFileBase(uri), IFolder {
 
-    protected val children = mutableListOf<IVirtualFile>()
+    private val children = mutableListOf<IVirtualFile>()
 
     override fun addFile(file: IVirtualFile) {
         val fb = file as VirtualFileBase
         fb.parent = this
-        fb.workspace = this.workspace
         children.add(file)
     }
 
@@ -23,7 +22,7 @@ open class Folder(uri: URI)
     }
 
     override fun findFile(uri: String): IVirtualFile? {
-        val formattedUri = URI(URLDecoder.decode(uri, "UTF-8")).toString()
+        val formattedUri = URI(URLDecoder.decode(uri, "UTF-8"))
         var f: IVirtualFile? = null
         walkFiles {
             if (it.matchUri(formattedUri)) {
