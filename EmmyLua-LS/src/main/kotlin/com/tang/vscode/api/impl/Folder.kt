@@ -4,7 +4,6 @@ import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import java.net.URI
-import java.net.URLDecoder
 
 open class Folder(uri: URI, private val myName: String? = null)
     : VirtualFileBase(uri), IFolder {
@@ -44,8 +43,8 @@ open class Folder(uri: URI, private val myName: String? = null)
     override val isFolder: Boolean
         get() = true
 
-    override fun addFile(uri: String, text: String): ILuaFile {
-        val luaFile = LuaFile(URI(uri))
+    override fun addFile(name: String, text: String): ILuaFile {
+        val luaFile = LuaFile(this.uri.resolve(name))
         luaFile.text = text
         addFile(luaFile)
         return luaFile

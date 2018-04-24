@@ -105,6 +105,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
         for (i in 2 until split.size) {
             val name = split[i]
+            if (i == split.lastIndex && name.isEmpty())
+                break
             folder = folder?.findFile(name) as? IFolder ?: folder?.createFolder(name)
         }
 
@@ -112,6 +114,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun addWSRoot(uri: URI): IFolder {
+        val exist = _rootList.find { it.uri == uri }
+        if (exist != null) return exist
+
         val pair = findOrCreate(uri, true)
         val folder = pair.first!!
         _rootList.add(folder)
@@ -123,6 +128,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun addRoot(uri: URI) {
+        if (_rootWSFolders.contains(uri))
+            return
         getWSRoot(uri)
         _rootWSFolders.add(uri)
     }
@@ -151,21 +158,16 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         monitor.done()
     }
 
-    private fun getParentUri(uri: String): URI {
-        val u = URI(uri)
-        return u.resolve("..")
-    }
-
     override fun findFile(uri: String): IVirtualFile? {
         val u = URI(uri)
-        val pair = findOrCreate(getParentUri(uri), false)
+        val pair = findOrCreate(u.resolve(""), false)
         val root = pair.first
         return root?.findFile(File(u.path).name)
     }
 
     override fun addFile(file: File, text: String?): ILuaFile {
         val uri = URI("file:///${file.invariantSeparatorsPath}")
-        val pair = findOrCreate(getParentUri(uri.toString()), true)
+        val pair = findOrCreate(uri.resolve(""), true)
         val root = pair.first!!
         return root.addFile(file.name, text ?: file.readText())
     }

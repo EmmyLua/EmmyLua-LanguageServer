@@ -22,7 +22,7 @@ interface IWorkspace {
 
 interface IFolder : IVirtualFile {
     fun addFile(file: IVirtualFile)
-    fun addFile(uri: String, text: String): ILuaFile
+    fun addFile(name: String, text: String): ILuaFile
     fun removeFile(file: IVirtualFile)
     fun findFile(name: String): IVirtualFile?
     fun getFile(name: String, recursive: Boolean = false): IVirtualFile?
