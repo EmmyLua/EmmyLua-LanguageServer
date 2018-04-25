@@ -16,6 +16,7 @@ import org.eclipse.lsp4j.services.LanguageClientAware
 import org.eclipse.lsp4j.services.LanguageServer
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.net.URI
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -69,6 +70,11 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.hoverProvider = true
         capabilities.referencesProvider = true
 
+        capabilities.workspace = WorkspaceServerCapabilities()
+        capabilities.workspace.workspaceFolders = WorkspaceFoldersOptions()
+        capabilities.workspace.workspaceFolders.supported = true
+        capabilities.workspace.workspaceFolders.changeNotifications = Either.forRight(true)
+
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Incremental)
 
         res.capabilities = capabilities
@@ -76,13 +82,11 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     }
 
     override fun initialized(params: InitializedParams) {
-        val watchers = listOf(FileSystemWatcher("**/*"))
-        val options = DidChangeWatchedFilesRegistrationOptions(watchers)
-
-        val id = "emmylua.${workspaceService.root}"
-        val registration = Registration(id, "workspace/didChangeWatchedFiles", options)
-        val registrations = listOf(registration)
-        client?.registerCapability(RegistrationParams(registrations))
+        val options = DidChangeWatchedFilesRegistrationOptions(listOf(FileSystemWatcher("**/*")))
+        val didChangeWatchedFiles = Registration(UUID.randomUUID().toString(), "workspace/didChangeWatchedFiles", options)
+        client?.registerCapability(RegistrationParams(listOf(didChangeWatchedFiles)))
+        val didChangeWorkspaceFolders = Registration(UUID.randomUUID().toString(), "workspace/didChangeWorkspaceFolders")
+        client?.registerCapability(RegistrationParams(listOf(didChangeWorkspaceFolders)))
 
         workspaceService.loadWorkspace(object : IProgressMonitor {
             override fun done() {
