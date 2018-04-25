@@ -93,7 +93,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
 
     private fun doParser() {
         diagnostics.clear()
-        _myPsi?.let { IndexSink.removeStubs(it) }
+        unindex()
         val parser = LuaParser()
         val builder = PsiBuilderFactory.getInstance().createBuilder(LuaParserDefinition(), LuaLexer(), text)
         val node = parser.parse(LuaParserDefinition.FILE, builder)
@@ -133,8 +133,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
 
     override fun getPsiFile() = _myPsi
 
-    /*override fun findNode(line: Int, character: Int): LuaNode? {
-        val lineOffset = character + getLineStart(line)
-        return chunkNode?.find(line, lineOffset)
-    }*/
+    override fun unindex() {
+        _myPsi?.let { IndexSink.removeStubs(it) }
+    }
 }

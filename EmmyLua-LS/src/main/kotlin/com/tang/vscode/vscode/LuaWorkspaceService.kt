@@ -9,10 +9,7 @@ import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
-import org.eclipse.lsp4j.DidChangeConfigurationParams
-import org.eclipse.lsp4j.DidChangeWatchedFilesParams
-import org.eclipse.lsp4j.SymbolInformation
-import org.eclipse.lsp4j.WorkspaceSymbolParams
+import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
 import java.net.URI
@@ -50,7 +47,13 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams) {
-
+        for (change in params.changes) {
+            when (change.type) {
+                FileChangeType.Created -> addFile(change.uri)
+                FileChangeType.Deleted -> removeFile(change.uri)
+                else -> { }
+            }
+        }
     }
 
     override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
@@ -170,5 +173,18 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val pair = findOrCreate(uri.resolve(""), true)
         val root = pair.first!!
         return root.addFile(file.name, text ?: file.readText())
+    }
+
+    private fun addFile(uri: String) {
+        val u = URI(uri)
+        addFile(File(u.path))
+    }
+
+    override fun removeFile(uri: String) {
+        val file = findFile(uri) as? ILuaFile
+        file?.let {
+            it.parent.removeFile(it)
+            it.unindex()
+        }
     }
 }

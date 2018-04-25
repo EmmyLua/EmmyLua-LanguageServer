@@ -21,7 +21,7 @@ open class Folder(uri: URI, private val myName: String? = null)
     }
 
     override fun removeFile(file: IVirtualFile) {
-        TODO()
+        children.remove(file)
     }
 
     override fun findFile(name: String): IVirtualFile? {

@@ -11,6 +11,7 @@ import java.net.URI
 interface IWorkspace {
     fun addFile(file: File, text: String? = null): ILuaFile
     fun findFile(uri: String): IVirtualFile?
+    fun removeFile(uri: String)
     fun eachRoot(processor: (f: IFolder) -> Boolean)
     companion object {
         val KEY = Key.create<IWorkspace>("emmy.workspace")
@@ -44,6 +45,7 @@ interface ILuaFile : IVirtualFile {
     fun getText(): String
     val diagnostics: List<Diagnostic>
     val psi: PsiFile?
+    fun unindex()
     fun getLine(offset: Int): Pair<Int, Int>
     fun didChange(params: DidChangeTextDocumentParams)
     fun getPosition(line:Int, char: Int): Int
