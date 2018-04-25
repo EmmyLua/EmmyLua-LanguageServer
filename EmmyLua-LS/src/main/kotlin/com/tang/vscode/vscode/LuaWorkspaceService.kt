@@ -63,6 +63,10 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         TODO()
     }
 
+    override fun didChangeWorkspaceFolders(params: DidChangeWorkspaceFoldersParams) {
+        print(params)
+    }
+
     var root: URI
         get() = _root
         set(value) {
