@@ -11,6 +11,7 @@ import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.impl.LuaFile
+import com.tang.vscode.utils.TargetElementUtil
 import com.tang.vscode.utils.computeAsync
 import com.tang.vscode.utils.toRange
 import org.eclipse.lsp4j.*
@@ -51,7 +52,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             val file = workspace.findFile(position.textDocument.uri)
             if (file is ILuaFile) {
                 val pos = file.getPosition(position.position.line, position.position.character)
-                val element = file.psi?.findElementAt(pos)
+                val element = TargetElementUtil.findTarget(file.psi, pos)
                 if (element != null) {
                     hover = Hover(listOf(Either.forLeft("test")))
                 }
