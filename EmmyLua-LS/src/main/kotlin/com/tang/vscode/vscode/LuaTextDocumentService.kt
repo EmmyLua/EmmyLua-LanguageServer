@@ -147,7 +147,34 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun rename(params: RenameParams): CompletableFuture<WorkspaceEdit> {
-        throw NotImplementedException()
+        return computeAsync {
+            val changes = mutableListOf<TextDocumentEdit>()
+            withPsiFile(params.textDocument, params.position) { _, psiFile, i ->
+                val target = TargetElementUtil.findTarget(psiFile, i) ?: return@withPsiFile
+
+                val def = target.reference?.resolve() ?: target
+
+                def.nameRange?.let {
+                    val refFile = def.containingFile.virtualFile as LuaFile
+                    val documentIdentifier = VersionedTextDocumentIdentifier()
+                    documentIdentifier.uri = refFile.uri.toString()
+                    changes.add(TextDocumentEdit(documentIdentifier, listOf(TextEdit(it.toRange(refFile), params.newName))))
+                }
+
+                // references
+                val search = ReferencesSearch.search(def)
+                search.forEach {
+                    if (it.isReferenceTo(def)) {
+                        val refFile = it.element.containingFile.virtualFile as LuaFile
+                        val documentIdentifier = VersionedTextDocumentIdentifier()
+                        documentIdentifier.uri = refFile.uri.toString()
+                        changes.add(TextDocumentEdit(documentIdentifier, listOf(TextEdit(it.getRangeInFile(refFile), params.newName))))
+                    }
+                }
+            }
+            val edit = WorkspaceEdit(changes)
+            edit
+        }
     }
 
     override fun completion(position: TextDocumentPositionParams): CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
@@ -231,13 +258,16 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         throw NotImplementedException()
     }
 
-    private fun withPsiFile(position: TextDocumentPositionParams, code: (LuaPsiFile, Int) -> Unit) {
     private fun withPsiFile(position: TextDocumentPositionParams, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
-        val file = workspace.findFile(position.textDocument.uri)
+        withPsiFile(position.textDocument, position.position, code)
+    }
+
+    private fun withPsiFile(textDocument: TextDocumentIdentifier, position: Position, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
+        val file = workspace.findFile(textDocument.uri)
         if (file is ILuaFile) {
             val psi = file.psi
             if (psi is LuaPsiFile) {
-                val pos = file.getPosition(position.position.line, position.position.character)
+                val pos = file.getPosition(position.line, position.character)
                 code(file, psi, pos)
             }
         }

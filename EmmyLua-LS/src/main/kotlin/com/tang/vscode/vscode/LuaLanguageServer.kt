@@ -71,6 +71,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.referencesProvider = true
         capabilities.codeLensProvider = CodeLensOptions(true)
         capabilities.documentHighlightProvider = true
+        capabilities.renameProvider = true
 
         capabilities.workspace = WorkspaceServerCapabilities()
         capabilities.workspace.workspaceFolders = WorkspaceFoldersOptions()
