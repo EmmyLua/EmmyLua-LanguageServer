@@ -1,6 +1,7 @@
 package com.tang.vscode
 
 import com.intellij.openapi.project.ProjectCoreUtil
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Consumer
 import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.psi.LuaClassMethod
@@ -77,9 +78,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     }
 
                     // references highlight
-                    val search = ReferencesSearch.search(def)
+                    val search = ReferencesSearch.search(def, GlobalSearchScope.fileScope(psiFile))
                     search.forEach {
-                        if (it.element.containingFile == psiFile && it.isReferenceTo(def)) {
+                        if (it.isReferenceTo(def)) {
                             list.add(DocumentHighlight(it.getRangeInFile(file)))
                         }
                     }

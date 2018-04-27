@@ -16,6 +16,7 @@
 package com.intellij.psi.search;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
@@ -27,11 +28,16 @@ public class GlobalSearchScope extends SearchScope {
     public static final GlobalSearchScope EMPTY_SCOPE = new GlobalSearchScope();
 
     public static GlobalSearchScope allScope(Project project) {
-        return new GlobalSearchScope();
+        return new GlobalSearchScope() {
+            @Override
+            public boolean contains(@NotNull VirtualFile file) {
+                return true;
+            }
+        };
     }
 
     public static GlobalSearchScope fileScope(PsiFile file) {
-        throw new Error();
+        return new FileScope(file.getProject(), file.getVirtualFile());
     }
 
     public static GlobalSearchScope projectScope(Project project) {
@@ -69,4 +75,23 @@ public class GlobalSearchScope extends SearchScope {
     public boolean contains(@NotNull VirtualFile file) {
         return false;
     }
+
+    private static class FileScope extends GlobalSearchScope {
+        private final VirtualFile myVirtualFile; // files can be out of project roots
+
+        private FileScope(@NotNull Project project, @Nullable VirtualFile virtualFile) {
+            super(project);
+            myVirtualFile = virtualFile;
+        }
+
+        @Override
+        public boolean contains(@NotNull VirtualFile file) {
+            return Comparing.equal(myVirtualFile, file);
+        }
+
+        @Override
+        public String toString() {
+            return "File :"+myVirtualFile;
+        }
+}
 }
