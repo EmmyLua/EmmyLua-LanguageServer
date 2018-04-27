@@ -11,9 +11,7 @@ import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.documentation.LuaDocumentationProvider
-import com.tang.vscode.utils.TargetElementUtil
-import com.tang.vscode.utils.computeAsync
-import com.tang.vscode.utils.toRange
+import com.tang.vscode.utils.*
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.services.TextDocumentService
@@ -67,7 +65,29 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun documentHighlight(position: TextDocumentPositionParams): CompletableFuture<MutableList<out DocumentHighlight>> {
-        throw NotImplementedException()
+        return computeAsync {
+            val list = mutableListOf<DocumentHighlight>()
+            withPsiFile(position) { file, psiFile, i ->
+                val target = TargetElementUtil.findTarget(psiFile, i)
+                if (target != null) {
+                    val def = target.reference?.resolve() ?: target
+
+                    // self highlight
+                    if (def.containingFile == psiFile) {
+                        def.nameRange?.let { list.add(DocumentHighlight(it.toRange(file))) }
+                    }
+
+                    // references highlight
+                    val search = ReferencesSearch.search(def)
+                    search.forEach {
+                        if (it.element.containingFile == psiFile && it.isReferenceTo(def)) {
+                            list.add(DocumentHighlight(it.getRangeInFile(file)))
+                        }
+                    }
+                }
+            }
+            list
+        }
     }
 
     override fun onTypeFormatting(params: DocumentOnTypeFormattingParams): CompletableFuture<MutableList<out TextEdit>> {
@@ -193,17 +213,14 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     override fun references(params: ReferenceParams): CompletableFuture<MutableList<out Location>> {
         val list = mutableListOf<Location>()
-        withPsiFile(params) { file, pos ->
-            val element = TargetElementUtil.findTarget(file, pos)
+        withPsiFile(params) { _, psiFile, pos ->
+            val element = TargetElementUtil.findTarget(psiFile, pos)
             if (element != null) {
                 val target = element.reference?.resolve() ?: element
                 val query = ReferencesSearch.search(target)
                 query.forEach { ref ->
-                    var textRange = ref.rangeInElement
-                    val parentRange = ref.element.textRange
-                    textRange = textRange.shiftRight(parentRange.startOffset)
                     val luaFile = ref.element.containingFile.virtualFile as LuaFile
-                    list.add(Location(luaFile.uri.toString(), textRange.toRange(luaFile)))
+                    list.add(Location(luaFile.uri.toString(), ref.getRangeInFile(luaFile)))
                 }
             }
         }
@@ -215,12 +232,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     private fun withPsiFile(position: TextDocumentPositionParams, code: (LuaPsiFile, Int) -> Unit) {
+    private fun withPsiFile(position: TextDocumentPositionParams, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
         val file = workspace.findFile(position.textDocument.uri)
         if (file is ILuaFile) {
             val psi = file.psi
             if (psi is LuaPsiFile) {
                 val pos = file.getPosition(position.position.line, position.position.character)
-                code(psi, pos)
+                code(file, psi, pos)
             }
         }
     }

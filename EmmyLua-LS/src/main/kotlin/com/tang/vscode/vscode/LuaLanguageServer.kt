@@ -70,6 +70,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.hoverProvider = true
         capabilities.referencesProvider = true
         capabilities.codeLensProvider = CodeLensOptions(true)
+        capabilities.documentHighlightProvider = true
 
         capabilities.workspace = WorkspaceServerCapabilities()
         capabilities.workspace.workspaceFolders = WorkspaceFoldersOptions()
