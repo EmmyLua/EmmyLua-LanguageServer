@@ -1,7 +1,6 @@
 package com.tang.vscode
 
 import com.intellij.openapi.project.ProjectCoreUtil
-import com.intellij.psi.PsiNameIdentifierOwner
 import com.intellij.util.Consumer
 import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.psi.LuaClassMethod
@@ -98,26 +97,14 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         return computeAsync {
             val list = mutableListOf<Location>()
 
-            val file = workspace.findFile(position.textDocument.uri)
-            if (file is ILuaFile) {
-                val pos = file.getPosition(position.position.line, position.position.character)
-                var element = file.psi?.findElementAt(pos)
-                while (element != null) {
-                    val reference = element.reference
-                    if (reference != null) {
-                        val result = reference.resolve()
-                        if (result != null) {
-                            val sourceFile = (result.containingFile as? LuaPsiFile)?.virtualFile as? LuaFile
-                            if (sourceFile != null) {
-                                var textRange = result.textRange
-                                if (result is PsiNameIdentifierOwner)
-                                    textRange = result.nameIdentifier?.textRange
-                                list.add(Location(sourceFile.uri.toString(), textRange.toRange(sourceFile)))
-                            }
-                            break
-                        }
-                    }
-                    element = element.parent
+            withPsiFile(position) { file, psiFile, i ->
+                val target = TargetElementUtil.findTarget(psiFile, i)
+                val resolve = target?.reference?.resolve()
+                if (resolve != null) {
+                    val sourceFile = resolve.containingFile.virtualFile as LuaFile
+                    val range = resolve.nameRange
+                    if (range != null)
+                        list.add(Location(file.uri.toString(), range.toRange(sourceFile)))
                 }
             }
 
