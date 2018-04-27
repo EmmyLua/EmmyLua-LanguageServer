@@ -1,13 +1,12 @@
 package com.tang.vscode.vscode
 
 import com.intellij.openapi.project.ProjectCoreUtil
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiNameIdentifierOwner
-import com.intellij.psi.PsiNamedElement
 import com.intellij.util.Consumer
 import com.tang.intellij.lua.editor.completion.CompletionService
+import com.tang.intellij.lua.psi.LuaClassMethod
 import com.tang.intellij.lua.psi.LuaPsiFile
+import com.tang.intellij.lua.psi.LuaVisitor
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.impl.LuaFile
@@ -111,7 +110,20 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun codeLens(params: CodeLensParams): CompletableFuture<MutableList<out CodeLens>> {
-        throw NotImplementedException()
+        return computeAsync {
+            val list = mutableListOf<CodeLens>()
+            workspace.findFile(params.textDocument.uri)?.let {
+                val luaFile = it as? ILuaFile
+                luaFile?.psi?.acceptChildren(object : LuaVisitor() {
+                    override fun visitClassMethod(o: LuaClassMethod) {
+                        val search = ReferencesSearch.search(o)
+                        val findAll = search.findAll()
+                        list.add(CodeLens(o.nameIdentifier!!.textRange.toRange(luaFile), Command("References:${findAll.size}", ""), null))
+                    }
+                })
+            }
+            list
+        }
     }
 
     override fun rename(params: RenameParams): CompletableFuture<WorkspaceEdit> {
@@ -182,34 +194,17 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     override fun references(params: ReferenceParams): CompletableFuture<MutableList<out Location>> {
         val list = mutableListOf<Location>()
         withPsiFile(params) { file, pos ->
-            var element = file.findElementAt(pos)
-            while (element != null && element !is PsiFile) {
-                val reference = element.reference
-                var found = false
-                var target: PsiElement? = null
-                if (reference != null) {
-                    target = reference.resolve()
-                    found = true
-                } else if (element is PsiNamedElement) {
-                    target = element
-                    found = true
+            val element = TargetElementUtil.findTarget(file, pos)
+            if (element != null) {
+                val target = element.reference?.resolve() ?: element
+                val query = ReferencesSearch.search(target)
+                query.forEach { ref ->
+                    var textRange = ref.rangeInElement
+                    val parentRange = ref.element.textRange
+                    textRange = textRange.shiftRight(parentRange.startOffset)
+                    val luaFile = ref.element.containingFile.virtualFile as LuaFile
+                    list.add(Location(luaFile.uri.toString(), textRange.toRange(luaFile)))
                 }
-                if (found) {
-                    if (target != null) {
-                        val query = ReferencesSearch.search(target)
-                        query.forEach { ref ->
-                            if (ref.isReferenceTo(target)) {
-                                var textRange = ref.rangeInElement
-                                val parentRange = ref.element.textRange
-                                textRange = textRange.shiftRight(parentRange.startOffset)
-                                val luaFile = ref.element.containingFile.virtualFile as LuaFile
-                                list.add(Location(luaFile.uri.toString(), textRange.toRange(luaFile)))
-                            }
-                        }
-                    }
-                    break
-                }
-                element = element.parent
             }
         }
         return CompletableFuture.completedFuture(list)

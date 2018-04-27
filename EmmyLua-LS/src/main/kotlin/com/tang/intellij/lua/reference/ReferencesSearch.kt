@@ -21,14 +21,14 @@ object ReferencesSearch {
         return ReferenceQuery(element)
     }
 
-    class ReferenceQuery(val element: PsiElement) : AbstractQuery<PsiReference>() {
+    class ReferenceQuery(private val element: PsiElement) : AbstractQuery<PsiReference>() {
         override fun processResults(consumer: Processor<PsiReference>): Boolean {
             val name = if (element is PsiNamedElement) element.name else element.text
             val project = element.project
             val pattern = "\\b$name\\b".toRegex()
             project.process { file ->
                 if (file is LuaPsiFile) {
-                    val text = file.virtualFile?.text
+                    val text = file.virtualFile.text
                     if (text != null) {
                         var matchResult = pattern.find(text)
 
@@ -51,7 +51,7 @@ object ReferencesSearch {
             var cur = element
             while (cur !is PsiFile) {
                 val r = cur.reference
-                if (r != null) {
+                if (r != null && r.isReferenceTo(this.element)) {
                     return consumer.process(r)
                 }
                 cur = cur.parent
