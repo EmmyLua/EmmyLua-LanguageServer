@@ -1,4 +1,4 @@
-package com.tang.vscode.vscode
+package com.tang.vscode
 
 data class DidChangeWatchedFilesRegistrationOptions(val list: List<FileSystemWatcher>)
 

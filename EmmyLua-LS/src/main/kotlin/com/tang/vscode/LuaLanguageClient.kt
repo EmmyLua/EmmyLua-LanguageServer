@@ -1,4 +1,4 @@
-package com.tang.vscode.vscode
+package com.tang.vscode
 
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.LanguageClient

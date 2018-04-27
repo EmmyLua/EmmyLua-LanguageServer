@@ -1,4 +1,4 @@
-package com.tang.vscode.vscode
+package com.tang.vscode
 
 interface IProgressMonitor {
     fun setProgress(text: String, percent: Float)

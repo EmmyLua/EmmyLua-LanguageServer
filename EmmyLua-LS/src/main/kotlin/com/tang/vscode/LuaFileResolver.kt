@@ -1,4 +1,4 @@
-package com.tang.vscode.vscode
+package com.tang.vscode
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile

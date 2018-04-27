@@ -1,4 +1,4 @@
-package com.tang.vscode.vscode
+package com.tang.vscode
 
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import java.net.InetSocketAddress
