@@ -11,6 +11,7 @@ import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.impl.LuaFile
+import com.tang.vscode.documentation.LuaDocumentationProvider
 import com.tang.vscode.utils.TargetElementUtil
 import com.tang.vscode.utils.computeAsync
 import com.tang.vscode.utils.toRange
@@ -28,6 +29,7 @@ import java.util.concurrent.CompletableFuture
  */
 class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextDocumentService {
     private var client: LuaLanguageClient? = null
+    private val documentProvider = LuaDocumentationProvider()
 
     fun connect(client: LuaLanguageClient) {
         this.client = client
@@ -54,7 +56,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 val pos = file.getPosition(position.position.line, position.position.character)
                 val element = TargetElementUtil.findTarget(file.psi, pos)
                 if (element != null) {
-                    hover = Hover(listOf(Either.forLeft("test")))
+                    val ref = element.reference?.resolve() ?: element
+                    val doc = documentProvider.generateDoc(ref, element)
+                    if (doc != null)
+                        hover = Hover(listOf(Either.forLeft(doc)))
                 }
             }
 
