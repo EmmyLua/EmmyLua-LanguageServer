@@ -1,9 +1,6 @@
 package com.tang.vscode.utils
 
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiNameIdentifierOwner
-import com.intellij.psi.PsiNamedElement
+import com.intellij.psi.*
 
 object TargetElementUtil {
     fun findTarget(file: PsiFile?, pos: Int): PsiElement? {
@@ -11,6 +8,9 @@ object TargetElementUtil {
 
         val element = file.findElementAt(pos)
         var cur = element
+        if (cur is PsiWhiteSpace)
+            cur = file.findElementAt(pos - 1)
+
         while (cur != null && cur !is PsiFile) {
             if (cur is PsiNamedElement) {
                 var id = cur
