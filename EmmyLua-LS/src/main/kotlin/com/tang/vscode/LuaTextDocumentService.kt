@@ -1,4 +1,4 @@
-package com.tang.vscode.vscode
+package com.tang.vscode
 
 import com.intellij.openapi.project.ProjectCoreUtil
 import com.intellij.psi.PsiNameIdentifierOwner

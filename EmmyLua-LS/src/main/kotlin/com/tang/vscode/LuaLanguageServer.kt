@@ -1,4 +1,4 @@
-package com.tang.vscode.vscode
+package com.tang.vscode
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
