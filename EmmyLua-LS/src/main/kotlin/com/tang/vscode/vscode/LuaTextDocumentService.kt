@@ -152,13 +152,14 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             withPsiFile(params.textDocument, params.position) { _, psiFile, i ->
                 val target = TargetElementUtil.findTarget(psiFile, i) ?: return@withPsiFile
 
+                val map = mutableMapOf<String, MutableList<TextEdit>>()
                 val def = target.reference?.resolve() ?: target
 
                 def.nameRange?.let {
                     val refFile = def.containingFile.virtualFile as LuaFile
-                    val documentIdentifier = VersionedTextDocumentIdentifier()
-                    documentIdentifier.uri = refFile.uri.toString()
-                    changes.add(TextDocumentEdit(documentIdentifier, listOf(TextEdit(it.toRange(refFile), params.newName))))
+                    val uri = refFile.uri.toString()
+                    val list = map.getOrPut(uri) { mutableListOf() }
+                    list.add(TextEdit(it.toRange(refFile), params.newName))
                 }
 
                 // references
@@ -166,10 +167,16 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 search.forEach {
                     if (it.isReferenceTo(def)) {
                         val refFile = it.element.containingFile.virtualFile as LuaFile
-                        val documentIdentifier = VersionedTextDocumentIdentifier()
-                        documentIdentifier.uri = refFile.uri.toString()
-                        changes.add(TextDocumentEdit(documentIdentifier, listOf(TextEdit(it.getRangeInFile(refFile), params.newName))))
+                        val uri = refFile.uri.toString()
+                        val list = map.getOrPut(uri) { mutableListOf() }
+                        list.add(TextEdit(it.getRangeInFile(refFile), params.newName))
                     }
+                }
+
+                map.forEach { t, u ->
+                    val documentIdentifier = VersionedTextDocumentIdentifier()
+                    documentIdentifier.uri = t
+                    changes.add(TextDocumentEdit(documentIdentifier, u))
                 }
             }
             val edit = WorkspaceEdit(changes)
