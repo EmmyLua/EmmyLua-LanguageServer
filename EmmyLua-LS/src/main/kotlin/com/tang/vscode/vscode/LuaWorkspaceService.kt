@@ -114,7 +114,12 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             val name = split[i]
             if (i == split.lastIndex && name.isEmpty())
                 break
-            folder = folder?.findFile(name) as? IFolder ?: folder?.createFolder(name)
+            val find = folder?.findFile(name) as? IFolder
+            folder = if (find != null) find else {
+                val create = folder?.createFolder(name)
+                isCreated = true
+                create
+            }
         }
 
         return Pair(folder, isCreated)
@@ -126,7 +131,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
         val pair = findOrCreate(uri, true)
         val folder = pair.first!!
-        _rootList.add(folder)
+        if (pair.second)
+            _rootList.add(folder)
         return folder
     }
 
