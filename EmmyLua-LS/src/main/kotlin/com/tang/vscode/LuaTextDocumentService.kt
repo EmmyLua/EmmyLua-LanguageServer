@@ -98,14 +98,14 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         return computeAsync {
             val list = mutableListOf<Location>()
 
-            withPsiFile(position) { file, psiFile, i ->
+            withPsiFile(position) { _, psiFile, i ->
                 val target = TargetElementUtil.findTarget(psiFile, i)
                 val resolve = target?.reference?.resolve()
                 if (resolve != null) {
                     val sourceFile = resolve.containingFile.virtualFile as LuaFile
                     val range = resolve.nameRange
                     if (range != null)
-                        list.add(Location(file.uri.toString(), range.toRange(sourceFile)))
+                        list.add(Location(sourceFile.uri.toString(), range.toRange(sourceFile)))
                 }
             }
 
