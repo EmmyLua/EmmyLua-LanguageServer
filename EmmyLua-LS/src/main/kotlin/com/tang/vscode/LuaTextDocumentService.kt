@@ -2,12 +2,18 @@ package com.tang.vscode
 
 import com.intellij.openapi.project.ProjectCoreUtil
 import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
+import com.intellij.util.Processor
 import com.tang.intellij.lua.editor.completion.CompletionService
+import com.tang.intellij.lua.psi.LuaCallExpr
 import com.tang.intellij.lua.psi.LuaClassMethod
 import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.psi.LuaVisitor
 import com.tang.intellij.lua.reference.ReferencesSearch
+import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.ty.ITyFunction
+import com.tang.intellij.lua.ty.process
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.documentation.LuaDocumentationProvider
@@ -212,8 +218,28 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     }
 
-    override fun signatureHelp(position: TextDocumentPositionParams?): CompletableFuture<SignatureHelp> {
-        throw NotImplementedException()
+    override fun signatureHelp(position: TextDocumentPositionParams): CompletableFuture<SignatureHelp> {
+        return computeAsync {
+            val list = mutableListOf<SignatureInformation>()
+            withPsiFile(position) { _, psiFile, i ->
+                val callExpr = PsiTreeUtil.findElementOfClassAtOffset(psiFile, i, LuaCallExpr::class.java, false)
+                callExpr?.guessParentType(SearchContext(psiFile.project))?.let { ty ->
+                    if (ty is ITyFunction) {
+                        ty.process(Processor { sig ->
+                            val information = SignatureInformation()
+                            information.parameters = mutableListOf()
+                            sig.params.forEach { pi ->
+                                information.parameters.add(ParameterInformation(pi.name, pi.ty.displayName))
+                            }
+                            information.label = sig.displayName
+                            list.add(information)
+                            true
+                        })
+                    }
+                }
+            }
+            SignatureHelp(list, 0, 0)
+        }
     }
 
     override fun didClose(params: DidCloseTextDocumentParams) {
