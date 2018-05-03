@@ -86,9 +86,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     // references highlight
                     val search = ReferencesSearch.search(def, GlobalSearchScope.fileScope(psiFile))
                     search.forEach {
-                        if (it.isReferenceTo(def)) {
-                            list.add(DocumentHighlight(it.getRangeInFile(file)))
-                        }
+                        list.add(DocumentHighlight(it.getRangeInFile(file)))
                     }
                 }
             }
@@ -159,12 +157,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 // references
                 val search = ReferencesSearch.search(def)
                 search.forEach {
-                    if (it.isReferenceTo(def)) {
-                        val refFile = it.element.containingFile.virtualFile as LuaFile
-                        val uri = refFile.uri.toString()
-                        val list = map.getOrPut(uri) { mutableListOf() }
-                        list.add(TextEdit(it.getRangeInFile(refFile), params.newName))
-                    }
+                    val refFile = it.element.containingFile.virtualFile as LuaFile
+                    val uri = refFile.uri.toString()
+                    val list = map.getOrPut(uri) { mutableListOf() }
+                    list.add(TextEdit(it.getRangeInFile(refFile), params.newName))
                 }
 
                 map.forEach { t, u ->
