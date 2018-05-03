@@ -119,15 +119,24 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun codeLens(params: CodeLensParams): CompletableFuture<MutableList<out CodeLens>> {
-        return computeAsync {
+        return computeAsync { cc->
             val list = mutableListOf<CodeLens>()
             workspace.findFile(params.textDocument.uri)?.let {
                 val luaFile = it as? ILuaFile
                 luaFile?.psi?.acceptChildren(object : LuaVisitor() {
                     override fun visitClassMethod(o: LuaClassMethod) {
-                        val search = ReferencesSearch.search(o)
-                        val findAll = search.findAll()
-                        list.add(CodeLens(o.nameIdentifier!!.textRange.toRange(luaFile), Command("References:${findAll.size}", ""), null))
+                        cc.checkCanceled()
+                        o.nameIdentifier?.let { id ->
+                            val search = ReferencesSearch.search(o)
+                            val findAll = search.findAll()
+                            val range = id.textRange.toRange(luaFile)
+                            val command = Command("References:${findAll.size}", null)
+                            if (findAll.isNotEmpty()) {
+                                command.command = "emmy.showReferences"
+                                command.arguments = listOf(params.textDocument.uri, range.start)
+                            }
+                            list.add(CodeLens(range, command, null))
+                        }
                     }
                 })
             }
