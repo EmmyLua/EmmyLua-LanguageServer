@@ -73,6 +73,8 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.documentHighlightProvider = true
         capabilities.renameProvider = true
         capabilities.signatureHelpProvider = SignatureHelpOptions(listOf(",", "("))
+        capabilities.documentSymbolProvider = true
+        capabilities.workspaceSymbolProvider = true
 
         capabilities.workspace = WorkspaceServerCapabilities()
         capabilities.workspace.workspaceFolders = WorkspaceFoldersOptions()

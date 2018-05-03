@@ -6,10 +6,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
 import com.intellij.util.Processor
 import com.tang.intellij.lua.editor.completion.CompletionService
-import com.tang.intellij.lua.psi.LuaCallExpr
-import com.tang.intellij.lua.psi.LuaClassMethod
-import com.tang.intellij.lua.psi.LuaPsiFile
-import com.tang.intellij.lua.psi.LuaVisitor
+import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyFunction
@@ -194,7 +191,36 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {
-        throw NotImplementedException()
+        return computeAsync {
+            val list = mutableListOf<SymbolInformation>()
+            val file = workspace.findFile(params.textDocument.uri)
+            if (file is ILuaFile) {
+                val psi = file.psi
+                if (psi is LuaPsiFile) {
+                    val uri = file.uri.toString()
+                    val project = psi.project
+                    psi.acceptChildren(object : LuaVisitor() {
+                        override fun visitClassMethodDef(o: LuaClassMethodDef) {
+                            val name = o.classMethodName.text
+                            val fTy = o.guessType(SearchContext(project)) as? ITyFunction
+                            if (name != null && fTy != null) {
+                                val info = SymbolInformation("$name${fTy.mainSignature.displayName}", SymbolKind.Method, Location(uri, o.textRange.toRange(file)))
+                                list.add(info)
+                            }
+                        }
+
+                        override fun visitLocalDef(o: LuaLocalDef) {
+                            o.nameList?.nameDefList?.forEach {
+                                val local = Location(uri, it.textRange.toRange(file))
+                                val info = SymbolInformation("local ${it.name}", SymbolKind.Variable, local)
+                                list.add(info)
+                            }
+                        }
+                    })
+                }
+            }
+            list
+        }
     }
 
     override fun didOpen(params: DidOpenTextDocumentParams) {
