@@ -20,7 +20,7 @@ object ReferencesSearch {
      * @return the query allowing to enumerate the references.
      */
     fun search(element: PsiElement): Query<PsiReference> {
-        return ReferenceQuery(element, GlobalSearchScope.allScope(element.project))
+        return ReferenceQuery(element, element.useScope)
     }
 
     fun search(element: PsiElement, scope: SearchScope): Query<PsiReference> {
