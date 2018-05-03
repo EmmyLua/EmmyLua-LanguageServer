@@ -41,7 +41,7 @@ public class GlobalSearchScope extends SearchScope {
     }
 
     public static GlobalSearchScope projectScope(Project project) {
-        throw new Error();
+        return allScope(project);
     }
 
     @Nullable private final Project myProject;
