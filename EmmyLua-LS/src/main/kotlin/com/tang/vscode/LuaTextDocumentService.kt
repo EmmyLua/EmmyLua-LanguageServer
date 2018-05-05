@@ -1,6 +1,7 @@
 package com.tang.vscode
 
 import com.intellij.openapi.project.ProjectCoreUtil
+import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
@@ -10,6 +11,7 @@ import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyFunction
+import com.tang.intellij.lua.ty.findPerfectSignature
 import com.tang.intellij.lua.ty.process
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.impl.LuaFile
@@ -252,24 +254,46 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     override fun signatureHelp(position: TextDocumentPositionParams): CompletableFuture<SignatureHelp> {
         return computeAsync {
             val list = mutableListOf<SignatureInformation>()
+            var activeParameter = 0
+            var activeSig = 0
             withPsiFile(position) { _, psiFile, i ->
                 val callExpr = PsiTreeUtil.findElementOfClassAtOffset(psiFile, i, LuaCallExpr::class.java, false)
+                var nCommas = 0
+                callExpr?.args?.firstChild?.let { firstChild ->
+                    var child: PsiElement? = firstChild
+                    while (child != null) {
+                        if (child.node.elementType == LuaTypes.COMMA) {
+                            activeParameter++
+                            nCommas++
+                        }
+                        child = child.nextSibling
+                    }
+                }
+
                 callExpr?.guessParentType(SearchContext(psiFile.project))?.let { ty ->
                     if (ty is ITyFunction) {
+                        val active = ty.findPerfectSignature(nCommas + 1)
+                        var idx = 0
                         ty.process(Processor { sig ->
                             val information = SignatureInformation()
                             information.parameters = mutableListOf()
                             sig.params.forEach { pi ->
-                                information.parameters.add(ParameterInformation(pi.name, pi.ty.displayName))
+                                val paramInfo = ParameterInformation("${pi.name}:${pi.ty.displayName}", pi.ty.displayName)
+                                information.parameters.add(paramInfo)
                             }
                             information.label = sig.displayName
                             list.add(information)
+
+                            if (sig == active) {
+                                activeSig = idx
+                            }
+                            idx++
                             true
                         })
                     }
                 }
             }
-            SignatureHelp(list, 0, 0)
+            SignatureHelp(list, activeSig, activeParameter)
         }
     }
 
