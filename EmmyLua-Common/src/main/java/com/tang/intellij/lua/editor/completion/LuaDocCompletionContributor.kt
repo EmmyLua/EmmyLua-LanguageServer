@@ -18,48 +18,34 @@ package com.tang.intellij.lua.editor.completion
 
 import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.LookupElementBuilder
+import com.intellij.lang.Language
 import com.intellij.patterns.PlatformPatterns.psiElement
-import com.intellij.psi.tree.TokenSet
+import com.intellij.psi.TokenType
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
 import com.intellij.util.Processor
 import com.tang.intellij.lua.comment.LuaCommentUtil
 import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.comment.psi.api.LuaComment
+import com.tang.intellij.lua.lang.LuaIcons
+import com.tang.intellij.lua.lang.LuaParserDefinition
+import com.tang.intellij.lua.psi.LuaClassField
 import com.tang.intellij.lua.psi.LuaFuncBodyOwner
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
 import com.tang.intellij.lua.ty.ITyClass
-import org.eclipse.lsp4j.CompletionItem
-import org.eclipse.lsp4j.CompletionItemKind
 
 /**
  * doc 相关代码完成
  * Created by tangzx on 2016/12/2.
  */
 class LuaDocCompletionContributor : CompletionContributor() {
-    val DOC_TAG_TOKENS = TokenSet.create(
-            LuaDocTypes.TAG_PARAM,
-            LuaDocTypes.TAG_RETURN,
-            LuaDocTypes.TAG_CLASS,
-            LuaDocTypes.TAG_MODULE,
-            LuaDocTypes.TAG_TYPE,
-            LuaDocTypes.TAG_FIELD,
-            LuaDocTypes.TAG_LANGUAGE,
-            LuaDocTypes.TAG_OVERLOAD,
-            LuaDocTypes.TAG_PRIVATE,
-            LuaDocTypes.TAG_PROTECTED,
-            LuaDocTypes.TAG_PUBLIC,
-            LuaDocTypes.TAG_SEE,
-            LuaDocTypes.TAG_GENERIC
-    )
-
     init {
         extend(CompletionType.BASIC, SHOW_DOC_TAG, object : CompletionProvider<CompletionParameters>() {
             override fun addCompletions(completionParameters: CompletionParameters, processingContext: ProcessingContext, completionResultSet: CompletionResultSet) {
-                val set = DOC_TAG_TOKENS
+                val set = LuaParserDefinition.DOC_TAG_TOKENS
                 for (type in set.types) {
-                    completionResultSet.addElement(LookupElementBuilder.create(type.toString()))
+                    completionResultSet.addElement(LookupElementBuilder.create(type).withIcon(LuaIcons.ANNOTATION))
                 }
                 completionResultSet.stopHere()
             }
@@ -73,8 +59,8 @@ class LuaDocCompletionContributor : CompletionContributor() {
 
         extend(CompletionType.BASIC, AFTER_PARAM, object : CompletionProvider<CompletionParameters>() {
             override fun addCompletions(completionParameters: CompletionParameters, processingContext: ProcessingContext, completionResultSet: CompletionResultSet) {
-                var element = completionParameters.position//completionParameters.originalFile.findElementAt(completionParameters.offset - 1)
-                if (element !is LuaDocPsiElement)
+                var element = completionParameters.originalFile.findElementAt(completionParameters.offset - 1)
+                if (element != null && element !is LuaDocPsiElement)
                     element = element.parent
 
                 if (element is LuaDocPsiElement) {
@@ -84,9 +70,10 @@ class LuaDocCompletionContributor : CompletionContributor() {
                         if (body != null) {
                             val parDefList = body.paramNameDefList
                             for (def in parDefList) {
-                                val item = CompletionItem(def.text)
-                                item.kind = CompletionItemKind.Unit
-                                completionResultSet.addElement(item)
+                                completionResultSet.addElement(
+                                        LookupElementBuilder.create(def.text)
+                                                .withIcon(LuaIcons.PARAMETER)
+                                )
                             }
                         }
                     }
@@ -98,9 +85,7 @@ class LuaDocCompletionContributor : CompletionContributor() {
             override fun addCompletions(completionParameters: CompletionParameters, processingContext: ProcessingContext, completionResultSet: CompletionResultSet) {
                 val project = completionParameters.position.project
                 LuaClassIndex.processKeys(project, Processor{
-                    val item = CompletionItem(it)
-                    item.kind = CompletionItemKind.Class
-                    completionResultSet.addElement(item)
+                    completionResultSet.addElement(LookupElementBuilder.create(it).withIcon(LuaIcons.CLASS))
                     true
                 })
                 completionResultSet.stopHere()
@@ -122,11 +107,11 @@ class LuaDocCompletionContributor : CompletionContributor() {
                 val classDef = PsiTreeUtil.findChildOfType(comment, LuaDocClassDef::class.java)
                 if (classDef != null) {
                     val classType = classDef.type
-                    /*classType.processMembers(SearchContext(classDef.project)) { _, member ->
+                    classType.processMembers(SearchContext(classDef.project)) { _, member ->
                         if (member is LuaClassField)
                             completionResultSet.addElement(LookupElementBuilder.create(member.name!!).withIcon(LuaIcons.CLASS_FIELD))
                         Unit
-                    }*/
+                    }
                 }
             }
         })
@@ -139,7 +124,7 @@ class LuaDocCompletionContributor : CompletionContributor() {
                 if (seeRefTag != null) {
                     val classType = seeRefTag.classNameRef?.resolveType() as? ITyClass
                     classType?.processMembers(SearchContext(seeRefTag.project)) { _, member ->
-                        completionResultSet.addElement(LookupElementBuilder.create(member.name!!))
+                        completionResultSet.addElement(LookupElementBuilder.create(member.name!!).withIcon(LuaIcons.CLASS_FIELD))
                         Unit
                     }
                 }
@@ -164,7 +149,10 @@ class LuaDocCompletionContributor : CompletionContributor() {
     companion object {
 
         // 在 @ 之后提示 param class type ...
-        private val SHOW_DOC_TAG = psiElement(LuaDocTypes.TAG_NAME)
+        private val SHOW_DOC_TAG = psiElement().afterLeaf(
+                psiElement().withText("@")
+                        .afterSiblingSkipping(psiElement().withElementType(TokenType.WHITE_SPACE), psiElement().withElementType(LuaDocTypes.DASHES))
+        )
 
         // 在 @param 之后提示方法的参数
         private val AFTER_PARAM = psiElement().withParent(LuaDocParamNameRef::class.java)
