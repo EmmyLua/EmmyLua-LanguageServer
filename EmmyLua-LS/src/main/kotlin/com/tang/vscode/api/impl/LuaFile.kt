@@ -77,12 +77,14 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
                 _lines.add(line)
                 lineStart = pos + lbSize
                 pos += lbSize
-            } else if (pos == length - 1) {
+            } else pos++
+
+            if (pos >= length) {
                 val str = _text.substring(lineStart, length)
                 val line = Line(lineCount, lineStart, pos, str)
                 _lines.add(line)
                 break
-            } else pos++
+            }
         }
     }
 
