@@ -4,7 +4,8 @@ import org.eclipse.lsp4j.Range
 
 enum class AnnotatorType {
     Param,
-    Global
+    Global,
+    DocName
 }
 
 data class AnnotatorParams(val uri: String)

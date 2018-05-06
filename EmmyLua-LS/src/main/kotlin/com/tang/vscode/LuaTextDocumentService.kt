@@ -7,6 +7,10 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
 import com.intellij.util.Processor
 import com.tang.intellij.lua.Constants
+import com.tang.intellij.lua.comment.psi.LuaDocClassDef
+import com.tang.intellij.lua.comment.psi.LuaDocClassNameRef
+import com.tang.intellij.lua.comment.psi.LuaDocVisitor
+import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
@@ -53,6 +57,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     private fun findAnnotators(file: ILuaFile): List<Annotator> {
         val params = mutableListOf<Range>()
         val globals = mutableListOf<Range>()
+        val docTypeNames = mutableListOf<Range>()
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
                 params.add(o.textRange.toRange(file))
@@ -73,12 +78,35 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     }
                 }
             }
+
+            override fun visitElement(element: PsiElement) {
+                if (element is LuaComment) {
+                    element.acceptChildren(object : LuaDocVisitor() {
+
+                        override fun visitClassDef(o: LuaDocClassDef) {
+                            val identifier = o.nameIdentifier
+                            docTypeNames.add(identifier.textRange.toRange(file))
+                        }
+
+                        override fun visitClassNameRef(o: LuaDocClassNameRef) {
+                            docTypeNames.add(o.textRange.toRange(file))
+                        }
+
+                        override fun visitElement(element: PsiElement) {
+                            element.acceptChildren(this)
+                        }
+                    })
+                } else
+                    super.visitElement(element)
+            }
         })
         val all = mutableListOf<Annotator>()
         if (params.isNotEmpty())
             all.add(Annotator(file.uri.toString(), params, AnnotatorType.Param))
-        if (params.isNotEmpty())
+        if (globals.isNotEmpty())
             all.add(Annotator(file.uri.toString(), globals, AnnotatorType.Global))
+        if (docTypeNames.isNotEmpty())
+            all.add(Annotator(file.uri.toString(), docTypeNames, AnnotatorType.DocName))
         return all
     }
 
