@@ -10,6 +10,7 @@ import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
 import org.eclipse.lsp4j.*
+import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
 import java.net.URI
@@ -24,6 +25,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val _rootList = mutableListOf<IFolder>()
     private val _rootWSFolders = mutableListOf<URI>()
     private val _baseFolders = mutableListOf<IFolder>()
+    private var client: LuaLanguageClient? = null
 
     inner class WProject : UserDataHolderBase(), Project {
         override fun process(processor: Processor<PsiFile>) {
@@ -64,7 +66,19 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun didChangeWorkspaceFolders(params: DidChangeWorkspaceFoldersParams) {
-        print(params)
+        didChangeWorkspaceFolders2(params)
+    }
+
+    @JsonNotification("emmy/didChangeWorkspaceFolders")
+    private fun didChangeWorkspaceFolders2(params: DidChangeWorkspaceFoldersParams) {
+        params.event.added.forEach {
+            addRoot(it.uri)
+        }
+        params.event.removed.forEach {
+            removeRoot(it.uri)
+        }
+        if (params.event.added.isNotEmpty())
+            loadWorkspace()
     }
 
     var root: URI
@@ -136,6 +150,17 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         return folder
     }
 
+    private fun removeRoot(uri: String) {
+        val u = URI(uri)
+        _rootList.removeIf {
+            if (it.matchUri(u)) {
+                it.parent.removeFile(it)
+                return@removeIf true
+            }
+            false
+        }
+    }
+
     fun addRoot(uri: String) {
         addRoot(URI(uri))
     }
@@ -155,7 +180,19 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
     }
 
-    fun loadWorkspace(monitor: IProgressMonitor) {
+    fun loadWorkspace() {
+        loadWorkspace(object : IProgressMonitor {
+            override fun done() {
+                client?.progressReport(ProgressReport("Finished!", 1f))
+            }
+
+            override fun setProgress(text: String, percent: Float) {
+                client?.progressReport(ProgressReport(text, percent))
+            }
+        })
+    }
+
+    private fun loadWorkspace(monitor: IProgressMonitor) {
         val allFiles = mutableListOf<File>()
         val arr = _rootWSFolders.toTypedArray()
         _rootWSFolders.clear()
@@ -196,5 +233,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             it.parent.removeFile(it)
             it.unindex()
         }
+    }
+
+    fun connect(client: LuaLanguageClient) {
+        this.client = client
     }
 }

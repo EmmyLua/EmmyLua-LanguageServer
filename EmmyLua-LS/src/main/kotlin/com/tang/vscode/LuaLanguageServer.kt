@@ -28,6 +28,11 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     private val documentService: LuaTextDocumentService = LuaTextDocumentService(workspaceService)
     private var client: LuaLanguageClient? = null
 
+    companion object {
+        private val WORKSPACE_FOLDERS_CAPABILITY_ID = UUID.randomUUID().toString()
+        private const val WORKSPACE_FOLDERS_CAPABILITY_NAME = "workspace/didChangeWorkspaceFolders"
+    }
+
     override fun shutdown(): CompletableFuture<Any> {
         return CompletableFuture.completedFuture(Object())
     }
@@ -79,7 +84,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.workspace = WorkspaceServerCapabilities()
         capabilities.workspace.workspaceFolders = WorkspaceFoldersOptions()
         capabilities.workspace.workspaceFolders.supported = true
-        capabilities.workspace.workspaceFolders.changeNotifications = Either.forRight(true)
+        capabilities.workspace.workspaceFolders.changeNotifications = Either.forLeft(WORKSPACE_FOLDERS_CAPABILITY_ID)
 
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Incremental)
 
@@ -91,18 +96,10 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         val options = DidChangeWatchedFilesRegistrationOptions(listOf(FileSystemWatcher("**/*")))
         val didChangeWatchedFiles = Registration(UUID.randomUUID().toString(), "workspace/didChangeWatchedFiles", options)
         client?.registerCapability(RegistrationParams(listOf(didChangeWatchedFiles)))
-        val didChangeWorkspaceFolders = Registration(UUID.randomUUID().toString(), "workspace/didChangeWorkspaceFolders")
+        val didChangeWorkspaceFolders = Registration(WORKSPACE_FOLDERS_CAPABILITY_ID, WORKSPACE_FOLDERS_CAPABILITY_NAME)
         client?.registerCapability(RegistrationParams(listOf(didChangeWorkspaceFolders)))
 
-        workspaceService.loadWorkspace(object : IProgressMonitor {
-            override fun done() {
-                client?.progressReport(ProgressReport("Finished!", 1f))
-            }
-
-            override fun setProgress(text: String, percent: Float) {
-                client?.progressReport(ProgressReport(text, percent))
-            }
-        })
+        workspaceService.loadWorkspace()
     }
 
     override fun getWorkspaceService(): WorkspaceService {
@@ -112,6 +109,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     override fun connect(client: LanguageClient) {
         val luaClient = client as LuaLanguageClient
         textDocumentService.connect(luaClient)
+        workspaceService.connect(luaClient)
 
         this.client = luaClient
     }
