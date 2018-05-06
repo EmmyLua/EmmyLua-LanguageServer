@@ -19,6 +19,7 @@ import com.tang.vscode.documentation.LuaDocumentationProvider
 import com.tang.vscode.utils.*
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.services.TextDocumentService
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import java.io.File
@@ -35,6 +36,34 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     fun connect(client: LuaLanguageClient) {
         this.client = client
+    }
+
+    @JsonRequest("emmy/annotator")
+    fun updateAnnotators(ann: AnnotatorParams): CompletableFuture<Annotator?> {
+        return computeAsync {
+            val file = workspace.findFile(ann.uri) as? ILuaFile
+            if (file != null)
+                findAnnotators(file)
+            else
+                null
+        }
+    }
+
+    private fun findAnnotators(file: ILuaFile): Annotator {
+        val list = mutableListOf<Range>()
+        file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
+            override fun visitParamNameDef(o: LuaParamNameDef) {
+                list.add(o.textRange.toRange(file))
+            }
+
+            override fun visitNameExpr(o: LuaNameExpr) {
+                val resolve = resolve(o, SearchContext(o.project))
+                if (resolve is LuaParamNameDef) {
+                    list.add(o.textRange.toRange(file))
+                }
+            }
+        })
+        return Annotator(file.uri.toString(), list, AnnotatorType.Param)
     }
 
     override fun resolveCompletionItem(item: CompletionItem): CompletableFuture<CompletionItem> {
