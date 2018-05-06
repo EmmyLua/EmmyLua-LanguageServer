@@ -3,7 +3,8 @@ package com.tang.vscode
 import org.eclipse.lsp4j.Range
 
 enum class AnnotatorType {
-    Param
+    Param,
+    Global
 }
 
 data class AnnotatorParams(val uri: String)

@@ -6,6 +6,7 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
 import com.intellij.util.Processor
+import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
@@ -39,31 +40,46 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     @JsonRequest("emmy/annotator")
-    fun updateAnnotators(ann: AnnotatorParams): CompletableFuture<Annotator?> {
+    fun updateAnnotators(ann: AnnotatorParams): CompletableFuture<List<Annotator>> {
         return computeAsync {
             val file = workspace.findFile(ann.uri) as? ILuaFile
             if (file != null)
                 findAnnotators(file)
             else
-                null
+                emptyList()
         }
     }
 
-    private fun findAnnotators(file: ILuaFile): Annotator {
-        val list = mutableListOf<Range>()
+    private fun findAnnotators(file: ILuaFile): List<Annotator> {
+        val params = mutableListOf<Range>()
+        val globals = mutableListOf<Range>()
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
-                list.add(o.textRange.toRange(file))
+                params.add(o.textRange.toRange(file))
             }
 
             override fun visitNameExpr(o: LuaNameExpr) {
                 val resolve = resolve(o, SearchContext(o.project))
-                if (resolve is LuaParamNameDef) {
-                    list.add(o.textRange.toRange(file))
+                when (resolve) {
+                    is LuaParamNameDef -> params.add(o.textRange.toRange(file))
+                    is LuaFuncDef -> globals.add(o.textRange.toRange(file))
+                    is LuaNameDef -> {} //local
+                    is LuaLocalFuncDef -> {} //local
+                    else -> {
+                        if (o.firstChild.textMatches(Constants.WORD_SELF)) {
+                            // SELF
+                        } else
+                            globals.add(o.textRange.toRange(file))
+                    }
                 }
             }
         })
-        return Annotator(file.uri.toString(), list, AnnotatorType.Param)
+        val all = mutableListOf<Annotator>()
+        if (params.isNotEmpty())
+            all.add(Annotator(file.uri.toString(), params, AnnotatorType.Param))
+        if (params.isNotEmpty())
+            all.add(Annotator(file.uri.toString(), globals, AnnotatorType.Global))
+        return all
     }
 
     override fun resolveCompletionItem(item: CompletionItem): CompletableFuture<CompletionItem> {
