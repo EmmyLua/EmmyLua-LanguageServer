@@ -14,6 +14,7 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
 import java.net.URI
+import java.net.URLDecoder
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -151,9 +152,14 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun removeRoot(uri: String) {
-        val u = URI(uri)
+        val uri2 = if (uri.endsWith("/")) uri else "$uri/"
+        val u = URI(URLDecoder.decode(uri2, "UTF-8"))
         _rootList.removeIf {
             if (it.matchUri(u)) {
+                it.walkFiles {
+                    it.unindex()
+                    true
+                }
                 it.parent.removeFile(it)
                 return@removeIf true
             }
