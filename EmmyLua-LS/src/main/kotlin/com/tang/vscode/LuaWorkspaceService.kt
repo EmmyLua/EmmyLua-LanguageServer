@@ -1,5 +1,6 @@
 package com.tang.vscode
 
+import com.intellij.openapi.fileEditor.impl.LoadTextUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.psi.PsiFile
@@ -225,7 +226,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val uri = URI("file:///${file.invariantSeparatorsPath}")
         val pair = findOrCreate(uri.resolve(""), true)
         val root = pair.first!!
-        return root.addFile(file.name, text ?: file.readText())
+        return root.addFile(file.name, text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes()))
     }
 
     private fun addFile(uri: String) {

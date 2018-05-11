@@ -59,7 +59,7 @@ open class Folder(uri: URI, private val myName: String? = null)
     override val isFolder: Boolean
         get() = true
 
-    override fun addFile(name: String, text: String): ILuaFile {
+    override fun addFile(name: String, text: CharSequence): ILuaFile {
         val luaFile = LuaFile(this.uri.resolve(name))
         luaFile.text = text
         addFile(luaFile)

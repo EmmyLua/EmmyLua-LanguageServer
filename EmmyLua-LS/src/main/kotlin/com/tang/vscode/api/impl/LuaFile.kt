@@ -20,7 +20,7 @@ import java.net.URI
 internal data class Line(val line: Int, val startOffset:Int, val stopOffset: Int, val str: String)
 
 class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFile {
-    private var _text: String = ""
+    private var _text: CharSequence = ""
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
 
@@ -30,7 +30,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         if (params.contentChanges.isEmpty())
             return
 
-        var sb = _text
+        var sb = _text.toString()
         var offset = 0
         params.contentChanges.forEach {
             if (it.range.start.line >= _lines.size) {
@@ -51,11 +51,11 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         onChanged()
     }
 
-    override fun getText(): String {
+    override fun getText(): CharSequence {
         return _text
     }
 
-    fun setText(str: String) {
+    fun setText(str: CharSequence) {
         _text = str
         onChanged()
     }

@@ -24,7 +24,7 @@ interface IWorkspace {
 
 interface IFolder : IVirtualFile {
     fun addFile(file: IVirtualFile)
-    fun addFile(name: String, text: String): ILuaFile
+    fun addFile(name: String, text: CharSequence): ILuaFile
     fun removeFile(file: IVirtualFile)
     fun findFile(name: String): IVirtualFile?
     fun findFile(vararg names: String): IVirtualFile?
@@ -42,7 +42,7 @@ interface IVirtualFile {
 }
 
 interface ILuaFile : IVirtualFile {
-    fun getText(): String
+    fun getText(): CharSequence
     val diagnostics: List<Diagnostic>
     val psi: PsiFile?
     fun unindex()

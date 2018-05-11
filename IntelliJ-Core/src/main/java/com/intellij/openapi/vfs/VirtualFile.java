@@ -7,7 +7,7 @@ public interface VirtualFile {
     @NotNull
     String getName();
 
-    String getText();
+    CharSequence getText();
 
     PsiFile getPsiFile();
 }
