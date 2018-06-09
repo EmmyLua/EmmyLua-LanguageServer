@@ -39,6 +39,7 @@ object LookupElementFactory {
         val item = buildSignatureCompletionItem(lookupString, signature)
         item.kind = CompletionItemKind.Method
         item.detail = "[$clazzName]"
+        item.data = "$clazzName|${classMember.name}"
         return item
     }
 
@@ -47,7 +48,9 @@ object LookupElementFactory {
                                  field: LuaClassField,
                                  ty: ITy?,
                                  bold: Boolean): LuaLookupElement {
-        return LuaLookupElement(name)
+        val element = LuaLookupElement(name)
+        element.data = "$clazzName|$name"
+        return element
     }
 
     private fun buildSignatureCompletionItem(name: String, signature: IFunSignature): LuaLookupElement {

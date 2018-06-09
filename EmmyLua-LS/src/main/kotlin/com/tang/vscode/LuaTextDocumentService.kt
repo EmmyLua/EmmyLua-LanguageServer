@@ -1,5 +1,6 @@
 package com.tang.vscode
 
+import com.google.gson.JsonPrimitive
 import com.intellij.openapi.project.ProjectCoreUtil
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
@@ -15,6 +16,7 @@ import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.ty.ITyFunction
 import com.tang.intellij.lua.ty.findPerfectSignature
 import com.tang.intellij.lua.ty.process
@@ -112,8 +114,18 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     override fun resolveCompletionItem(item: CompletionItem): CompletableFuture<CompletionItem> {
         return computeAsync {
-            item.documentation = "doc for ${item.label}"
-            item.detail = "detail for ${item.label}"
+            val data = item.data
+            if (data is JsonPrimitive) {
+                val arr = data.asString.split("|")
+                if (arr.size >= 2) {
+                    val cls = arr[0]
+                    val name = arr[1]
+                    LuaClassMemberIndex.process(cls, name, SearchContext(workspace.project), Processor {
+                        item.documentation = documentProvider.generateDoc(it, it)
+                        false
+                    })
+                }
+            }
             item
         }
     }
