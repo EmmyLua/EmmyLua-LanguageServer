@@ -3,6 +3,7 @@ package com.tang.vscode.api.impl
 import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
+import com.tang.vscode.utils.safeURIName
 import java.net.URI
 
 open class Folder(uri: URI, private val myName: String? = null)
@@ -60,7 +61,8 @@ open class Folder(uri: URI, private val myName: String? = null)
         get() = true
 
     override fun addFile(name: String, text: String): ILuaFile {
-        val luaFile = LuaFile(this.uri.resolve(name))
+        val safeName = safeURIName(name)
+        val luaFile = LuaFile(this.uri.resolve(safeName))
         luaFile.text = text
         addFile(luaFile)
         return luaFile
@@ -78,7 +80,7 @@ open class Folder(uri: URI, private val myName: String? = null)
     }
 
     override fun createFolder(name: String): IFolder {
-        val u = uri.resolve("$name/")
+        val u = uri.resolve("${safeURIName(name)}/")
         val folder = Folder(u)
         addFile(folder)
         return folder

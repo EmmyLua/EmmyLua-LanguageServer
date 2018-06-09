@@ -45,3 +45,7 @@ fun <R> computeAsync(code :(CancelChecker) -> R) : CompletableFuture<R> {
         code(it)
     }
 }
+
+fun safeURIName(name: String): String {
+    return name.replace(" ", "%20")
+}
