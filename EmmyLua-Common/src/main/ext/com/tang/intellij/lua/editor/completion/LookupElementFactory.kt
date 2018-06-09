@@ -45,6 +45,7 @@ object LookupElementFactory {
     fun createFieldLookupElement(clazzName: String,
                                  name: String,
                                  field: LuaClassField,
+                                 ty: ITy?,
                                  bold: Boolean): LuaLookupElement {
         return LuaLookupElement(name)
     }

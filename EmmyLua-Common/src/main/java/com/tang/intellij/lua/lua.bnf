@@ -399,7 +399,6 @@ left indexExpr ::= '[' expr ']' | '.' ID | ':' ID {
         toString
 
         guessParentType
-        guessValueType
 
         dot = 'DOT'
         colon = 'COLON'
@@ -426,8 +425,8 @@ left callExpr ::= args {
         resolveFuncBodyOwner
         getFirstStringArg
 
-        isStaticMethodCall
-        isMethodCall
+        isMethodDotCall
+        isMethodColonCall
         isFunctionCall
     ]
     stubClass = 'com.tang.intellij.lua.stubs.LuaExprStub'

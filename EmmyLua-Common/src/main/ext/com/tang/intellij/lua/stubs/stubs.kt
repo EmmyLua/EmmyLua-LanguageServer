@@ -10,6 +10,8 @@ import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
 import com.tang.intellij.lua.ty.TyClass
 
+// fake stubs!
+
 abstract class FakeStubElement<T : PsiElement> : StubElement<T> {
     override fun getPsi(): T? = null
     override fun getChildrenStubs(): MutableList<StubElement<PsiElement>> {
@@ -68,7 +70,10 @@ interface LuaNameExprStub : StubElement<LuaNameExpr>, LuaExprStub<LuaNameExpr>, 
 interface LuaTableExprStub : StubElement<LuaTableExpr>, LuaExprStub<LuaTableExpr> {
     val tableTypeName: String
 }
-interface LuaLiteralExprStub : StubElement<LuaLiteralExpr>, LuaExprStub<LuaLiteralExpr>
+interface LuaLiteralExprStub : StubElement<LuaLiteralExpr>, LuaExprStub<LuaLiteralExpr> {
+    val kind: LuaLiteralKind
+    val string: String?
+}
 
 interface LuaIndexExprStub : LuaExprStub<LuaIndexExpr>, LuaClassMemberStub<LuaIndexExpr> {
     val classNames: Array<String>
