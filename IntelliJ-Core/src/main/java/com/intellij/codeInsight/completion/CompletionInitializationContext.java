@@ -15,9 +15,15 @@
  */
 package com.intellij.codeInsight.completion;
 
+import com.intellij.psi.PsiFile;
+
 /**
  * @author peter
  */
 public class CompletionInitializationContext {
+    public static String DUMMY_IDENTIFIER_TRIMMED = "emmy";
 
+    public String dummyIdentifier;
+
+    public PsiFile file;
 }

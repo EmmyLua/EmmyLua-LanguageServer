@@ -10,6 +10,7 @@ import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
+import com.tang.vscode.utils.safeURIName
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.WorkspaceService
@@ -223,7 +224,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun addFile(file: File, text: String?): ILuaFile {
-        val uri = URI("file:///${file.invariantSeparatorsPath}")
+        val path = safeURIName(file.invariantSeparatorsPath)
+        val uri = URI("file:///$path")
         val pair = findOrCreate(uri.resolve(""), true)
         val root = pair.first!!
         return root.addFile(file.name, text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes()))

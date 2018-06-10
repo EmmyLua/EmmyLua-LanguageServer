@@ -16,7 +16,12 @@
 
 package com.tang.intellij.lua.psi
 
+import com.intellij.extapi.psi.StubBasedPsiElementBase
+import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.CachedValue
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Processor
 import com.tang.intellij.lua.comment.LuaCommentUtil
@@ -25,6 +30,7 @@ import com.tang.intellij.lua.comment.psi.LuaDocOverloadDef
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.lang.type.LuaString
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.stubs.LuaFuncBodyOwnerStub
 import com.tang.intellij.lua.ty.*
 
 /**
@@ -33,32 +39,52 @@ import com.tang.intellij.lua.ty.*
 fun LuaLocalDef.getIndexFor(psi: LuaNameDef): Int {
     var idx = 0
     val nameList = nameList
-    LuaPsiTreeUtilEx.processChildren(nameList, Processor{
-        if (it is LuaNameDef) {
-            if (it == psi)
-                return@Processor false
-            idx++
-        }
-        return@Processor true
-    })
+    val stub = nameList?.stub
+    if (stub != null) {
+        idx = stub.childrenStubs.indexOf(psi.stub)
+    } else {
+        LuaPsiTreeUtilEx.processChildren(nameList, Processor{
+            if (it is LuaNameDef) {
+                if (it == psi)
+                    return@Processor false
+                idx++
+            }
+            return@Processor true
+        })
+    }
     return idx
 }
 
 val LuaNameDef.docTy: ITy? get() {
+    val stub = stub
+    if (stub != null)
+        return stub.docTy
+
     val localDef = PsiTreeUtil.getParentOfType(this, LuaLocalDef::class.java)
     return localDef?.comment?.ty
 }
 
 fun LuaAssignStat.getIndexFor(psi: LuaExpr): Int {
     var idx = 0
-    LuaPsiTreeUtilEx.processChildren(this.varExprList, Processor{
-        if (it is LuaExpr) {
-            if (it == psi)
-                return@Processor false
-            idx++
+    val stub = valueExprList?.stub
+    if (stub != null) {
+        val children = stub.childrenStubs
+        for (i in 0 until children.size) {
+            if (psi == children[i].psi) {
+                idx = i
+                break
+            }
         }
-        return@Processor true
-    })
+    } else {
+        LuaPsiTreeUtilEx.processChildren(this.varExprList, Processor{
+            if (it is LuaExpr) {
+                if (it == psi)
+                    return@Processor false
+                idx++
+            }
+            return@Processor true
+        })
+    }
     return idx
 }
 
@@ -81,7 +107,7 @@ fun LuaListArgs.getIndexFor(psi: LuaExpr): Int {
 }
 
 val LuaExprList.exprStubList: List<LuaExpr> get() {
-    return PsiTreeUtil.getChildrenOfTypeAsList(this, LuaExpr::class.java)
+    return PsiTreeUtil.getStubChildrenOfTypeAsList(this, LuaExpr::class.java)
 }
 
 fun LuaExprList.getExprAt(idx: Int): LuaExpr? {
@@ -101,19 +127,13 @@ fun LuaExprList.guessType(context: SearchContext):ITy {
 
 fun LuaParametersOwner.getIndexFor(paramNameDef: LuaParamNameDef): Int {
     val list = this.paramNameDefList
-    if (list != null) {
-        list.indices
-                .filter { list[it].name == paramNameDef.name }
-                .forEach { return it }
-    }
+    list?.indices?.filter { list[it].name == paramNameDef.name }?.forEach { return it }
     return 0
 }
 
 fun LuaLocalDef.getExprFor(nameDef: LuaNameDef): LuaExpr? {
-    val nameList = this.nameList
-    nameList ?: return null
-    val exprList = this.exprList
-    exprList ?: return null
+    val nameList = this.nameList ?: return null
+    val exprList = this.exprList ?: return null
 
     var next = nameList.firstChild
     var idx = 0
@@ -136,15 +156,23 @@ val LuaParamNameDef.owner: LuaParametersOwner
     get() = PsiTreeUtil.getParentOfType(this, LuaParametersOwner::class.java)!!
 
 val LuaFuncBodyOwner.overloads: Array<IFunSignature> get() {
+    if (this is StubBasedPsiElementBase<*>) {
+        val stub = this.stub
+        if (stub is LuaFuncBodyOwnerStub<*>) {
+            return stub.overloads
+        }
+    }
+
     val list = mutableListOf<IFunSignature>()
     if (this is LuaCommentOwner) {
         val comment = comment
         if (comment != null) {
             val children = PsiTreeUtil.findChildrenOfAnyType(comment, LuaDocOverloadDef::class.java)
+            val colonCall = this is LuaClassMethodDef && !this.isStatic
             children.forEach {
                 val fty = it.functionTy
                 if (fty != null)
-                    list.add(FunSignature.create(false, fty))
+                    list.add(FunSignature.create(colonCall, fty))
             }
         }
     }
@@ -166,6 +194,10 @@ enum class LuaLiteralKind {
 }
 
 val LuaLiteralExpr.kind: LuaLiteralKind get() {
+    val stub = this.stub
+    if (stub != null)
+        return stub.kind
+
     return when(node.firstChildNode.elementType) {
         LuaTypes.STRING -> LuaLiteralKind.String
         LuaTypes.TRUE -> LuaLiteralKind.Bool
@@ -177,6 +209,9 @@ val LuaLiteralExpr.kind: LuaLiteralKind get() {
 }
 
 val LuaLiteralExpr.stringValue: String get() {
+    val stub = stub
+    if (stub != null)
+        return stub.string ?: ""
     val content = LuaString.getContent(text)
     return content.value
 }
@@ -213,11 +248,16 @@ val LuaDocClassDef.aliasName: String? get() {
 }
 
 val LuaIndexExpr.brack: Boolean get() {
-    return lbrack != null
+    val stub = stub
+    return stub?.brack ?: (lbrack != null)
 }
 
 val LuaIndexExpr.docTy: ITy? get() {
-    return assignStat?.comment?.docTy
+    val stub = stub
+    return if (stub != null)
+        stub.docTy
+    else
+        assignStat?.comment?.docTy
 }
 
 val LuaIndexExpr.prefixExpr: LuaExpr get() {
@@ -235,16 +275,66 @@ val LuaExpr.assignStat: LuaAssignStat? get() {
 }
 
 val LuaNameExpr.docTy: ITy? get() {
+    val stub = stub
+    if (stub != null)
+        return stub.docTy
     return assignStat?.comment?.ty
 }
 
+private val KEY_SHOULD_CREATE_STUB = Key.create<CachedValue<Boolean>>("lua.should_create_stub")
+
+// { field = valueExpr }
+// { valueExpr }
+// { ["field"] = valueExpr }
+val LuaTableField.valueExpr: LuaExpr? get() {
+    val list = PsiTreeUtil.getStubChildrenOfTypeAsList(this, LuaExpr::class.java)
+    return list.lastOrNull()
+}
+
+val LuaTableField.shouldCreateStub: Boolean get() =
+    CachedValuesManager.getCachedValue(this, KEY_SHOULD_CREATE_STUB, {
+        CachedValueProvider.Result.create(innerShouldCreateStub, this)
+    })
+
+private val LuaTableField.innerShouldCreateStub: Boolean get() {
+    if (id == null && idExpr == null)
+        return false
+    if (name == null)
+        return false
+
+    val tableExpr = PsiTreeUtil.getStubOrPsiParentOfType(this, LuaTableExpr::class.java)
+    tableExpr ?: return false
+    return tableExpr.shouldCreateStub
+}
+
+val LuaTableExpr.shouldCreateStub: Boolean get() =
+    CachedValuesManager.getCachedValue(this, KEY_SHOULD_CREATE_STUB, {
+        CachedValueProvider.Result.create(innerShouldCreateStub, this)
+    })
+
+private val LuaTableExpr.innerShouldCreateStub: Boolean get() {
+    val pt = parent
+    return when (pt) {
+        is LuaTableField -> pt.shouldCreateStub
+        is LuaExprList -> {
+            val ppt = pt.parent
+            when (ppt) {
+                is LuaArgs-> false
+                else-> true
+            }
+        }
+        else-> true
+    }
+}
+
+private val KEY_FORWARD = Key.create<CachedValue<PsiElement>>("lua.lua_func_def.forward")
+
 val LuaFuncDef.forwardDeclaration: PsiElement? get() {
-    /*return CachedValuesManager.getCachedValue(this, KEY_FORWARD, {
+    return CachedValuesManager.getCachedValue(this, KEY_FORWARD, {
         val refName = name
         val ret = if (refName == null) null else resolveLocal(refName, this)
         CachedValueProvider.Result.create(ret, this)
-    })*/
-    TODO()
+    })
 }
 
 val LuaCallExpr.argList: List<LuaExpr> get() {
@@ -261,6 +351,6 @@ val LuaBinaryExpr.left: LuaExpr? get() {
 }
 
 val LuaBinaryExpr.right: LuaExpr? get() {
-    val list = PsiTreeUtil.getChildrenOfTypeAsList(this, LuaExpr::class.java)
+    val list = PsiTreeUtil.getStubChildrenOfTypeAsList(this, LuaExpr::class.java)
     return list.getOrNull(1)
 }

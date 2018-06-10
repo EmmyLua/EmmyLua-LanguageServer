@@ -41,6 +41,7 @@ object CompletionService {
         parameters.completionType = CompletionType.BASIC
         parameters.position = position!!
         parameters.originalFile = psi
+        parameters.offset = pos
 
         val result = CompletionResultSetImpl(consumer)
         val prefix = findPrefix(text, pos)
