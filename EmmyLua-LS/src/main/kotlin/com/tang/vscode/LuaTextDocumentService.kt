@@ -214,20 +214,40 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     override fun visitClassMethod(o: LuaClassMethod) {
                         cc.checkCanceled()
                         o.nameIdentifier?.let { id ->
-                            val search = ReferencesSearch.search(o)
-                            val findAll = search.findAll()
                             val range = id.textRange.toRange(luaFile)
-                            val command = Command("References:${findAll.size}", null)
-                            if (findAll.isNotEmpty()) {
-                                command.command = "emmy.showReferences"
-                                command.arguments = listOf(params.textDocument.uri, range.start)
-                            }
-                            list.add(CodeLens(range, command, null))
+                            list.add(CodeLens(range, null, params.textDocument.uri))
                         }
                     }
                 })
             }
             list
+        }
+    }
+
+    override fun resolveCodeLens(unresolved: CodeLens): CompletableFuture<CodeLens> {
+        return computeAsync {
+            val data = unresolved.data as? JsonPrimitive
+            val command = Command("References:0", null)
+            val uri = data?.asString
+            if (uri != null) {
+                workspace.findFile(uri)?.let { file->
+                    if (file is ILuaFile) {
+                        val pos = file.getPosition(unresolved.range.start.line, unresolved.range.start.character)
+                        val target = TargetElementUtil.findTarget(file.psi, pos)
+                        if (target != null) {
+                            val search = ReferencesSearch.search(target)
+                            val findAll = search.findAll()
+                            command.title = "References:${findAll.size}"
+                            if (findAll.isNotEmpty()) {
+                                command.command = "emmy.showReferences"
+                                command.arguments = listOf(uri, unresolved.range.start)
+                            }
+                        }
+                    }
+                }
+            }
+            unresolved.command = command
+            unresolved
         }
     }
 
@@ -413,10 +433,6 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             }
         }
         return CompletableFuture.completedFuture(list)
-    }
-
-    override fun resolveCodeLens(unresolved: CodeLens?): CompletableFuture<CodeLens> {
-        throw NotImplementedException()
     }
 
     private fun withPsiFile(position: TextDocumentPositionParams, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
