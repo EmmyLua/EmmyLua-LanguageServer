@@ -88,6 +88,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         override fun visitClassDef(o: LuaDocClassDef) {
                             val identifier = o.nameIdentifier
                             docTypeNames.add(identifier.textRange.toRange(file))
+                            super.visitClassDef(o)
                         }
 
                         override fun visitClassNameRef(o: LuaDocClassNameRef) {
