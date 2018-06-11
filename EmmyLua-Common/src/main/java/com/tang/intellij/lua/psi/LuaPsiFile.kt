@@ -13,6 +13,9 @@ class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile
 
     private var virtualFile: VirtualFile? = null
 
+    var indexed = false
+    var indexing = false
+
     override fun getVirtualFile(): VirtualFile {
         return virtualFile!!
     }

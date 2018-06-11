@@ -1,6 +1,5 @@
 package com.tang.intellij.lua.stubs
 
-import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.intellij.psi.util.PsiTreeUtil
@@ -14,19 +13,14 @@ import com.tang.intellij.lua.ty.ITyClass
 import com.tang.intellij.lua.ty.TyUnion
 import com.tang.intellij.lua.ty.getTableTypeName
 
-private val ALREADY_INDEXED = Key.create<Boolean>("lua.indexing.already_indexed")
-private val IN_PROGRESS = Key.create<Boolean>("lua.indexing.in_progress")
-
 fun index(file: LuaPsiFile) {
-    if (ALREADY_INDEXED.get(file) == true)
+    if (file.indexed || file.indexing)
         return
-    if (IN_PROGRESS.get(file) == true)
-        return
-    file.putUserData(ALREADY_INDEXED, true)
-    file.putUserData(IN_PROGRESS, true)
+    file.indexing = true
+    file.indexed = true
     val sink = IndexSinkImpl(file)
     indexImpl(file, sink)
-    file.putUserData(IN_PROGRESS, false)
+    file.indexing = false
 }
 
 private fun indexImpl(file: LuaPsiFile, sink: IndexSink) {
