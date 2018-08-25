@@ -122,17 +122,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val cls = arr[0]
                     val name = arr[1]
                     LuaClassMemberIndex.process(cls, name, SearchContext(workspace.project), Processor {
-                        item.documentation = documentProvider.generateDoc(it, it)
+                        item.documentation = Either.forLeft(documentProvider.generateDoc(it, it))
                         false
                     })
                 }
             }
             item
         }
-    }
-
-    override fun codeAction(params: CodeActionParams): CompletableFuture<MutableList<out Command>> {
-        throw NotImplementedException()
     }
 
     override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover?> {
@@ -288,7 +284,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun completion(position: TextDocumentPositionParams): CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
+    override fun completion(position: CompletionParams): CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
         return computeAsync { checker ->
             val list = CompletionList()
             list.items = mutableListOf()
@@ -307,9 +303,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {
+    override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<MutableList<Either<SymbolInformation, DocumentSymbol>>> {
         return computeAsync {
-            val list = mutableListOf<SymbolInformation>()
+            val list = mutableListOf<Either<SymbolInformation, DocumentSymbol>>()
             val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
                 val psi = file.psi
@@ -322,7 +318,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             val fTy = o.guessType(SearchContext(project)) as? ITyFunction
                             if (name != null && fTy != null) {
                                 val info = SymbolInformation("$name${fTy.mainSignature.displayName}", SymbolKind.Method, Location(uri, o.textRange.toRange(file)))
-                                list.add(info)
+                                list.add(Either.forLeft(info))
                             }
                         }
 
@@ -330,7 +326,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             o.nameList?.nameDefList?.forEach {
                                 val local = Location(uri, it.textRange.toRange(file))
                                 val info = SymbolInformation("local ${it.name}", SymbolKind.Variable, local)
-                                list.add(info)
+                                list.add(Either.forLeft(info))
                             }
                         }
                     })
