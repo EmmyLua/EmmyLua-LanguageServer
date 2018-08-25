@@ -26,6 +26,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
 
     override val diagnostics = mutableListOf<Diagnostic>()
 
+    @Synchronized
     override fun didChange(params: DidChangeTextDocumentParams) {
         if (params.contentChanges.isEmpty())
             return
@@ -60,6 +61,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         onChanged()
     }
 
+    @Synchronized
     private fun updateLines() {
         _lines.clear()
         var pos = 0
@@ -118,6 +120,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         return _lines.firstOrNull { it.line == line } ?.startOffset ?: 0
     }
 
+    @Synchronized
     override fun getLine(offset: Int): Pair<Int, Int> {
         val line = _lines.firstOrNull { it.startOffset <= offset && it.stopOffset >= offset }
         if (line != null)
@@ -125,6 +128,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         return Pair(0, 0)
     }
 
+    @Synchronized
     override fun getPosition(line: Int, char: Int): Int {
         val lineData = _lines.firstOrNull { it.line == line }
         return if (lineData != null) lineData.startOffset + char else char
