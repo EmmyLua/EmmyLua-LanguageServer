@@ -102,7 +102,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         val psi = node.psi
         _myPsi = psi as LuaPsiFile
         _myPsi?.virtualFile = this
-        PsiTreeUtil.processElements(psi, {
+        PsiTreeUtil.processElements(psi) {
             if (it is PsiErrorElement) {
                 val diagnostic = Diagnostic()
                 diagnostic.message = it.errorDescription
@@ -111,7 +111,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
                 diagnostics.add(diagnostic)
             }
             true
-        })
+        }
     }
 
     private fun getLineStart(line: Int): Int {
