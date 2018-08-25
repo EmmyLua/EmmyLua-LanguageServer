@@ -218,6 +218,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     override fun findFile(uri: String): IVirtualFile? {
         val u = URI(uri)
+        if (u.scheme != "file")
+            return null
         val pair = findOrCreate(u.resolve(""), false)
         val root = pair.first
         return root?.findFile(File(u.path).name)
