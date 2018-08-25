@@ -13,7 +13,7 @@ import com.tang.intellij.lua.comment.psi.*;
 
 public class LuaDocLanDefImpl extends ASTWrapperPsiElement implements LuaDocLanDef {
 
-  public LuaDocLanDefImpl(ASTNode node) {
+  public LuaDocLanDefImpl(@NotNull ASTNode node) {
     super(node);
   }
 
@@ -24,6 +24,12 @@ public class LuaDocLanDefImpl extends ASTWrapperPsiElement implements LuaDocLanD
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof LuaDocVisitor) accept((LuaDocVisitor)visitor);
     else super.accept(visitor);
+  }
+
+  @Override
+  @Nullable
+  public LuaDocCommentString getCommentString() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocCommentString.class);
   }
 
   @Override

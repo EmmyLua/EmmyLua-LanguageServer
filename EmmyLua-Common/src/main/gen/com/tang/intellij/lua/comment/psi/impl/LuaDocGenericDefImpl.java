@@ -13,7 +13,7 @@ import com.tang.intellij.lua.comment.psi.*;
 
 public class LuaDocGenericDefImpl extends ASTWrapperPsiElement implements LuaDocGenericDef {
 
-  public LuaDocGenericDefImpl(ASTNode node) {
+  public LuaDocGenericDefImpl(@NotNull ASTNode node) {
     super(node);
   }
 
@@ -33,9 +33,9 @@ public class LuaDocGenericDefImpl extends ASTWrapperPsiElement implements LuaDoc
   }
 
   @Override
-  @Nullable
+  @NotNull
   public PsiElement getId() {
-    return findChildByType(ID);
+    return notNullChild(findChildByType(ID));
   }
 
   @Nullable
@@ -44,7 +44,7 @@ public class LuaDocGenericDefImpl extends ASTWrapperPsiElement implements LuaDoc
   }
 
   @NotNull
-  public PsiElement setName(String newName) {
+  public PsiElement setName(@NotNull String newName) {
     return LuaDocPsiImplUtilKt.setName(this, newName);
   }
 

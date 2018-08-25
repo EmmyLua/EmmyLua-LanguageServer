@@ -19,13 +19,16 @@ package com.tang.intellij.lua.comment.psi.impl
 import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.comment.LuaCommentUtil
 import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.comment.psi.api.LuaComment
+import com.tang.intellij.lua.project.LuaSettings
 import com.tang.intellij.lua.psi.LuaCommentOwner
 import com.tang.intellij.lua.psi.LuaTypes
+import com.tang.intellij.lua.psi.LuaVisitor
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.*
 
@@ -49,6 +52,10 @@ class LuaCommentImpl(node: ASTNode) : ASTWrapperPsiElement(node), LuaComment {
         return PsiTreeUtil.findChildrenOfType(this, t)
     }
 
+    override fun findTags(name: String): Collection<LuaDocTagDef> {
+        return PsiTreeUtil.findChildrenOfType(this, LuaDocTagDef::class.java).filter { it.tagName.text == name }
+    }
+
     override fun getTokenType(): IElementType {
         return LuaTypes.DOC_COMMENT
     }
@@ -64,6 +71,9 @@ class LuaCommentImpl(node: ASTNode) : ASTWrapperPsiElement(node), LuaComment {
             }
             return null
         }
+
+    override val isDeprecated: Boolean
+        get() = findTags("deprecated").isNotEmpty()
 
     override fun getParamDef(name: String): LuaDocParamDef? {
         var element: PsiElement? = firstChild
@@ -147,6 +157,9 @@ class LuaCommentImpl(node: ASTNode) : ASTWrapperPsiElement(node), LuaComment {
     }
 
     override fun createSubstitutor(): ITySubstitutor? {
+        if (!LuaSettings.instance.enableGeneric)
+            return null
+
         val list = findTags(LuaDocGenericDef::class.java)
         val map = mutableMapOf<String, String>()
         for (def in list) {
@@ -156,11 +169,15 @@ class LuaCommentImpl(node: ASTNode) : ASTWrapperPsiElement(node), LuaComment {
                 if (base != null) map[name] = base
             }
         }
+
+        if (map.isEmpty())
+            return null
+
         return object : TySubstitutor() {
             override fun substitute(clazz: ITyClass): ITy {
                 val base = map[clazz.className]
                 if (base != null) {
-                    return TySerializedClass(clazz.className, clazz.className, base)
+                    return TyParameter(clazz.className, base)
                 }
                 return super.substitute(clazz)
             }
@@ -169,5 +186,14 @@ class LuaCommentImpl(node: ASTNode) : ASTWrapperPsiElement(node), LuaComment {
 
     override fun toString(): String {
         return "DOC_COMMENT"
+    }
+
+    fun accept(visitor: LuaVisitor) {
+        visitor.visitComment(this)
+    }
+
+    override fun accept(visitor: PsiElementVisitor) {
+        if (visitor is LuaVisitor) accept(visitor)
+        else super.accept(visitor)
     }
 }

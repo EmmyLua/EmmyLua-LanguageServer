@@ -17,6 +17,7 @@
 package com.tang.intellij.lua.psi
 
 import com.intellij.extapi.psi.StubBasedPsiElementBase
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.CachedValue
@@ -26,12 +27,66 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Processor
 import com.tang.intellij.lua.comment.LuaCommentUtil
 import com.tang.intellij.lua.comment.psi.LuaDocClassDef
+import com.tang.intellij.lua.comment.psi.LuaDocGenericDef
 import com.tang.intellij.lua.comment.psi.LuaDocOverloadDef
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.lang.type.LuaString
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.LuaFuncBodyOwnerStub
+import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.ty.*
+
+/**
+ * 1.
+ * ---@type MyClass
+ * local a = {}
+ *
+ * this table should be `MyClass`
+ *
+ * 2.
+ *
+ * ---@param callback fun(sender: any, type: string):void
+ * local function addListener(type, callback)
+ *      ...
+ * end
+ *
+ * addListener(function() end)
+ *
+ * this closure should be `fun(sender: any, type: string):void`
+ */
+fun LuaExpr.shouldBe(context: SearchContext): ITy {
+    val p1 = parent
+    if (p1 is LuaExprList) {
+        val p2 = p1.parent
+        if (p2 is LuaAssignStat) {
+            val receiver = p2.varExprList.getExprAt(0)
+            if (receiver != null)
+                return infer(receiver, context)
+        } else if (p2 is LuaLocalDef) {
+            val receiver = p2.nameList?.nameDefList?.getOrNull(0)
+            if (receiver != null)
+                return infer(receiver, context)
+        }
+    } else if (p1 is LuaListArgs) {
+        val p2 = p1.parent
+        if (p2 is LuaCallExpr) {
+            val idx = p1.getIndexFor(this)
+            val fTy = infer(p2.expr, context)
+            var ret: ITy = Ty.UNKNOWN
+            fTy.each {
+                if (it is ITyFunction) {
+                    var sig = it.mainSignature
+                    val substitutor = p2.createSubstitutor(sig, context)
+                    if (substitutor != null) sig = sig.substitute(substitutor)
+
+                    ret = ret.union(sig.getParamTy(idx))
+                }
+            }
+            return ret
+        }
+    }
+    return Ty.UNKNOWN
+}
 
 /**
  * 获取所在的位置
@@ -179,6 +234,22 @@ val LuaFuncBodyOwner.overloads: Array<IFunSignature> get() {
     return list.toTypedArray()
 }
 
+val LuaFuncBodyOwner.tyParams: Array<TyParameter> get() {
+    /*if (this is StubBasedPsiElementBase<*>) {
+        val stub = this.stub
+        if (stub is LuaFuncBodyOwnerStub<*>) {
+            return stub.tyParams
+        }
+    }*/
+
+    val list = mutableListOf<TyParameter>()
+    if (this is LuaCommentOwner) {
+        val genericDefList = comment?.findTags(LuaDocGenericDef::class.java)
+        genericDefList?.forEach { it.name?.let { name -> list.add(TyParameter(name, it.classNameRef?.text)) } }
+    }
+    return list.toTypedArray()
+}
+
 enum class LuaLiteralKind {
     String,
     Bool,
@@ -209,9 +280,9 @@ val LuaLiteralExpr.kind: LuaLiteralKind get() {
 }
 
 val LuaLiteralExpr.stringValue: String get() {
-    val stub = stub
-    if (stub != null)
-        return stub.string ?: ""
+    /*val stub = stub
+    if (stub != null && !stub.tooLargerString)
+        return stub.string ?: ""*/
     val content = LuaString.getContent(text)
     return content.value
 }
@@ -292,9 +363,9 @@ val LuaTableField.valueExpr: LuaExpr? get() {
 }
 
 val LuaTableField.shouldCreateStub: Boolean get() =
-    CachedValuesManager.getCachedValue(this, KEY_SHOULD_CREATE_STUB, {
+    CachedValuesManager.getCachedValue(this, KEY_SHOULD_CREATE_STUB) {
         CachedValueProvider.Result.create(innerShouldCreateStub, this)
-    })
+    }
 
 private val LuaTableField.innerShouldCreateStub: Boolean get() {
     if (id == null && idExpr == null)
@@ -308,9 +379,9 @@ private val LuaTableField.innerShouldCreateStub: Boolean get() {
 }
 
 val LuaTableExpr.shouldCreateStub: Boolean get() =
-    CachedValuesManager.getCachedValue(this, KEY_SHOULD_CREATE_STUB, {
+    CachedValuesManager.getCachedValue(this, KEY_SHOULD_CREATE_STUB) {
         CachedValueProvider.Result.create(innerShouldCreateStub, this)
-    })
+    }
 
 private val LuaTableExpr.innerShouldCreateStub: Boolean get() {
     val pt = parent
@@ -330,11 +401,11 @@ private val LuaTableExpr.innerShouldCreateStub: Boolean get() {
 private val KEY_FORWARD = Key.create<CachedValue<PsiElement>>("lua.lua_func_def.forward")
 
 val LuaFuncDef.forwardDeclaration: PsiElement? get() {
-    return CachedValuesManager.getCachedValue(this, KEY_FORWARD, {
+    return CachedValuesManager.getCachedValue(this, KEY_FORWARD) {
         val refName = name
         val ret = if (refName == null) null else resolveLocal(refName, this)
         CachedValueProvider.Result.create(ret, this)
-    })
+    }
 }
 
 val LuaCallExpr.argList: List<LuaExpr> get() {
@@ -353,4 +424,23 @@ val LuaBinaryExpr.left: LuaExpr? get() {
 val LuaBinaryExpr.right: LuaExpr? get() {
     val list = PsiTreeUtil.getStubChildrenOfTypeAsList(this, LuaExpr::class.java)
     return list.getOrNull(1)
+}
+
+fun LuaClassMethod.findOverridingMethod(context: SearchContext): LuaClassMethod? {
+    val methodName = name ?: return null
+
+    val type = guessClassType(context) ?: return null
+    var superType = type.getSuperClass(context)
+
+    while (superType != null && superType is TyClass) {
+        ProgressManager.checkCanceled()
+        val superTypeName = superType.className
+        val superMethod = LuaClassMemberIndex.findMethod(superTypeName, methodName, context)
+        if (superMethod != null) {
+            return superMethod
+        }
+        superType = superType.getSuperClass(context)
+    }
+
+    return null
 }

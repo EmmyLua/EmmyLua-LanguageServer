@@ -61,17 +61,16 @@ fun resolveLocal(ref: LuaNameExpr, context: SearchContext? = null) = resolveLoca
 private val KEY_RESOLVE = Key.create<CachedValue<PsiElement>>("lua.resolve.cache.resolveLocal")
 
 fun resolveLocal(refName:String, ref: PsiElement, context: SearchContext? = null): PsiElement? {
-    return CachedValuesManager.getCachedValue(ref, KEY_RESOLVE, {
+    return CachedValuesManager.getCachedValue(ref, KEY_RESOLVE) {
         val element = resolveInFile(refName, ref, context)
         val r = if (element is LuaNameExpr) null else element
         CachedValueProvider.Result.create(r, ref)
-    })
+    }
 }
-
-private val KEY_RESOLVE_CACHE = Key.create<PsiElement>("lua.resolve.cache")
 
 fun resolveInFile(refName:String, pin: PsiElement, context: SearchContext?): PsiElement? {
     var ret: PsiElement? = null
+    var lastNameExpr: LuaNameExpr? = null
 
     //local/param
     LuaPsiTreeUtilEx.walkUpNameDef(pin, Processor { nameDef ->
@@ -80,19 +79,15 @@ fun resolveInFile(refName:String, pin: PsiElement, context: SearchContext?): Psi
         ret == null
     }, Processor {
         for (expr in it.varExprList.exprList) {
-            if (expr is LuaNameExpr) {
-                if (expr.name == refName) {
-                    ret = KEY_RESOLVE_CACHE.get(expr)
-                    if (ret == null) {
-                        ret = resolveInFile(refName, it, context) ?: expr
-                        expr.putUserData(KEY_RESOLVE_CACHE, ret)
-                    }
-                    return@Processor false
-                }
+            if (expr is LuaNameExpr && expr.name == refName) {
+                lastNameExpr = expr
+                return@Processor true
             }
         }
         true
     })
+
+    ret = ret ?: lastNameExpr
 
     if (ret == null && refName == Constants.WORD_SELF) {
         val methodDef = PsiTreeUtil.getStubOrPsiParentOfType(pin, LuaClassMethodDef::class.java)

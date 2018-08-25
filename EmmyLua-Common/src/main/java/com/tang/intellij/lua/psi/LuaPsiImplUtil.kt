@@ -133,11 +133,11 @@ private val GET_CLASS_METHOD = Key.create<ParameterizedCachedValue<ITy, SearchCo
  */
 fun guessParentType(classMethodDef: LuaClassMethodDef, context: SearchContext): ITy {
     return CachedValuesManager.getManager(classMethodDef.project).getParameterizedCachedValue(classMethodDef, GET_CLASS_METHOD, { ctx ->
-        val stub = classMethodDef.stub
+        /*val stub = classMethodDef.stub
         var type: ITy = Ty.UNKNOWN
         if (stub != null) {
-            stub.classNames.forEach {
-               type = type.union(createSerializedClass(it))
+            stub.classes.forEach {
+               type = type.union(it)
             }
         } else {
             val expr = classMethodDef.classMethodName.expr
@@ -145,7 +145,11 @@ fun guessParentType(classMethodDef: LuaClassMethodDef, context: SearchContext): 
             val perfect = TyUnion.getPerfectClass(ty)
             if (perfect is ITyClass)
                 type = perfect
-        }
+        }*/
+
+        val expr = classMethodDef.classMethodName.expr
+        val ty = expr.guessType(ctx)
+        val type = TyUnion.getPerfectClass(ty)
         CachedValueProvider.Result.create(type, classMethodDef)
     }, false, context) ?: Ty.UNKNOWN
 }
@@ -264,7 +268,7 @@ fun guessTypeAt(list: LuaExprList, context: SearchContext): ITy {
         //local a, b = getValues12() -- a = 1, b = 2
         //local a, b, c = getValues12(), 3, 4 --a = 1, b = 3, c =  4
         //local a, b, c = getValues12(), getValue34() --a = 1, b = 3, c =  4
-        var index = -1
+        var index = context.index
         if (exprList.size > 1) {
             val nameSize = context.index + 1
             index = if (nameSize > exprList.size) {
@@ -604,4 +608,20 @@ fun getVisibility(classMethodDef: LuaClassMethodDef): Visibility {
 
 fun getExpr(exprStat: LuaExprStat): LuaExpr {
     return PsiTreeUtil.getStubChildOfType(exprStat, LuaExpr::class.java)!!
+}
+
+fun isDeprecated(member: LuaClassMember): Boolean {
+    /*if (member is StubBasedPsiElement<*>) {
+        val stub = member.stub
+        if (stub is LuaClassMemberStub) {
+            return stub.isDeprecated
+        }
+    }*/
+
+    if (member is LuaCommentOwner) {
+        val comment = member.comment
+        if (comment != null)
+            return comment.isDeprecated
+    }
+    return false
 }

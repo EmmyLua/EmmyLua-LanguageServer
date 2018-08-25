@@ -30,6 +30,7 @@ import com.tang.intellij.lua.comment.LuaCommentUtil
 import com.tang.intellij.lua.comment.reference.LuaClassNameReference
 import com.tang.intellij.lua.comment.reference.LuaDocParamNameReference
 import com.tang.intellij.lua.comment.reference.LuaDocSeeReference
+import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaElementFactory
 import com.tang.intellij.lua.psi.Visibility
 import com.tang.intellij.lua.search.SearchContext
@@ -49,7 +50,7 @@ fun getReference(docClassNameRef: LuaDocClassNameRef): PsiReference {
 }
 
 fun resolveType(nameRef: LuaDocClassNameRef): ITy {
-    return Ty.getBuiltin(nameRef.text) ?: TyLazyClass(nameRef.text)
+    return Ty.create(nameRef.text)
 }
 
 fun getName(identifierOwner: PsiNameIdentifierOwner): String? {
@@ -184,6 +185,10 @@ fun getType(classDef: LuaDocClassDef): ITyClass {
     return stub?.classType ?: TyPsiDocClass(classDef)
 }
 
+fun isDeprecated(classDef: LuaDocClassDef): Boolean {
+    return LuaCommentUtil.findContainer(classDef).isDeprecated
+}
+
 /**
  * 猜测类型
  * @param typeDef 类型定义
@@ -243,8 +248,14 @@ fun getType(luaDocFunctionTy: LuaDocFunctionTy): ITy {
 }
 
 fun getReturnType(luaDocFunctionTy: LuaDocFunctionTy): ITy {
-    val set = luaDocFunctionTy.typeList?.tyList?.firstOrNull()
-    return set?.getType() ?: Ty.VOID
+    val list = luaDocFunctionTy.typeList?.tyList?.map { it.getType() }
+
+    return when {
+        list == null -> Ty.VOID
+        list.isEmpty() -> Ty.VOID
+        list.size == 1 -> list.first()
+        else -> TyTuple(list)
+    }
 }
 
 fun getType(luaDocGenericTy: LuaDocGenericTy): ITy {
@@ -299,4 +310,8 @@ fun guessType(f:LuaDocTableField, context: SearchContext): ITy {
 
 fun getNameIdentifier(g: LuaDocGenericDef): PsiElement? {
     return g.id
+}
+
+fun isDeprecated(member: LuaClassMember): Boolean {
+    return false
 }

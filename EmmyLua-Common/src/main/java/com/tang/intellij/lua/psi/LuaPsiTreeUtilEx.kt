@@ -19,9 +19,37 @@ package com.tang.intellij.lua.psi
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiNamedElement
+import com.intellij.psi.StubBasedPsiElement
+import com.intellij.psi.stubs.StubElement
 import com.intellij.util.Processor
+import com.tang.intellij.lua.stubs.LuaFileStub
+
+typealias STUB_ELE = StubElement<*>
+typealias STUB_PSI = StubBasedPsiElement<*>
 
 object LuaPsiTreeUtilEx {
+
+    private fun STUB_ELE.walkUp(curChild: STUB_ELE, processor: Processor<STUB_ELE>) {
+        val list = this.childrenStubs
+        val index = list.indexOf(curChild)
+        if (index > 0) {
+            for (i in 0 until index) {
+                val element = list[index - i - 1]
+                if (!processor.process(element)) break
+            }
+        }
+    }
+
+    private fun <T> findStubOfType(stub: STUB_ELE, clazz: Class<T>, collector: (t:T) -> Boolean) {
+        val list = stub.childrenStubs
+        for (i in 0 until list.size) {
+            val stubElement = list[i]
+            if (clazz.isInstance(stubElement.psi)) {
+                val t = clazz.cast(stubElement.psi)
+                collector(t)
+            } else findStubOfType(stubElement, clazz, collector)
+        }
+    }
 
     fun walkUpNameDef(psi: PsiElement?, processor: Processor<PsiNamedElement>, nameExprProcessor: Processor<LuaAssignStat>? = null) {
         if (psi == null) return
@@ -85,6 +113,17 @@ object LuaPsiTreeUtilEx {
     }
 
     fun processChildren(element: PsiElement?, processor: Processor<PsiElement>) {
+        if (element is STUB_PSI) {
+            val stub = element.stub
+            if (stub != null) {
+                for (childrenStub in stub.childrenStubs) {
+                    if (!processor.process(childrenStub.psi))
+                        break
+                }
+                return
+            }
+        }
+
         var child = element?.firstChild
         while (child != null) {
             if (!processor.process(child)) {

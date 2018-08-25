@@ -28,12 +28,14 @@ public interface LuaDocClassDef extends LuaDocPsiElement, PsiNameIdentifierOwner
   PsiElement getNameIdentifier();
 
   @NotNull
-  PsiElement setName(String newName);
+  PsiElement setName(@NotNull String newName);
 
   @NotNull
   String getName();
 
   int getTextOffset();
+
+  boolean isDeprecated();
 
   @Nullable
   LuaDocClassNameRef getSuperClassNameRef();

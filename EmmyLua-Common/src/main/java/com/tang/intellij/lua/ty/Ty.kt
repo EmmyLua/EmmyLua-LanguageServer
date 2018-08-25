@@ -65,13 +65,20 @@ interface ITy : Comparable<ITy> {
 
     fun union(ty: ITy): ITy
 
+    @Deprecated("use `displayName` instead")
     fun createTypeString(): String
 
     fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean
 
     fun getSuperClass(context: SearchContext): ITy?
 
+    fun visitSuper(searchContext: SearchContext, processor: Processor<ITyClass>)
+
     fun substitute(substitutor: ITySubstitutor): ITy
+
+    fun each(fn: (ITy) -> Unit) {
+        TyUnion.each(this, fn)
+    }
 
     fun eachTopClass(fn: Processor<ITyClass>)
 
@@ -91,6 +98,9 @@ val ITy.isAnonymous: Boolean
 private val ITy.worth: Float get() {
     var value = 10f
     when(this) {
+        is ITyArray, is ITyGeneric -> value = 80f
+        is ITyPrimitive -> value = 70f
+        is ITyFunction -> value = 60f
         is ITyClass -> {
             value = when {
                 this is TyTable -> 9f
@@ -99,9 +109,6 @@ private val ITy.worth: Float get() {
                 else -> 90f
             }
         }
-        is ITyArray, is ITyGeneric -> value = 80f
-        is TyPrimitive -> value = 70f
-        is ITyFunction -> value = 60f
     }
     return value
 }
@@ -153,7 +160,7 @@ abstract class Ty(override val kind: TyKind) : ITy {
         if (other.kind == TyKind.Unknown) return !strict
 
         // Handle unions, subtype if subtype of any of the union components.
-        if (other is TyUnion) return other.getChildTypes().any({ type -> subTypeOf(type, context, strict) })
+        if (other is TyUnion) return other.getChildTypes().any { type -> subTypeOf(type, context, strict) }
 
         // Classes are equal
         return this == other
@@ -161,6 +168,12 @@ abstract class Ty(override val kind: TyKind) : ITy {
 
     override fun getSuperClass(context: SearchContext): ITy? {
         return null
+    }
+
+    override fun visitSuper(searchContext: SearchContext, processor: Processor<ITyClass>) {
+        val superType = getSuperClass(searchContext) as? ITyClass ?: return
+        if (processor.process(superType))
+            superType.visitSuper(searchContext, processor)
     }
 
     override fun compareTo(other: ITy): Int {
@@ -192,7 +205,7 @@ abstract class Ty(override val kind: TyKind) : ITy {
         val UNKNOWN = TyUnknown()
         val VOID = TyVoid()
         val BOOLEAN = TyPrimitive(TyPrimitiveKind.Boolean, "boolean")
-        val STRING = TyPrimitive(TyPrimitiveKind.String, "string")
+        val STRING = TyPrimitiveClass(TyPrimitiveKind.String, "string")
         val NUMBER = TyPrimitive(TyPrimitiveKind.Number, "number")
         val TABLE = TyPrimitive(TyPrimitiveKind.Table, "table")
         val FUNCTION = TyPrimitive(TyPrimitiveKind.Function, "function")
@@ -227,6 +240,10 @@ abstract class Ty(override val kind: TyKind) : ITy {
             }
         }
 
+        fun create(name: String): ITy {
+            return getBuiltin(name) ?: TyLazyClass(name)
+        }
+
         fun isInvalid(ty: ITy?): Boolean {
             return ty == null || ty is TyUnknown || ty is TyNil || ty is TyVoid
         }
@@ -242,14 +259,18 @@ abstract class Ty(override val kind: TyKind) : ITy {
                     FunSignature.serialize(ty.mainSignature, stream)
                     stream.writeSignatures(ty.signatures)
                 }
+                is TyParameter -> {
+                    stream.writeName(ty.name)
+                    stream.writeName(ty.superClassName)
+                }
+                is ITyPrimitive -> {
+                    stream.writeByte(ty.primitiveKind.ordinal)
+                }
                 is ITyClass -> {
                     stream.writeName(ty.className)
                     stream.writeName(ty.varName)
                     stream.writeName(ty.superClassName)
                     stream.writeName(ty.aliasName)
-                }
-                is TyPrimitive -> {
-                    stream.writeByte(ty.primitiveKind.ordinal)
                 }
                 is TyUnion -> {
                     stream.writeByte(ty.size)
@@ -317,19 +338,14 @@ abstract class Ty(override val kind: TyKind) : ITy {
                     for (i in 0 until size) list.add(deserialize(stream))
                     TyTuple(list)
                 }
+                TyKind.GenericParam -> {
+                    val name = StringRef.toString(stream.readName())
+                    val base = StringRef.toString(stream.readName())
+                    TyParameter(name, base)
+                }
                 else -> TyUnknown()
             }
         }
-    }
-}
-
-class TyPrimitive(val primitiveKind: TyPrimitiveKind, override val displayName: String) : Ty(TyKind.Primitive) {
-    override fun equals(other: Any?): Boolean {
-        return other is TyPrimitive && other.primitiveKind == primitiveKind
-    }
-
-    override fun hashCode(): Int {
-        return primitiveKind.hashCode()
     }
 }
 
@@ -462,23 +478,20 @@ class TyUnion : Ty(TyKind.Union) {
         }
 
         fun getPerfectClass(ty: ITy): ITyClass? {
-            var tc: ITyClass? = null
+            var clazz: ITyClass? = null
             var anonymous: ITyClass? = null
             var global: ITyClass? = null
             process(ty) {
                 if (it is ITyClass) {
-                    if (it.isAnonymous)
-                        anonymous = it
-                    else if (it.isGlobal)
-                        global = it
-                    else {
-                        tc = it
-                        return@process false
+                    when {
+                        it.isAnonymous -> anonymous = it
+                        it.isGlobal -> global = it
+                        else -> clazz = it
                     }
                 }
-                true
+                clazz == null
             }
-            return tc ?: global ?: anonymous
+            return clazz ?: global ?: anonymous
         }
     }
 }

@@ -16,7 +16,7 @@ public interface LuaNameExpr extends LuaExpr, PsiNameIdentifierOwner, LuaExprStu
   PsiElement getId();
 
   @NotNull
-  PsiElement setName(String name);
+  PsiElement setName(@NotNull String name);
 
   @NotNull
   String getName();
@@ -29,6 +29,8 @@ public interface LuaNameExpr extends LuaExpr, PsiNameIdentifierOwner, LuaExprStu
 
   @NotNull
   PsiReference[] getReferences();
+
+  boolean isDeprecated();
 
   //WARNING: toString(...) is skipped
   //matching toString(LuaNameExpr, ...)

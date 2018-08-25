@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2017. tangzx(love.tangzx@qq.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.tang.intellij.lua.stubs.index
 
 import com.intellij.util.Processor
@@ -7,9 +23,9 @@ import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaClassMethod
 import com.tang.intellij.lua.psi.LuaTableField
 import com.tang.intellij.lua.search.SearchContext
-import com.tang.intellij.lua.stubs.IndexSink
 import com.tang.intellij.lua.stubs.StubKeys
 import com.tang.intellij.lua.ty.ITyClass
+import com.tang.intellij.lua.ty.TyParameter
 
 class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
     override fun getKey() = StubKeys.CLASS_MEMBER
@@ -78,7 +94,9 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
         }
 
         fun processAll(type: ITyClass, fieldName: String, context: SearchContext, processor: Processor<LuaClassMember>) {
-            process(type.className, fieldName, context, processor)
+            if (type is TyParameter)
+                type.superClassName?.let { process(it, fieldName, context, processor) }
+            else process(type.className, fieldName, context, processor)
         }
 
         fun processAll(type: ITyClass, context: SearchContext, processor: Processor<LuaClassMember>) {

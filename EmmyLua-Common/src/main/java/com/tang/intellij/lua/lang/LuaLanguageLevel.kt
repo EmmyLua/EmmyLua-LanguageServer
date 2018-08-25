@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.tang.intellij.lua.lexer;
+package com.tang.intellij.lua.lang
 
-import com.intellij.lexer.FlexAdapter;
+enum class LuaLanguageLevel(val version: Int) {
+    LUA50(50),
+    LUA51(51),
+    LUA52(52),
+    LUA53(53),
+    LUA54(54);
 
-import java.io.Reader;
-
-public class LuaLexer extends FlexAdapter {
-    public LuaLexer() {
-        super(new _LuaLexer((Reader) null));
+    override fun toString(): String {
+        return "Lua ${version / 10}.${version % 10}"
     }
 }

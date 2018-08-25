@@ -31,7 +31,7 @@ public interface LuaDocFieldDef extends LuaClassField, LuaDocPsiElement, PsiName
   PsiElement getId();
 
   @NotNull
-  ITy guessParentType(SearchContext context);
+  ITy guessParentType(@NotNull SearchContext context);
 
   @NotNull
   Visibility getVisibility();
@@ -40,7 +40,7 @@ public interface LuaDocFieldDef extends LuaClassField, LuaDocPsiElement, PsiName
   PsiElement getNameIdentifier();
 
   @NotNull
-  PsiElement setName(String newName);
+  PsiElement setName(@NotNull String newName);
 
   @Nullable
   String getName();
@@ -52,5 +52,7 @@ public interface LuaDocFieldDef extends LuaClassField, LuaDocPsiElement, PsiName
 
   @NotNull
   ItemPresentation getPresentation();
+
+  boolean isDeprecated();
 
 }

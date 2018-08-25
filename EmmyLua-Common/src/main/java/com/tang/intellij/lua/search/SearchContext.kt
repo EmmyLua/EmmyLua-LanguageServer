@@ -67,7 +67,8 @@ class SearchContext(val project: Project, private val currentFile: PsiFile? = nu
     fun clone() = SearchContext(project, currentFile)
 }
 
-class LuaPredefinedScope : AdditionalIndexedRootsScope {
-    constructor(project: Project) : this(ProjectAndLibrariesScope(project))
-    constructor(base: GlobalSearchScope) : super(base, LuaPredefinedLibraryProvider::class.java)
+@Deprecated("use `ProjectAndLibrariesScope` instead")
+class LuaPredefinedScope(project: Project) : ProjectAndLibrariesScope(project) {
+    //constructor(project: Project) : this(ProjectAndLibrariesScope(project))
+    //constructor(base: GlobalSearchScope) : super(base, LuaPredefinedLibraryProvider::class.java)
 }

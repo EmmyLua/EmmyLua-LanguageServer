@@ -1,15 +1,21 @@
 package com.tang.intellij.lua.lexer;
 
 import com.intellij.lexer.FlexLexer;
-import com.intellij.psi.tree.IElementType;
 import com.intellij.psi.TokenType;
+import com.intellij.psi.tree.IElementType;
+import com.tang.intellij.lua.lang.LuaLanguageLevel;
+
+import java.io.Reader;
+
 import static com.tang.intellij.lua.psi.LuaTypes.*;
 
 %%
 
 %{
-    public _LuaLexer() {
-        this(null);
+    private LuaLanguageLevel level;
+    public _LuaLexer(LuaLanguageLevel level) {
+        this((Reader) null);
+        this.level = level;
     }
 
     private int nBrackets = 0;
@@ -64,8 +70,8 @@ ppp=[Pp][+-]{n}
 NUMBER=(0[xX]({h}|{h}[.]{h})({exp}|{ppp})?|({n}|{n}[.]{n}){exp}?|[.]{n}|{n}[.])
 
 //Comments
-REGION_START =--region({LINE_WS}+[^\r\n]*)*
-REGION_END =--endregion({LINE_WS}+[^\r\n]*)*
+REGION_START =--(region|\{\{\{)([^\r\n]*)*
+REGION_END =--(endregion|\}\}\})([^\r\n]*)*
 BLOCK_COMMENT=--\[=*\[[\s\S]*(\]=*\])?
 SHORT_COMMENT=--[^\r\n]*
 DOC_COMMENT=----*[^\r\n]*(\r?\n{LINE_WS}*----*[^\r\n]*)*
@@ -114,22 +120,22 @@ LONG_STRING=\[=*\[[\s\S]*\]=*\]
   "true"                      { return TRUE; }
   "until"                     { return UNTIL; }
   "while"                     { return WHILE; }
-  "goto"                      { return GOTO; } //lua5.3
+  "goto"                      { if (level.getVersion() < LuaLanguageLevel.LUA52.getVersion()) return ID; else return GOTO; } //lua5.3
   "#!"                        { yybegin(xSHEBANG); return SHEBANG; }
   "..."                       { return ELLIPSIS; }
   ".."                        { return CONCAT; }
   "=="                        { return EQ; }
   ">="                        { return GE; }
-  ">>"                        { return BIT_RTRT; } //lua5.3
+  ">>"                        { return BIT_RTRT; } //lua5.2
   "<="                        { return LE; }
-  "<<"                        { return BIT_LTLT; } //lua5.3
+  "<<"                        { return BIT_LTLT; } //lua5.2
   "~="                        { return NE; }
-  "~"                         { return BIT_TILDE; } //lua5.3
+  "~"                         { return BIT_TILDE; } //lua5.2
   "-"                         { return MINUS; }
   "+"                         { return PLUS; }
   "*"                         { return MULT; }
   "%"                         { return MOD; }
-  "//"                        { return DOUBLE_DIV; } //lua5.3
+  "//"                        { return DOUBLE_DIV; } //lua5.2
   "/"                         { return DIV; }
   "="                         { return ASSIGN; }
   ">"                         { return GT; }
@@ -143,13 +149,13 @@ LONG_STRING=\[=*\[[\s\S]*\]=*\]
   "#"                         { return GETN; }
   ","                         { return COMMA; }
   ";"                         { return SEMI; }
-  "::"                        { return DOUBLE_COLON; } //lua5.3
+  "::"                        { return DOUBLE_COLON; } //lua5.2
   ":"                         { return COLON; }
   "."                         { return DOT; }
   "^"                         { return EXP; }
-  "~"                         { return BIT_TILDE; } //lua5.3
-  "&"                         { return BIT_AND; } //lua5.3
-  "|"                         { return BIT_OR; } //lua5.3
+  "~"                         { return BIT_TILDE; } //lua5.2
+  "&"                         { return BIT_AND; } //lua5.2
+  "|"                         { return BIT_OR; } //lua5.2
 
   "\""                        { yybegin(xDOUBLE_QUOTED_STRING); yypushback(yylength()); }
   "'"                         { yybegin(xSINGLE_QUOTED_STRING); yypushback(yylength()); }

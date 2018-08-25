@@ -17,6 +17,8 @@
 package com.tang.intellij.lua.psi
 
 import com.intellij.psi.NavigatablePsiElement
+import com.tang.intellij.lua.lang.LuaLanguageLevel
+import com.tang.intellij.lua.project.LuaSettings
 
 /**
  * LuaPsiElement
@@ -30,4 +32,11 @@ val LuaPsiElement.moduleName: String? get() {
         return file.moduleName
     return null*/
     return null
+}
+
+val LuaPsiElement.languageLevel: LuaLanguageLevel get() {
+    val file = containingFile
+    if (file is LuaPsiFile)
+        return file.languageLevel
+    return LuaSettings.instance.languageLevel
 }

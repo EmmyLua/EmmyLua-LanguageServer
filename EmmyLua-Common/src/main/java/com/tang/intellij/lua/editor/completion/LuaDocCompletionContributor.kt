@@ -18,6 +18,7 @@ package com.tang.intellij.lua.editor.completion
 
 import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.LookupElementBuilder
+import com.intellij.lang.Language
 import com.intellij.patterns.PlatformPatterns.psiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
@@ -44,6 +45,9 @@ class LuaDocCompletionContributor : CompletionContributor() {
                 val set = LuaParserDefinition.DOC_TAG_TOKENS
                 for (type in set.types) {
                     completionResultSet.addElement(LookupElementBuilder.create(type).withIcon(LuaIcons.ANNOTATION))
+                }
+                ADDITIONAL_TAGS.forEach { tagName ->
+                    completionResultSet.addElement(LookupElementBuilder.create(tagName).withIcon(LuaIcons.ANNOTATION))
                 }
                 completionResultSet.stopHere()
             }
@@ -170,5 +174,7 @@ class LuaDocCompletionContributor : CompletionContributor() {
         private val SHOW_SEE_MEMBER = psiElement(LuaDocTypes.ID).inside(LuaDocSeeRefTag::class.java)
 
         private val SHOW_LAN = psiElement(LuaDocTypes.ID).inside(LuaDocLanDef::class.java)
+
+        private val ADDITIONAL_TAGS = arrayOf("deprecated", "author", "version", "since")
     }
 }

@@ -16,6 +16,8 @@
 
 package com.tang.intellij.lua.project
 
+import com.tang.intellij.lua.lang.LuaLanguageLevel
+
 /**
  *
  * Created by Administrator on 2017/6/12.
@@ -47,6 +49,8 @@ class LuaSettings {
      * 使用泛型
      */
     var enableGeneric: Boolean = false
+
+    var languageLevel: LuaLanguageLevel = LuaLanguageLevel.LUA53
 
     companion object {
 

@@ -103,21 +103,21 @@ fun LuaCallExpr.createSubstitutor(sig: IFunSignature, context: SearchContext): I
     if (sig.isGeneric()) {
         val list = this.argList.map { it.guessType(context.clone()) }
         val map = mutableMapOf<String, ITy>()
-        sig.params.forEach {
-            val ty = it.ty
-            if (ty is ITyClass) {
-                for (i in 0 until sig.tyParameters.size) {
-                    val parameter = sig.tyParameters[i]
-                    if (parameter.name == ty.className) {
-                        map[parameter.name] = list.getOrElse(i, { Ty.UNKNOWN })
-                        break
-                    }
-                }
+        sig.tyParameters.forEach { map[it.name] = Ty.UNKNOWN }
+        sig.processArgs(this) { index, param ->
+            val arg = list.getOrNull(index)
+            if (arg != null) {
+                GenericAnalyzer(arg, param.ty).analyze(map)
             }
+            true
+        }
+        sig.tyParameters.forEach {
+            val superCls = it.superClassName
+            if (Ty.isInvalid(map[it.name]) && superCls != null) map[it.name] = Ty.create(superCls)
         }
         return object : TySubstitutor() {
             override fun substitute(clazz: ITyClass): ITy {
-                return map.getOrElse(clazz.className, { clazz })
+                return map.getOrElse(clazz.className) { clazz }
             }
         }
     }
@@ -242,7 +242,7 @@ private fun getType(context: SearchContext, def: PsiElement): ITy {
 
             var type: ITy = def.docTy ?: Ty.UNKNOWN
             //guess from value expr
-            if (Ty.isInvalid(type)) {
+            if (Ty.isInvalid(type) && !context.forStore) {
                 val stat = def.assignStat
                 if (stat != null) {
                     val exprList = stat.valueExprList
@@ -255,7 +255,7 @@ private fun getType(context: SearchContext, def: PsiElement): ITy {
             }
 
             //Global
-            if (isGlobal(def) && type !is TyPrimitive) {
+            if (isGlobal(def) && type !is ITyPrimitive) {
                 //use globalClassTy to store class members, that's very important
                 type = type.union(TyClass.createGlobalType(def, context.forStore))
             }
@@ -346,40 +346,4 @@ private fun guessFieldType(fieldName: String, type: ITyClass, context: SearchCon
     })
 
     return set
-}
-
-/**
- * ---@type MyClass
- * local a = {}
- *
- * this table should be `MyClass`
- */
-fun LuaExpr.shouldBe(context: SearchContext): ITy {
-    val p1 = parent
-    if (p1 is LuaExprList) {
-        val p2 = p1.parent
-        if (p2 is LuaAssignStat) {
-            val receiver = p2.varExprList.getExprAt(0)
-            if (receiver != null)
-                return infer(receiver, context)
-        } else if (p2 is LuaLocalDef) {
-            val receiver = p2.nameList?.nameDefList?.getOrNull(0)
-            if (receiver != null)
-                return infer(receiver, context)
-        }
-    } else if (p1 is LuaListArgs) {
-        val p2 = p1.parent
-        if (p2 is LuaCallExpr) {
-            val idx = p1.getIndexFor(this)
-            val fTy = infer(p2.expr, context)
-            var ret: ITy = Ty.UNKNOWN
-            TyUnion.each(fTy) {
-                if (it is ITyFunction) {
-                    ret = ret.union(it.mainSignature.getParamTy(idx))
-                }
-            }
-            return ret
-        }
-    }
-    return Ty.UNKNOWN
 }

@@ -19,6 +19,7 @@ public interface LuaDocTypes {
   IElementType FUNCTION_TY = LuaParserDefinitionKt.createDocType("FUNCTION_TY");
   IElementType GENERAL_TY = LuaParserDefinitionKt.createDocType("GENERAL_TY");
   IElementType GENERIC_DEF = LuaParserDefinitionKt.createDocType("GENERIC_DEF");
+  IElementType GENERIC_LIST = LuaParserDefinitionKt.createDocType("GENERIC_LIST");
   IElementType GENERIC_TY = LuaParserDefinitionKt.createDocType("GENERIC_TY");
   IElementType LAN_DEF = LuaParserDefinitionKt.createDocType("LAN_DEF");
   IElementType OVERLOAD_DEF = LuaParserDefinitionKt.createDocType("OVERLOAD_DEF");
@@ -31,7 +32,6 @@ public interface LuaDocTypes {
   IElementType TABLE_FIELD = LuaParserDefinitionKt.createDocType("TABLE_FIELD");
   IElementType TABLE_TY = LuaParserDefinitionKt.createDocType("TABLE_TY");
   IElementType TAG_DEF = LuaParserDefinitionKt.createDocType("TAG_DEF");
-  IElementType TAG_VALUE = LuaParserDefinitionKt.createDocType("TAG_VALUE");
   IElementType TY = LuaParserDefinitionKt.createDocType("TY");
   IElementType TYPE_DEF = LuaParserDefinitionKt.createDocType("TYPE_DEF");
   IElementType TYPE_LIST = LuaParserDefinitionKt.createDocType("TYPE_LIST");
@@ -107,6 +107,9 @@ public interface LuaDocTypes {
       else if (type == GENERIC_DEF) {
         return new LuaDocGenericDefImpl(node);
       }
+      else if (type == GENERIC_LIST) {
+        return new LuaDocGenericListImpl(node);
+      }
       else if (type == GENERIC_TY) {
         return new LuaDocGenericTyImpl(node);
       }
@@ -142,9 +145,6 @@ public interface LuaDocTypes {
       }
       else if (type == TAG_DEF) {
         return new LuaDocTagDefImpl(node);
-      }
-      else if (type == TAG_VALUE) {
-        return new LuaDocTagValueImpl(node);
       }
       else if (type == TYPE_DEF) {
         return new LuaDocTypeDefImpl(node);

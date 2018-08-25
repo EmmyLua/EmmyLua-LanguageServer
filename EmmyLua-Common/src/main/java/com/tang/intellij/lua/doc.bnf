@@ -87,7 +87,7 @@ private doc_item ::= '@' (param_def
     | see_ref_tag
     | tag_def
     | access_modifier
-    | generic_def)
+    | generic_list)
 
 ty ::= union_ty | function_ty | table_ty | generic_ty | arr_ty | general_ty | par_ty {
     implements = ['com.tang.intellij.lua.comment.psi.LuaDocType']
@@ -121,6 +121,7 @@ tableField ::= tableField2 {
         getName
         getNameIdentifier
         guessType
+        isDeprecated
     ]
     stubClass = "com.tang.intellij.lua.stubs.LuaDocTableFieldDefStub"
 }
@@ -140,7 +141,7 @@ generic_ty ::= general_ty '<' generic_param_list '>' {
     pin = 2
 }
 
-function_param ::= ID ':' ty {
+function_param ::= ID (':' ty)? {
     pin = 1
 }
 private function_param_list::= (function_param ',')* (function_param |& ')')
@@ -172,18 +173,23 @@ field_def ::= TAG_FIELD access_modifier? ('<' class_name_ref '>')? ID ty comment
         getFieldName
         toString
         getPresentation
+        isDeprecated
     ]
 }
 
 //--- tag
-tag_value ::= ID
-tag_def ::= TAG_NAME tag_value? comment_string? { pin = 1 }
+tag_def ::= TAG_NAME comment_string? {
+    pin = 1
+    methods = [
+        tagName = 'TAG_NAME'
+    ]
+}
 
 //@overload
 overload_def ::= TAG_OVERLOAD function_ty { pin = 1 }
 
 //@language json
-lan_def ::= TAG_LANGUAGE ID { pin = 1 }
+lan_def ::= TAG_LANGUAGE ID comment_string? { pin = 1 }
 
 //@param PARAM_NAME CLASS_REF
 param_name_ref ::= ID {
@@ -220,6 +226,7 @@ class_def ::= (TAG_CLASS|TAG_MODULE) ID (EXTENDS class_name_ref)? comment_string
         getName
         getTextOffset
         toString
+        isDeprecated
 
         superClassNameRef = 'class_name_ref'
         module = 'TAG_MODULE'
@@ -234,7 +241,7 @@ type_def ::= TAG_TYPE ty comment_string? {
 }
 
 comment_string ::= STRING_BEGIN? STRING? {
-    pin = 1
+    //pin = 1
     methods = [
         string = "STRING"
     ]
@@ -247,7 +254,7 @@ see_ref_tag ::= TAG_SEE class_name_ref (SHARP ID)? {
     ]
 }
 
-generic_def ::= TAG_GENERIC ID (EXTENDS class_name_ref)? {
+generic_def ::= ID (EXTENDS class_name_ref)? {
     pin = 1
     implements = [
         "com.intellij.psi.PsiNameIdentifierOwner"
@@ -259,4 +266,8 @@ generic_def ::= TAG_GENERIC ID (EXTENDS class_name_ref)? {
         getName
         getTextOffset
     ]
+}
+
+generic_list ::= TAG_GENERIC generic_def (',' generic_def)* {
+    pin = 1
 }

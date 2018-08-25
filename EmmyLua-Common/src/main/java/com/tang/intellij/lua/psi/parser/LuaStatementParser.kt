@@ -19,7 +19,6 @@ package com.tang.intellij.lua.psi.parser
 import com.intellij.lang.PsiBuilder
 import com.intellij.lang.parser.GeneratedParserUtilBase
 import com.intellij.psi.tree.IElementType
-import com.tang.intellij.lua.psi.LuaParserUtil
 import com.tang.intellij.lua.psi.LuaTypes.*
 
 object LuaStatementParser : GeneratedParserUtilBase() {
@@ -233,13 +232,14 @@ object LuaStatementParser : GeneratedParserUtilBase() {
 
     private fun parseNameList(b: PsiBuilder): PsiBuilder.Marker? {
         var m = b.mark()
-        if (expectError(b, ID, { "ID" })) {
+        if (expectError(b, ID) { "ID" }) {
             m.done(NAME_DEF)
             while (b.tokenType == COMMA) {
                 b.advanceLexer()
                 val nameDef = b.mark()
-                expectError(b, ID, { "ID" })
-                nameDef.done(NAME_DEF)
+                if (expectError(b, ID) { "ID" })
+                    nameDef.done(NAME_DEF)
+                else nameDef.drop()
             }
             m = m.precede()
         }

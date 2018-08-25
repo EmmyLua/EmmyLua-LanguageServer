@@ -20,11 +20,11 @@ import com.intellij.psi.tree.IElementType;
 
 public class LuaTableFieldImpl extends StubBasedPsiElementBase<LuaTableFieldStub> implements LuaTableField {
 
-  public LuaTableFieldImpl(LuaTableFieldStub stub, IStubElementType type) {
+  public LuaTableFieldImpl(@NotNull LuaTableFieldStub stub, @NotNull IStubElementType type) {
     super(stub, type);
   }
 
-  public LuaTableFieldImpl(ASTNode node) {
+  public LuaTableFieldImpl(@NotNull ASTNode node) {
     super(node);
   }
 
@@ -59,7 +59,7 @@ public class LuaTableFieldImpl extends StubBasedPsiElementBase<LuaTableFieldStub
   }
 
   @NotNull
-  public PsiElement setName(String name) {
+  public PsiElement setName(@NotNull String name) {
     return LuaPsiImplUtilKt.setName(this, name);
   }
 
@@ -88,13 +88,17 @@ public class LuaTableFieldImpl extends StubBasedPsiElementBase<LuaTableFieldStub
   }
 
   @NotNull
-  public ITy guessParentType(SearchContext context) {
+  public ITy guessParentType(@NotNull SearchContext context) {
     return LuaPsiImplUtilKt.guessParentType(this, context);
   }
 
   @NotNull
   public Visibility getVisibility() {
     return LuaPsiImplUtilKt.getVisibility(this);
+  }
+
+  public boolean isDeprecated() {
+    return LuaPsiImplUtilKt.isDeprecated(this);
   }
 
   @Nullable
