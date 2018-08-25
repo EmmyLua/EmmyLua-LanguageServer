@@ -12,7 +12,6 @@ import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
 import com.tang.vscode.utils.safeURIName
 import org.eclipse.lsp4j.*
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
 import java.net.URI
@@ -69,11 +68,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun didChangeWorkspaceFolders(params: DidChangeWorkspaceFoldersParams) {
-        didChangeWorkspaceFolders2(params)
-    }
-
-    @JsonNotification("emmy/didChangeWorkspaceFolders")
-    private fun didChangeWorkspaceFolders2(params: DidChangeWorkspaceFoldersParams) {
         params.event.added.forEach {
             addRoot(it.uri)
         }
@@ -201,17 +195,25 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun loadWorkspace(monitor: IProgressMonitor) {
+        monitor.setProgress("load workspace folders", 0f)
+        client?.workspaceFolders()?.whenCompleteAsync { wsFolders, _ ->
+            wsFolders.forEach { addRoot(it.uri) }
+            loadWorkspaceImpl(monitor)
+        }
+    }
+
+    private fun loadWorkspaceImpl(monitor: IProgressMonitor) {
         val allFiles = mutableListOf<File>()
         val arr = _rootWSFolders.toTypedArray()
         _rootWSFolders.clear()
-        arr.forEach { uri->
+        arr.forEach { uri ->
             val folder = File(uri.path)
             collectFiles(folder, allFiles)
         }
 
         allFiles.forEachIndexed { index, file ->
             addFile(file)
-            monitor.setProgress("Emmy load file: ${file.canonicalPath}", (index  + 1) / allFiles.size.toFloat())
+            monitor.setProgress("Emmy load file: ${file.canonicalPath}", (index + 1) / allFiles.size.toFloat())
         }
         monitor.done()
     }
