@@ -9,6 +9,7 @@ import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
 import com.tang.intellij.lua.ty.ITyFunction
 import org.eclipse.lsp4j.CompletionItemKind
+import org.eclipse.lsp4j.InsertTextFormat
 import javax.swing.Icon
 
 object LookupElementFactory {
@@ -56,7 +57,7 @@ object LookupElementFactory {
     private fun buildSignatureCompletionItem(name: String, signature: IFunSignature): LuaLookupElement {
         val item = LuaLookupElement("$name${signature.paramSignature}")
         item.insertText = name
-        /*item.insertText = buildString {
+        item.insertText = buildString {
             append(name)
             append("(")
             signature.params.forEachIndexed { index, info ->
@@ -65,7 +66,7 @@ object LookupElementFactory {
             }
             append(")")
         }
-        item.insertTextFormat = InsertTextFormat.Snippet*/
+        item.insertTextFormat = InsertTextFormat.Snippet
         return item
     }
 
