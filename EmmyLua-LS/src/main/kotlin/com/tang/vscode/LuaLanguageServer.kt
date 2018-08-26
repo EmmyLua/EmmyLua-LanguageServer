@@ -56,9 +56,9 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         initIntellijEnv()
 
         val json = params.initializationOptions as JsonObject
-        /*val stdFolder = json["stdFolder"] as? JsonPrimitive
+        val stdFolder = json["stdFolder"] as? JsonPrimitive
         if (stdFolder != null && stdFolder.isString)
-            workspaceService.addRoot(stdFolder.asString)*/
+            workspaceService.addRoot(stdFolder.asString)
         val workspaceFolders = json["workspaceFolders"] as? JsonArray
         workspaceFolders?.forEach { workspaceService.addRoot(it.asString) }
 
