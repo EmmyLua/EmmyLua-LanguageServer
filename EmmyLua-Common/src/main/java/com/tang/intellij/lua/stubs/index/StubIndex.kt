@@ -24,6 +24,7 @@ abstract class StubIndex<K, Psi : PsiElement> {
 
     private val indexMap = mutableMapOf<K, StubEntry>()
 
+    @Synchronized
     fun get(key: K, project: Project, scope: GlobalSearchScope): MutableList<Psi> {
         val list = mutableListOf<Psi>()
         if (lock)
@@ -34,12 +35,14 @@ abstract class StubIndex<K, Psi : PsiElement> {
         return list
     }
 
+    @Synchronized
     fun processKeys(project: Project, scope: GlobalSearchScope, processor: Processor<K>) {
         if (lock)
             return
         ContainerUtil.process(indexMap.keys, processor)
     }
 
+    @Synchronized
     fun processValues(project: Project, scope: GlobalSearchScope, processor: Processor<Psi>) {
         for (stubEntry in indexMap.values) {
             for (stubFile in stubEntry.files.values) {
@@ -49,6 +52,7 @@ abstract class StubIndex<K, Psi : PsiElement> {
         }
     }
 
+    @Synchronized
     @Suppress("UNCHECKED_CAST")
     fun <Psi1 : PsiElement, K1> occurrence(file: LuaPsiFile, key: K1, value: Psi1) {
         val k = key as K
@@ -57,6 +61,7 @@ abstract class StubIndex<K, Psi : PsiElement> {
         stubFile.elements.add(value as Psi)
     }
 
+    @Synchronized
     fun removeStubs(file: LuaPsiFile) {
         indexMap.forEach { _, u ->
             u.files.remove(file.id)

@@ -9,6 +9,7 @@ import com.tang.intellij.lua.ext.ILuaFileResolver
 import com.tang.intellij.lua.lang.LuaLanguage
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.reference.LuaReferenceContributor
+import com.tang.vscode.utils.computeAsync
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.services.LanguageClient
@@ -34,7 +35,9 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     }
 
     override fun shutdown(): CompletableFuture<Any> {
-        return CompletableFuture.completedFuture(Object())
+        return computeAsync {
+            workspaceService.dispose()
+        }
     }
 
     override fun getTextDocumentService() = documentService

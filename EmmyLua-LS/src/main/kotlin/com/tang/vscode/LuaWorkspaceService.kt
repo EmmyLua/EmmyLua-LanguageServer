@@ -282,4 +282,10 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     fun connect(client: LuaLanguageClient) {
         this.client = client
     }
+
+    fun dispose() {
+        _rootWSFolders.clear()
+        _rootList.forEach { it.removeAll() }
+        _rootList.clear()
+    }
 }
