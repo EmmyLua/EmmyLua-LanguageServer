@@ -5,21 +5,18 @@ import com.intellij.openapi.fileEditor.impl.LoadTextUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
-import com.tang.intellij.lua.comment.psi.LuaDocClassDef
-import com.tang.intellij.lua.psi.LuaClassField
-import com.tang.intellij.lua.psi.LuaClassMethod
 import com.tang.intellij.lua.stubs.index.LuaShortNameIndex
 import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
-import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.utils.computeAsync
 import com.tang.vscode.utils.safeURIName
-import com.tang.vscode.utils.toRange
+import com.tang.vscode.utils.getSymbol
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
@@ -81,17 +78,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             LuaShortNameIndex.processValues(project, GlobalSearchScope.projectScope(project), Processor {
                 cancel.checkCanceled()
                 val name = it.name
-                if (name != null && matcher.prefixMatches(name)) {
-                    val file = it.containingFile.virtualFile as LuaFile
-                    val loc = Location(file.uri.toString(), it.textRange.toRange(file))
-                    val kind = when (it) {
-                        is LuaClassMethod -> SymbolKind.Method
-                        is LuaClassField -> SymbolKind.Field
-                        is LuaDocClassDef -> SymbolKind.Class
-                        else -> SymbolKind.Variable
-                    }
-                    val si = SymbolInformation(it.name, kind, loc)
-                    list.add(si)
+                if (it is PsiNamedElement && name != null && matcher.prefixMatches(name)) {
+                    list.add(it.getSymbol())
                 }
                 true
             })

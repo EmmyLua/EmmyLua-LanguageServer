@@ -311,36 +311,23 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             if (file is ILuaFile) {
                 val psi = file.psi
                 if (psi is LuaPsiFile) {
-                    val uri = file.uri.toString()
-                    val project = psi.project
                     psi.acceptChildren(object : LuaVisitor() {
                         override fun visitClassMethodDef(o: LuaClassMethodDef) {
-                            val name = o.classMethodName.text
-                            val fTy = o.guessType(SearchContext(project)) as? ITyFunction
-                            if (name != null && fTy != null) {
-                                val info = SymbolInformation("$name${fTy.mainSignature.displayName}", SymbolKind.Method, Location(uri, o.textRange.toRange(file)))
-                                list.add(Either.forLeft(info))
-                            }
+                            o.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
                         }
 
                         override fun visitLocalDef(o: LuaLocalDef) {
-                            o.nameList?.nameDefList?.forEach {
-                                val local = Location(uri, it.textRange.toRange(file))
-                                val info = SymbolInformation("local ${it.name}", SymbolKind.Variable, local)
-                                list.add(Either.forLeft(info))
+                            o.nameList?.nameDefList?.forEach { def ->
+                                def.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
                             }
                         }
 
                         override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
-                            val local = Location(uri, o.textRange.toRange(file))
-                            val information = SymbolInformation("local function ${o.name}", SymbolKind.Function, local)
-                            list.add(Either.forLeft(information))
+                            o.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
                         }
 
                         override fun visitFuncDef(o: LuaFuncDef) {
-                            val local = Location(uri, o.textRange.toRange(file))
-                            val information = SymbolInformation("function ${o.name}", SymbolKind.Function, local)
-                            list.add(Either.forLeft(information))
+                            o.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
                         }
                     })
                 }
