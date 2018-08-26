@@ -16,15 +16,14 @@
 
 package com.tang.intellij.lua.stubs
 
-import com.intellij.openapi.util.Key
-import com.intellij.psi.NavigatablePsiElement
 import com.intellij.util.indexing.IndexId
 import com.tang.intellij.lua.comment.psi.LuaDocClassDef
 import com.tang.intellij.lua.psi.LuaClassMember
+import com.tang.intellij.lua.psi.LuaPsiElement
 
 object StubKeys {
     val CLASS_MEMBER: IndexId<Int, LuaClassMember> = IndexId.create<Int, LuaClassMember>("lua.index.class.member")
-    val SHORT_NAME = Key.create<NavigatablePsiElement>("lua.index.short_name")
+    val SHORT_NAME: IndexId<String, LuaPsiElement> = IndexId.create<String, LuaPsiElement>("lua.index.short_name")
     val CLASS: IndexId<String, LuaDocClassDef> = IndexId.create<String, LuaDocClassDef>("lua.index.class")
     val SUPER_CLASS: IndexId<String, LuaDocClassDef> = IndexId.create<String, LuaDocClassDef>("lua.index.super_class")
 }

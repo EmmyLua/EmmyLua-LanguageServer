@@ -47,7 +47,9 @@ private fun index(psi: LuaPsiElement, sink: IndexSink) {
 }
 
 private fun index(doc: LuaDocClassDef, sink: IndexSink) {
-    sink.occurrence(StubKeys.CLASS, doc.type.className, doc)
+    val name = doc.type.className
+    sink.occurrence(StubKeys.CLASS, name, doc)
+    sink.occurrence(StubKeys.SHORT_NAME, name, doc)
 }
 
 private fun index(field: LuaDocFieldDef, sink: IndexSink) {
@@ -69,6 +71,7 @@ private fun index(field: LuaDocFieldDef, sink: IndexSink) {
         if (className != null) {
             sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), field)
             sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), field)
+            sink.occurrence(StubKeys.SHORT_NAME, name, field)
         }
     }
 }
@@ -98,6 +101,7 @@ private fun index(methodDef: LuaClassMethodDef, sink: IndexSink) {
     classNameSet.forEach {className ->
         sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), methodDef)
         sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), methodDef)
+        sink.occurrence(StubKeys.SHORT_NAME, className, methodDef)
     }
 }
 
@@ -117,6 +121,8 @@ private fun index(indexExpr: LuaIndexExpr, sink: IndexSink) {
     classNameSet.forEach { className ->
         sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), indexExpr)
         sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), indexExpr)
+
+        sink.occurrence(StubKeys.SHORT_NAME, name, indexExpr)
     }
 }
 
@@ -131,6 +137,7 @@ private fun index(tableField: LuaTableField, sink: IndexSink) {
 
     sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), tableField)
     sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), tableField)
+    sink.occurrence(StubKeys.SHORT_NAME, name, tableField)
 }
 
 private fun findTableExprTypeName(field: LuaTableField): String? {
@@ -158,6 +165,7 @@ private fun index(luaNameExpr: LuaNameExpr, sink: IndexSink) {
     if (isGlobal) {
         sink.occurrence(StubKeys.CLASS_MEMBER, Constants.WORD_G.hashCode(), luaNameExpr)
         sink.occurrence(StubKeys.CLASS_MEMBER, "${Constants.WORD_G}*$name".hashCode(), luaNameExpr)
+        sink.occurrence(StubKeys.SHORT_NAME, name, luaNameExpr)
     }
 }
 
@@ -172,4 +180,5 @@ private fun index(funcDef: LuaFuncDef, sink: IndexSink) {
 
     sink.occurrence(StubKeys.CLASS_MEMBER, moduleName.hashCode(), funcDef)
     sink.occurrence(StubKeys.CLASS_MEMBER, "$moduleName*${nameRef.text}".hashCode(), funcDef)
+    sink.occurrence(StubKeys.SHORT_NAME, nameRef.text, funcDef)
 }
