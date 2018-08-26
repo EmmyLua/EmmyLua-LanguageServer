@@ -275,11 +275,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun removeFile(uri: String) {
-        val file = findFile(uri) as? ILuaFile
-        file?.let {
-            it.parent.removeFile(it)
-            it.unindex()
-        }
+        val file = findFile(uri)
+        file?.let { it.parent.removeFile(it) }
     }
 
     fun connect(client: LuaLanguageClient) {

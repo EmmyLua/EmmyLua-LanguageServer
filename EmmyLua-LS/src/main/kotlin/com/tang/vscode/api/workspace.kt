@@ -26,6 +26,7 @@ interface IFolder : IVirtualFile {
     fun addFile(file: IVirtualFile)
     fun addFile(name: String, text: CharSequence): ILuaFile
     fun removeFile(file: IVirtualFile)
+    fun removeAll()
     fun findFile(name: String): IVirtualFile?
     fun findFile(vararg names: String): IVirtualFile?
     fun getFile(name: String, recursive: Boolean = false): IVirtualFile?

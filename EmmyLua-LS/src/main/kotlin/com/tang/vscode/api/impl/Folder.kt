@@ -16,6 +16,12 @@ open class Folder(uri: URI, private val myName: String? = null)
     }
 
     override fun addFile(file: IVirtualFile) {
+        val old = findFile(file.getName())
+        if (old == file)
+            return
+        if (old != null)
+            removeFile(old)
+
         val fb = file as VirtualFileBase
         fb.parent = this
         children.add(file)
@@ -23,6 +29,19 @@ open class Folder(uri: URI, private val myName: String? = null)
 
     override fun removeFile(file: IVirtualFile) {
         children.remove(file)
+        if (file is ILuaFile) {
+            file.unindex()
+        } else if (file is IFolder) {
+            file.removeAll()
+        }
+    }
+
+    override fun removeAll() {
+        walkFiles {
+            removeFile(it)
+            true
+        }
+        children.clear()
     }
 
     override fun findFile(name: String): IVirtualFile? {
@@ -69,7 +88,9 @@ open class Folder(uri: URI, private val myName: String? = null)
     }
 
     override fun walkFiles(processor: (f: ILuaFile) -> Boolean): Boolean {
-        for (file in children) {
+        for (i in children.size - 1 downTo 0) {
+            val file = children[i]
+
             if (file is ILuaFile && !processor(file)) {
                 return false
             } else if (file is IFolder && !file.walkFiles(processor)) {
