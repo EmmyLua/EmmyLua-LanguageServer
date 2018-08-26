@@ -114,6 +114,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
             }
             true
         }
+        index()
     }
 
     private fun getLineStart(line: Int): Int {
@@ -141,5 +142,9 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
 
     override fun unindex() {
         _myPsi?.let { IndexSink.removeStubs(it) }
+    }
+
+    private fun index() {
+        _myPsi?.let { com.tang.intellij.lua.stubs.index(it) }
     }
 }

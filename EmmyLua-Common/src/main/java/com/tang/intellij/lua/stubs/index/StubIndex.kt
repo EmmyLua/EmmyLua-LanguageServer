@@ -4,66 +4,50 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
+import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.indexing.IndexId
 import com.tang.intellij.lua.psi.LuaPsiFile
-import com.tang.intellij.lua.stubs.index
 
 abstract class StubIndex<K, Psi : PsiElement> {
+    inner class StubFile {
+        val elements = mutableListOf<Psi>()
+    }
+    inner class StubEntry(val key: K) {
+        val files = mutableMapOf<Int, StubFile>()
+    }
 
     abstract fun getKey(): IndexId<K, Psi>
 
     private var lock = false
 
-    private val indexMap = mutableMapOf<Int, MutableMap<K, MutableList<PsiElement>>>()
+    private val indexMap = mutableMapOf<K, StubEntry>()
 
     fun get(key: K, project: Project, scope: GlobalSearchScope): MutableList<Psi> {
         val list = mutableListOf<Psi>()
         if (lock)
             return list
-        project.process { file ->
-            if (file is LuaPsiFile) {
-                lock = true
-                index(file)
-                lock = false
+        val stubEntry = indexMap[key]
+        stubEntry?.files?.forEach { _, u -> list.addAll(u.elements) }
 
-                indexMap[file.id]?.let {
-                    it[key]?.forEach {
-                        list.add(it as Psi)
-                    }
-                }
-            }
-            true
-        }
         return list
     }
 
     fun processKeys(project: Project, scope: GlobalSearchScope, processor: Processor<K>) {
         if (lock)
             return
-        project.process { file ->
-            var continueRun = true
-            if (file is LuaPsiFile) {
-                lock = true
-                index(file)
-                lock = false
-
-                indexMap[file.id]?.let {
-                    val iter = it.keys.iterator()
-                    while (iter.hasNext() && continueRun)
-                        continueRun = processor.process(iter.next())
-                }
-            }
-            continueRun
-        }
+        ContainerUtil.process(indexMap.keys, processor)
     }
 
-    fun <Psi : PsiElement, K1> occurrence(file: LuaPsiFile, key: K1, value: Psi) {
-        val map = indexMap.getOrPut(file.id) { mutableMapOf() }
-        val list = map.getOrPut(key as K) { mutableListOf() }
-        list.add(value)
+    fun <Psi1 : PsiElement, K1> occurrence(file: LuaPsiFile, key: K1, value: Psi1) {
+        val k = key as K
+        val stubEntry = indexMap.getOrPut(k) { StubEntry(k) }
+        val stubFile = stubEntry.files.getOrPut(file.id) { StubFile() }
+        stubFile.elements.add(value as Psi)
     }
 
     fun removeStubs(file: LuaPsiFile) {
-        indexMap.remove(file.id)
+        indexMap.forEach { _, u ->
+            u.files.remove(file.id)
+        }
     }
 }
