@@ -1,5 +1,6 @@
 package com.tang.vscode
 
+import com.intellij.codeInsight.completion.impl.CamelHumpMatcher
 import com.intellij.openapi.fileEditor.impl.LoadTextUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
@@ -74,12 +75,13 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     override fun symbol(params: WorkspaceSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {
         if (params.query.isBlank())
             return CompletableFuture.completedFuture(mutableListOf())
+        val matcher = CamelHumpMatcher(params.query, false)
         return computeAsync { cancel->
             val list = mutableListOf<SymbolInformation>()
             LuaShortNameIndex.processValues(project, GlobalSearchScope.projectScope(project), Processor {
                 cancel.checkCanceled()
                 val name = it.name
-                if (name != null && name.contains(params.query, true)) {
+                if (name != null && matcher.prefixMatches(name)) {
                     val file = it.containingFile.virtualFile as LuaFile
                     val loc = Location(file.uri.toString(), it.textRange.toRange(file))
                     val kind = when (it) {
