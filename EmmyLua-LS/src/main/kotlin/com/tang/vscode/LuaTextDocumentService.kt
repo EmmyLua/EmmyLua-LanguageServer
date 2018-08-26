@@ -329,6 +329,18 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                 list.add(Either.forLeft(info))
                             }
                         }
+
+                        override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
+                            val local = Location(uri, o.textRange.toRange(file))
+                            val information = SymbolInformation("local function ${o.name}", SymbolKind.Function, local)
+                            list.add(Either.forLeft(information))
+                        }
+
+                        override fun visitFuncDef(o: LuaFuncDef) {
+                            val local = Location(uri, o.textRange.toRange(file))
+                            val information = SymbolInformation("function ${o.name}", SymbolKind.Function, local)
+                            list.add(Either.forLeft(information))
+                        }
                     })
                 }
             }
