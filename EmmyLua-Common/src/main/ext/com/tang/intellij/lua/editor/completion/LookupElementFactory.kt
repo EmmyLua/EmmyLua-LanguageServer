@@ -56,17 +56,21 @@ object LookupElementFactory {
 
     private fun buildSignatureCompletionItem(name: String, signature: IFunSignature): LuaLookupElement {
         val item = LuaLookupElement("$name${signature.paramSignature}")
-        item.insertText = name
-        item.insertText = buildString {
-            append(name)
-            append("(")
-            signature.params.forEachIndexed { index, info ->
-                if (index != 0) append(", ")
-                append("\${${index + 1}:${info.name}}")
+        if (signature.params.isEmpty()) {
+            item.insertText = "$name()"
+        } else {
+            item.insertText = name
+            /*item.insertText = buildString {
+                append(name)
+                append("(")
+                signature.params.forEachIndexed { index, info ->
+                    if (index != 0) append(", ")
+                    append("\${${index + 1}:${info.name}}")
+                }
+                append(")")
             }
-            append(")")
+            item.insertTextFormat = InsertTextFormat.Snippet*/
         }
-        item.insertTextFormat = InsertTextFormat.Snippet
         return item
     }
 
