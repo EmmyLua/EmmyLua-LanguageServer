@@ -4,13 +4,21 @@ import com.intellij.openapi.fileEditor.impl.LoadTextUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.psi.PsiFile
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
+import com.tang.intellij.lua.psi.LuaClassField
+import com.tang.intellij.lua.psi.LuaClassMethod
+import com.tang.intellij.lua.stubs.index.LuaClassIndex
+import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
+import com.tang.vscode.api.impl.LuaFile
+import com.tang.vscode.utils.computeAsync
 import com.tang.vscode.utils.safeURIName
+import com.tang.vscode.utils.toRange
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
@@ -64,7 +72,39 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun symbol(params: WorkspaceSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {
-        TODO()
+        if (params.query.isBlank())
+            return CompletableFuture.completedFuture(mutableListOf())
+        return computeAsync { cancel->
+            val list = mutableListOf<SymbolInformation>()
+            LuaClassMemberIndex.instance.processValues(project, GlobalSearchScope.projectScope(project), Processor {
+                cancel.checkCanceled()
+                val name = it.name
+                if (name != null && name.startsWith(params.query, true)) {
+                    val file = it.containingFile.virtualFile as LuaFile
+                    val loc = Location(file.uri.toString(), it.textRange.toRange(file))
+                    val kind = when (it) {
+                        is LuaClassMethod -> SymbolKind.Method
+                        is LuaClassField -> SymbolKind.Field
+                        else -> SymbolKind.Variable
+                    }
+                    val si = SymbolInformation(it.name, kind, loc)
+                    list.add(si)
+                }
+                true
+            })
+            LuaClassIndex.instance.processValues(project, GlobalSearchScope.projectScope(project), Processor {
+                cancel.checkCanceled()
+                val name = it.name
+                if (name.startsWith(params.query, true)) {
+                    val file = it.containingFile.virtualFile as LuaFile
+                    val loc = Location(file.uri.toString(), it.textRange.toRange(file))
+                    val si = SymbolInformation(it.name, SymbolKind.Class, loc)
+                    list.add(si)
+                }
+                true
+            })
+            list
+        }
     }
 
     override fun didChangeWorkspaceFolders(params: DidChangeWorkspaceFoldersParams) {

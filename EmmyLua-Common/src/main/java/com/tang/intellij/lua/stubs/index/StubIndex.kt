@@ -1,3 +1,5 @@
+@file:Suppress("UNUSED_PARAMETER")
+
 package com.tang.intellij.lua.stubs.index
 
 import com.intellij.openapi.project.Project
@@ -38,6 +40,16 @@ abstract class StubIndex<K, Psi : PsiElement> {
         ContainerUtil.process(indexMap.keys, processor)
     }
 
+    fun processValues(project: Project, scope: GlobalSearchScope, processor: Processor<Psi>) {
+        for (stubEntry in indexMap.values) {
+            for (stubFile in stubEntry.files.values) {
+                if (!ContainerUtil.process(stubFile.elements, processor))
+                    return
+            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
     fun <Psi1 : PsiElement, K1> occurrence(file: LuaPsiFile, key: K1, value: Psi1) {
         val k = key as K
         val stubEntry = indexMap.getOrPut(k) { StubEntry(k) }
