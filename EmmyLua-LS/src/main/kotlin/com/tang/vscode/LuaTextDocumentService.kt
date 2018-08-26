@@ -45,6 +45,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         this.client = client
     }
 
+    @Suppress("unused")
     @JsonRequest("emmy/annotator")
     fun updateAnnotators(ann: AnnotatorParams): CompletableFuture<List<Annotator>> {
         return computeAsync {
@@ -66,7 +67,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             }
 
             override fun visitNameExpr(o: LuaNameExpr) {
-                val resolve = resolve(o, SearchContext(o.project))
+                val resolve = resolveInFile(o.name, o, SearchContext(o.project))
                 when (resolve) {
                     is LuaParamNameDef -> params.add(o.textRange.toRange(file))
                     is LuaFuncDef -> globals.add(o.textRange.toRange(file))
