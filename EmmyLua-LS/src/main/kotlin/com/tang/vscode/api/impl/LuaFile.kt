@@ -34,18 +34,24 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         var sb = _text.toString()
         var offset = 0
         params.contentChanges.forEach {
-            if (it.range.start.line >= _lines.size) {
-                sb += "\r\n${it.text}"
-                _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character, it.text))
-            } else {
-                val sline = _lines[it.range.start.line]
-                val eline = _lines[it.range.end.line]
-                val spos = sline.startOffset + it.range.start.character
-                val epos = eline.startOffset + it.range.end.character
-                sb = sb.replaceRange(spos, epos, it.text)
+            when {
+                // for sublime lsp
+                it.range == null -> sb = it.text
+                // incremental updating
+                it.range.start.line >= _lines.size -> {
+                    sb += "\r\n${it.text}"
+                    _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character, it.text))
+                }
+                else -> {
+                    val sline = _lines[it.range.start.line]
+                    val eline = _lines[it.range.end.line]
+                    val spos = sline.startOffset + it.range.start.character
+                    val epos = eline.startOffset + it.range.end.character
+                    sb = sb.replaceRange(spos, epos, it.text)
 
-                val textSize = it.text.length
-                offset += textSize - it.rangeLength
+                    val textSize = it.text.length
+                    offset += textSize - it.rangeLength
+                }
             }
         }
         _text = sb
