@@ -61,6 +61,10 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             when (change.type) {
                 FileChangeType.Created -> addFile(change.uri)
                 FileChangeType.Deleted -> removeFile(change.uri)
+                FileChangeType.Changed -> {
+                    removeRoot(change.uri)
+                    addFile(change.uri)
+                }
                 else -> { }
             }
         }
