@@ -54,7 +54,8 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
-        workspaceService.root = URI(params.rootUri)
+        if (params.rootUri != null)
+            workspaceService.root = URI(params.rootUri)
 
         initIntellijEnv()
 

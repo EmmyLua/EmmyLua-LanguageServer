@@ -221,7 +221,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private fun loadWorkspace(monitor: IProgressMonitor) {
         monitor.setProgress("load workspace folders", 0f)
         client?.workspaceFolders()?.whenCompleteAsync { wsFolders, _ ->
-            wsFolders.forEach { addRoot(it.uri) }
+            wsFolders?.forEach { addRoot(it.uri) }
             loadWorkspaceImpl(monitor)
         }
     }
