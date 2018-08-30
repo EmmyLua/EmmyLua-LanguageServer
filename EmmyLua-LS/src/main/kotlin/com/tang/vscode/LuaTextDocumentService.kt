@@ -67,6 +67,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             }
 
             override fun visitNameExpr(o: LuaNameExpr) {
+                if (o.parent is LuaExprStat) // non-complete stat
+                    return
+
                 val resolve = resolveInFile(o.name, o, SearchContext(o.project))
                 when (resolve) {
                     is LuaParamNameDef -> params.add(o.textRange.toRange(file))
