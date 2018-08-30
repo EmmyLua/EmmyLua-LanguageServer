@@ -8,6 +8,8 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
+import com.tang.intellij.lua.psi.LuaCallExpr
+import com.tang.intellij.lua.psi.LuaExprStat
 import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.stubs.IndexSink
 import com.tang.vscode.api.ILuaFile
@@ -117,6 +119,14 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
                 diagnostic.severity = DiagnosticSeverity.Error
                 diagnostic.range = it.textRange.toRange(this)
                 diagnostics.add(diagnostic)
+            } else if (it is LuaExprStat) {
+                if (it.expr !is LuaCallExpr) {
+                    val diagnostic = Diagnostic()
+                    diagnostic.message = "non-complete statement"
+                    diagnostic.severity = DiagnosticSeverity.Error
+                    diagnostic.range = it.textRange.toRange(this)
+                    diagnostics.add(diagnostic)
+                }
             }
             true
         }
