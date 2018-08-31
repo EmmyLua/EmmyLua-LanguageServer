@@ -41,7 +41,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
                 it.range == null -> sb = it.text
                 // incremental updating
                 it.range.start.line >= _lines.size -> {
-                    sb += "\r\n${it.text}"
+                    sb += it.text
                     _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character, it.text))
                 }
                 else -> {
