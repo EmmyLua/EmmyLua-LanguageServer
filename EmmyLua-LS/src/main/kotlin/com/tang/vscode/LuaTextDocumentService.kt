@@ -13,6 +13,7 @@ import com.tang.intellij.lua.comment.psi.LuaDocClassNameRef
 import com.tang.intellij.lua.comment.psi.LuaDocVisitor
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.editor.completion.CompletionService
+import com.tang.intellij.lua.editor.completion.LuaLookupElement
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
@@ -299,7 +300,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 if (psi != null) {
                     CompletionService.collectCompletion(psi, pos, Consumer {
                         checker.checkCanceled()
-                        list.items.add(it)
+                        if (it is LuaLookupElement)
+                            list.items.add(it.item)
                     })
                 }
             }

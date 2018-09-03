@@ -4,6 +4,7 @@ import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.completion.impl.CamelHumpMatcher
+import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.lang.PsiBuilderFactory
 import com.intellij.psi.PsiFile
 import com.intellij.util.Consumer
@@ -11,12 +12,17 @@ import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
 import com.tang.intellij.lua.psi.LuaPsiFile
-import org.eclipse.lsp4j.CompletionItem
 
-class CompletionResultSetImpl(private val consumer: Consumer<CompletionItem>) : CompletionResultSet() {
+class CompletionResultSetImpl(private val consumer: Consumer<LookupElement>) : CompletionResultSet() {
+    override fun withPrefixMatcher(prefix: String): CompletionResultSet {
+        val set = CompletionResultSetImpl(consumer)
+        set.prefixMatcher = prefixMatcher.cloneWithPrefix(prefix)
+        return set
+    }
+
     private val set = mutableSetOf<String>()
-    override fun addElement(item: CompletionItem) {
-        if (set.add(item.label))
+    override fun addElement(item: LookupElement) {
+        if (set.add(item.lookupString))
             consumer.consume(item)
     }
 }
@@ -26,7 +32,7 @@ object CompletionService {
 
     private val docContributor = LuaDocCompletionContributor()
 
-    fun collectCompletion(psi: PsiFile, pos: Int, consumer: Consumer<CompletionItem>) {
+    fun collectCompletion(psi: PsiFile, pos: Int, consumer: Consumer<LookupElement>) {
         //val element = psi.findElementAt(pos)
         val text = psi.text.replaceRange(pos, pos, "emmy")
 

@@ -15,7 +15,8 @@
  */
 package com.intellij.codeInsight.completion;
 
-import org.eclipse.lsp4j.CompletionItem;
+import com.intellij.codeInsight.lookup.LookupElement;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link com.intellij.codeInsight.completion.CompletionResultSet}s feed on {@link com.intellij.codeInsight.lookup.LookupElement}s,
@@ -44,7 +45,9 @@ public abstract class CompletionResultSet {
         return myStopped;
     }
 
-    public abstract void addElement(CompletionItem item);
+    @NotNull public abstract CompletionResultSet withPrefixMatcher(@NotNull String prefix);
+
+    public abstract void addElement(LookupElement item);
 
     public void setPrefixMatcher(PrefixMatcher prefixMatcher) {
         this.prefixMatcher = prefixMatcher;

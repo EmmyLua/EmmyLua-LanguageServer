@@ -5,10 +5,31 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 
-public class LookupElement extends CompletionItem {
+public class LookupElement {
+
+    private String lookupString;
+
+    private String itemText;
+
+    public String getItemText() {
+        return itemText;
+    }
+
+    public void setItemText(String itemText) {
+        this.itemText = itemText;
+    }
+
+    public String getLookupString() {
+        return lookupString;
+    }
+
+    public void setLookupString(String lookupString) {
+        this.lookupString = lookupString;
+    }
 
     public LookupElement(String label) {
-        super(label);
+        //super(label);
+        this.lookupString = label;
     }
 
     public boolean isCaseSensitive() {
@@ -16,7 +37,7 @@ public class LookupElement extends CompletionItem {
     }
 
     public String[] getAllLookupStrings() {
-        return new String[]{ this.getLabel() };
+        return new String[]{ this.lookupString };
     }
 
     public LookupElement withIcon(@Nullable Icon icon) {
