@@ -1,6 +1,5 @@
 package com.intellij.codeInsight.lookup;
 
-import org.eclipse.lsp4j.CompletionItem;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;

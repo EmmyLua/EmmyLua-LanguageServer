@@ -14,7 +14,9 @@ import javax.swing.Icon
 object LookupElementFactory {
 
     fun createGuessableLookupElement(name: String, psi: LuaPsiElement, ty: ITy, icon: Icon?): LookupElement {
-        return LuaLookupElement(name)
+        val element = LuaLookupElement(name)
+        element.kind = CompletionItemKind.Value
+        return element
     }
 
     fun createFunctionLookupElement(name: String,
@@ -50,6 +52,7 @@ object LookupElementFactory {
                                  bold: Boolean): LuaLookupElement {
         val element = LuaLookupElement(name)
         element.data = "$clazzName|$name"
+        element.kind = CompletionItemKind.Field
         return element
     }
 

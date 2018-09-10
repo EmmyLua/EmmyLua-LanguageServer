@@ -63,8 +63,12 @@ abstract class StubIndex<K, Psi : PsiElement> {
 
     @Synchronized
     fun removeStubs(file: LuaPsiFile) {
-        indexMap.forEach { _, u ->
-            u.files.remove(file.id)
+        val iterator = indexMap.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            entry.value.files.remove(file.id)
+            if (entry.value.files.isEmpty())
+                iterator.remove()
         }
     }
 }

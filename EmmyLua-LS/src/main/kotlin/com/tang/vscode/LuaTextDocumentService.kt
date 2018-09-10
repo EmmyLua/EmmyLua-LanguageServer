@@ -13,7 +13,7 @@ import com.tang.intellij.lua.comment.psi.LuaDocClassNameRef
 import com.tang.intellij.lua.comment.psi.LuaDocVisitor
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.editor.completion.CompletionService
-import com.tang.intellij.lua.editor.completion.LuaLookupElement
+import com.tang.intellij.lua.editor.completion.asCompletionItem
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
@@ -119,7 +119,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun resolveCompletionItem(item: CompletionItem): CompletableFuture<CompletionItem> {
-        return computeAsync {
+        return computeAsync { _ ->
             val data = item.data
             if (data is JsonPrimitive) {
                 val arr = data.asString.split("|")
@@ -157,7 +157,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun documentHighlight(position: TextDocumentPositionParams): CompletableFuture<MutableList<out DocumentHighlight>> {
-        return computeAsync {
+        return computeAsync { _ ->
             val list = mutableListOf<DocumentHighlight>()
             withPsiFile(position) { file, psiFile, i ->
                 val target = TargetElementUtil.findTarget(psiFile, i)
@@ -254,7 +254,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun rename(params: RenameParams): CompletableFuture<WorkspaceEdit> {
-        return computeAsync {
+        return computeAsync { _ ->
             val changes = mutableListOf<TextDocumentEdit>()
             withPsiFile(params.textDocument, params.position) { _, psiFile, i ->
                 val target = TargetElementUtil.findTarget(psiFile, i) ?: return@withPsiFile
@@ -300,8 +300,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 if (psi != null) {
                     CompletionService.collectCompletion(psi, pos, Consumer {
                         checker.checkCanceled()
-                        if (it is LuaLookupElement)
-                            list.items.add(it.item)
+                        list.items.add(it.asCompletionItem)
                     })
                 }
             }
@@ -310,7 +309,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<MutableList<Either<SymbolInformation, DocumentSymbol>>> {
-        return computeAsync {
+        return computeAsync { _ ->
             val list = mutableListOf<Either<SymbolInformation, DocumentSymbol>>()
             val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
