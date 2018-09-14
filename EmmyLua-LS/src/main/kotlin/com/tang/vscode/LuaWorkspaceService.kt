@@ -14,9 +14,10 @@ import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
+import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.utils.computeAsync
-import com.tang.vscode.utils.safeURIName
 import com.tang.vscode.utils.getSymbol
+import com.tang.vscode.utils.safeURIName
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
@@ -242,6 +243,20 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             monitor.setProgress("Emmy load file: ${file.canonicalPath}", (index + 1) / allFiles.size.toFloat())
         }
         monitor.done()
+        sendAllDiagnostics()
+    }
+
+    /**
+     * send all diagnostics of the workspace
+     */
+    private fun sendAllDiagnostics() {
+        project.process {
+            val file = it.virtualFile
+            if (file is LuaFile && file.diagnostics.isNotEmpty()) {
+                client?.publishDiagnostics(PublishDiagnosticsParams(file.uri.toString(), file.diagnostics))
+            }
+            true
+        }
     }
 
     override fun findFile(uri: String): IVirtualFile? {
