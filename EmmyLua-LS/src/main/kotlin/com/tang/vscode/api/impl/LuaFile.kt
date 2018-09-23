@@ -1,12 +1,14 @@
 package com.tang.vscode.api.impl
 
 import com.intellij.lang.PsiBuilderFactory
+import com.intellij.lexer.FlexAdapter
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
+import com.tang.intellij.lua.lang.LuaLanguageLevel
 import com.tang.intellij.lua.lang.LuaParserDefinition
-import com.tang.intellij.lua.lexer.LuaLexer
+import com.tang.intellij.lua.lexer._LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
 import com.tang.intellij.lua.psi.LuaCallExpr
 import com.tang.intellij.lua.psi.LuaExprStat
@@ -107,7 +109,11 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         diagnostics.clear()
         unindex()
         val parser = LuaParser()
-        val builder = PsiBuilderFactory.getInstance().createBuilder(LuaParserDefinition(), LuaLexer(), text)
+        val builder = PsiBuilderFactory.getInstance().createBuilder(
+                LuaParserDefinition(),
+                FlexAdapter(_LuaLexer(LuaLanguageLevel.LUA54)),
+                text
+        )
         val node = parser.parse(LuaParserDefinition.FILE, builder)
         val psi = node.psi
         _myPsi = psi as LuaPsiFile
@@ -133,9 +139,9 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
         index()
     }
 
-    private fun getLineStart(line: Int): Int {
+    /*private fun getLineStart(line: Int): Int {
         return _lines.firstOrNull { it.line == line } ?.startOffset ?: 0
-    }
+    }*/
 
     @Synchronized
     override fun getLine(offset: Int): Pair<Int, Int> {

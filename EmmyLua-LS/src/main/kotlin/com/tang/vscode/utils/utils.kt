@@ -102,6 +102,23 @@ fun <R> computeAsync(code :(CancelChecker) -> R) : CompletableFuture<R> {
     }
 }
 
+private val encodeMap = mapOf(
+        " " to "%20",
+        "[" to "%5b",
+        "]" to "%5d",
+        "!" to "%21",
+        "#" to "%23",
+        "$" to "%24",
+        "%" to "%25",
+        "+" to "%2B",
+        "@" to "%40",
+        ":" to "%3A",
+        "=" to "%3D",
+        "?" to "%3F"
+)
+
 fun safeURIName(name: String): String {
-    return name.replace(" ", "%20")
+    var ret = name
+    encodeMap.map { ret = ret.replace(it.key, it.value) }
+    return ret
 }
