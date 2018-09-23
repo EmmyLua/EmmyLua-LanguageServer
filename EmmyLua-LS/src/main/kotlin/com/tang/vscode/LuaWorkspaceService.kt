@@ -15,8 +15,8 @@ import com.tang.vscode.api.IVirtualFile
 import com.tang.vscode.api.IWorkspace
 import com.tang.vscode.api.impl.Folder
 import com.tang.vscode.utils.computeAsync
-import com.tang.vscode.utils.safeURIName
 import com.tang.vscode.utils.getSymbol
+import com.tang.vscode.utils.safeURIName
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
@@ -174,13 +174,13 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private fun removeRoot(uri: String) {
         val uri2 = if (uri.endsWith("/")) uri else "$uri/"
         val u = URI(URLDecoder.decode(uri2, "UTF-8"))
-        _rootList.removeIf {
-            if (it.matchUri(u)) {
-                it.walkFiles {
+        _rootList.removeIf { folder ->
+            if (folder.matchUri(u)) {
+                folder.walkFiles {
                     it.unindex()
                     true
                 }
-                it.parent.removeFile(it)
+                folder.parent.removeFile(folder)
                 return@removeIf true
             }
             false
