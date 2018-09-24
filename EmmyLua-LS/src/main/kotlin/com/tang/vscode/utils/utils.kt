@@ -15,6 +15,7 @@ import com.tang.vscode.api.impl.LuaFile
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.CancelChecker
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures
+import java.net.URLEncoder
 import java.util.concurrent.CompletableFuture
 
 fun range(sLine: Int, sChar: Int, eLine: Int, eChar: Int): Range {
@@ -102,23 +103,6 @@ fun <R> computeAsync(code :(CancelChecker) -> R) : CompletableFuture<R> {
     }
 }
 
-private val encodeMap = mapOf(
-        " " to "%20",
-        "[" to "%5b",
-        "]" to "%5d",
-        "!" to "%21",
-        "#" to "%23",
-        "$" to "%24",
-        "%" to "%25",
-        "+" to "%2B",
-        "@" to "%40",
-        ":" to "%3A",
-        "=" to "%3D",
-        "?" to "%3F"
-)
-
-fun safeURIName(name: String): String {
-    var ret = name
-    encodeMap.map { ret = ret.replace(it.key, it.value) }
-    return ret
+fun encodeURI(name: String): String {
+    return URLEncoder.encode(name)
 }
