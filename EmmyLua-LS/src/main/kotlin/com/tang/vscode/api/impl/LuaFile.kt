@@ -5,6 +5,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
+import com.tang.intellij.lua.comment.psi.LuaDocPsiElement
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
@@ -116,7 +117,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
             if (it is PsiErrorElement) {
                 val diagnostic = Diagnostic()
                 diagnostic.message = it.errorDescription
-                diagnostic.severity = DiagnosticSeverity.Error
+                diagnostic.severity = if (it.parent is LuaDocPsiElement) DiagnosticSeverity.Warning else DiagnosticSeverity.Error
                 diagnostic.range = it.textRange.toRange(this)
                 diagnostics.add(diagnostic)
             } else if (it is LuaExprStat) {
