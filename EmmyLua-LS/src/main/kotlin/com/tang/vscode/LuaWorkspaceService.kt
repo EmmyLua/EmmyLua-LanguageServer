@@ -1,5 +1,6 @@
 package com.tang.vscode
 
+import com.google.gson.JsonObject
 import com.intellij.codeInsight.completion.impl.CamelHumpMatcher
 import com.intellij.openapi.fileEditor.impl.LoadTextUtil
 import com.intellij.openapi.project.Project
@@ -33,6 +34,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val _rootWSFolders = mutableListOf<URI>()
     private val _baseFolders = mutableListOf<IFolder>()
     private var client: LuaLanguageClient? = null
+
+    val configuration = Configuration()
 
     inner class WProject : UserDataHolderBase(), Project {
         override fun process(processor: Processor<PsiFile>) {
@@ -70,6 +73,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
+        val settings = params.settings as? JsonObject ?: return
+        configuration.update(settings)
     }
 
     override fun symbol(params: WorkspaceSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {
