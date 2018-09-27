@@ -1,5 +1,6 @@
 package com.tang.vscode
 
+import com.google.gson.JsonObject
 import com.intellij.codeInsight.completion.impl.CamelHumpMatcher
 import com.intellij.openapi.fileEditor.impl.LoadTextUtil
 import com.intellij.openapi.project.Project
@@ -35,6 +36,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val _rootWSFolders = mutableListOf<URI>()
     private val _baseFolders = mutableListOf<IFolder>()
     private var client: LuaLanguageClient? = null
+
+    val configuration = Configuration()
 
     inner class WProject : UserDataHolderBase(), Project {
         override fun process(processor: Processor<PsiFile>) {
@@ -72,6 +75,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
+        val settings = params.settings as? JsonObject ?: return
+        configuration.update(settings)
     }
 
     override fun symbol(params: WorkspaceSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {
@@ -175,13 +180,13 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private fun removeRoot(uri: String) {
         val uri2 = if (uri.endsWith("/")) uri else "$uri/"
         val u = URI(URLDecoder.decode(uri2, "UTF-8"))
-        _rootList.removeIf {
-            if (it.matchUri(u)) {
-                it.walkFiles {
+        _rootList.removeIf { folder ->
+            if (folder.matchUri(u)) {
+                folder.walkFiles {
                     it.unindex()
                     true
                 }
-                it.parent.removeFile(it)
+                folder.parent.removeFile(folder)
                 return@removeIf true
             }
             false
@@ -269,8 +274,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun addFile(file: File, text: String?): ILuaFile {
-        val path = safeURIName(file.invariantSeparatorsPath)
-        val uri = URI("file:///$path")
+        val uri = file.toURI()
         val pair = findOrCreate(uri.resolve(""), true)
         val root = pair.first!!
         return root.addFile(file.name, text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes()))
