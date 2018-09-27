@@ -18,7 +18,6 @@ import com.tang.vscode.api.impl.Folder
 import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.utils.computeAsync
 import com.tang.vscode.utils.getSymbol
-import com.tang.vscode.utils.safeURIName
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
