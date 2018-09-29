@@ -62,16 +62,26 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val params = mutableListOf<Range>()
         val globals = mutableListOf<Range>()
         val docTypeNames = mutableListOf<Range>()
+        val upvalues = mutableListOf<Range>()
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
                 params.add(o.textRange.toRange(file))
+            }
+
+            override fun visitFuncDef(o: LuaFuncDef) {
+                val name = o.nameIdentifier
+                if (name != null && o.forwardDeclaration == null) {
+                    globals.add(name.textRange.toRange(file))
+                }
+                super.visitFuncDef(o)
             }
 
             override fun visitNameExpr(o: LuaNameExpr) {
                 if (o.parent is LuaExprStat) // non-complete stat
                     return
 
-                val resolve = resolveInFile(o.name, o, SearchContext(o.project))
+                val context = SearchContext(o.project)
+                val resolve = resolveInFile(o.name, o, context)
                 when (resolve) {
                     is LuaParamNameDef -> params.add(o.textRange.toRange(file))
                     is LuaFuncDef -> globals.add(o.textRange.toRange(file))
@@ -84,6 +94,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             globals.add(o.textRange.toRange(file))
                     }
                 }
+
+                if (isUpValue(o, context))
+                    upvalues.add(o.textRange.toRange(file))
             }
 
             override fun visitElement(element: PsiElement) {
@@ -109,12 +122,15 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             }
         })
         val all = mutableListOf<Annotator>()
+        val uri = file.uri.toString()
         if (params.isNotEmpty())
-            all.add(Annotator(file.uri.toString(), params, AnnotatorType.Param))
+            all.add(Annotator(uri, params, AnnotatorType.Param))
         if (globals.isNotEmpty())
-            all.add(Annotator(file.uri.toString(), globals, AnnotatorType.Global))
+            all.add(Annotator(uri, globals, AnnotatorType.Global))
         if (docTypeNames.isNotEmpty())
-            all.add(Annotator(file.uri.toString(), docTypeNames, AnnotatorType.DocName))
+            all.add(Annotator(uri, docTypeNames, AnnotatorType.DocName))
+        if (upvalues.isNotEmpty())
+            all.add(Annotator(uri, upvalues, AnnotatorType.Upvalue))
         return all
     }
 
