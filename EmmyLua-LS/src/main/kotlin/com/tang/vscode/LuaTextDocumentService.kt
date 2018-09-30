@@ -324,32 +324,15 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<MutableList<Either<SymbolInformation, DocumentSymbol>>> {
+    override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> {
         return computeAsync { _ ->
             val list = mutableListOf<Either<SymbolInformation, DocumentSymbol>>()
             val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
                 val psi = file.psi
                 if (psi is LuaPsiFile) {
-                    psi.acceptChildren(object : LuaVisitor() {
-                        override fun visitClassMethodDef(o: LuaClassMethodDef) {
-                            o.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
-                        }
-
-                        override fun visitLocalDef(o: LuaLocalDef) {
-                            o.nameList?.nameDefList?.forEach { def ->
-                                def.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
-                            }
-                        }
-
-                        override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
-                            o.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
-                        }
-
-                        override fun visitFuncDef(o: LuaFuncDef) {
-                            o.getSymbolDetail(file)?.let { list.add(Either.forLeft(it)) }
-                        }
-                    })
+                    val symbols = getDocumentSymbols(psi, file)
+                    symbols.forEach { symbol -> list.add(Either.forRight(symbol)) }
                 }
             }
             list

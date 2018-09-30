@@ -54,40 +54,95 @@ fun PsiNamedElement.getSymbol(): SymbolInformation {
     return SymbolInformation(text, kind, loc)
 }
 
-fun PsiNamedElement.getSymbolDetail(file: ILuaFile): SymbolInformation? {
-    val range = nameRange ?: textRange
-    return when (this) {
+fun getDocumentSymbols(psi: PsiElement, file: ILuaFile): List<DocumentSymbol> {
+    val list = mutableListOf<DocumentSymbol>()
+    psi.acceptChildren(object : LuaVisitor() {
+        override fun visitClassMethodDef(o: LuaClassMethodDef) {
+            o.getDocumentSymbol(file)?.let { list.add(it) }
+        }
+
+        override fun visitLocalDef(o: LuaLocalDef) {
+            o.nameList?.nameDefList?.forEach { def ->
+                def.getDocumentSymbol(file)?.let { list.add(it) }
+            }
+        }
+
+        override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
+            o.getDocumentSymbol(file)?.let { list.add(it) }
+        }
+
+        override fun visitFuncDef(o: LuaFuncDef) {
+            o.getDocumentSymbol(file)?.let { list.add(it) }
+        }
+
+        override fun visitBlock(o: LuaBlock) {
+            o.acceptChildren(this)
+        }
+
+        override fun visitPsiElement(o: LuaPsiElement) {
+            o.acceptChildren(this)
+        }
+    })
+    return list
+}
+
+private fun PsiNamedElement.getDocumentSymbol(file: ILuaFile): DocumentSymbol? {
+    val range = textRange.toRange(file)
+    val selectionRange = (nameRange ?: textRange).toRange(file)
+    val symbol = when (this) {
         is LuaClassMethodDef -> {
             val fTy = guessType(SearchContext(project))
             if (fTy is ITyFunction) {
-                val info = SymbolInformation(
+                val info = DocumentSymbol(
                         "${this.classMethodName.text}${fTy.mainSignature.paramSignature}",
                         SymbolKind.Method,
-                        Location(file.uri.toString(), range.toRange(file))
+                        range,
+                        selectionRange
                 )
                 info
             } else null
         }
         is LuaClassField -> {
-            SymbolInformation(this.text, SymbolKind.Field, Location(file.uri.toString(), range.toRange(file)))
+            DocumentSymbol(
+                    this.text,
+                    SymbolKind.Field,
+                    range,
+                    selectionRange
+            )
         }
         is LuaNameDef -> {
-            val local = Location(file.uri.toString(), range.toRange(file))
-            val info = SymbolInformation("local $name", SymbolKind.Variable, local)
+            val info = DocumentSymbol(
+                    "local $name",
+                    SymbolKind.Variable,
+                    range,
+                    selectionRange
+            )
             info
         }
         is LuaLocalFuncDef -> {
-            val local = Location(file.uri.toString(), range.toRange(file))
-            val information = SymbolInformation("local function $name", SymbolKind.Function, local)
+            val information = DocumentSymbol(
+                    "local function $name",
+                    SymbolKind.Function,
+                    range,
+                    selectionRange
+            )
             information
         }
         is LuaFuncDef -> {
-            val local = Location(file.uri.toString(), range.toRange(file))
-            val information = SymbolInformation("function $name", SymbolKind.Function, local)
+            val information = DocumentSymbol(
+                    "function $name",
+                    SymbolKind.Function,
+                    range,
+                    selectionRange
+            )
             information
         }
         else -> null
     }
+    if (symbol != null) {
+        symbol.children = getDocumentSymbols(this, file)
+    }
+    return symbol
 }
 
 fun TextRange.toRange(file: ILuaFile): Range {
