@@ -143,7 +143,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val cls = arr[0]
                     val name = arr[1]
                     LuaClassMemberIndex.process(cls, name, SearchContext(workspace.project), Processor {
-                        item.documentation = Either.forLeft(documentProvider.generateDoc(it, it))
+                        val doc = documentProvider.generateDoc(it, it)
+                        val content = MarkupContent()
+                        content.kind = "markdown"
+                        content.value = doc
+                        item.documentation = Either.forRight(content)
                         false
                     })
                 }
