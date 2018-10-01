@@ -36,8 +36,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val _baseFolders = mutableListOf<IFolder>()
     private var client: LuaLanguageClient? = null
 
-    val configuration = Configuration()
-
     inner class WProject : UserDataHolderBase(), Project {
         override fun process(processor: Processor<PsiFile>) {
             for (ws in _rootList) {
@@ -75,7 +73,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
         val settings = params.settings as? JsonObject ?: return
-        configuration.update(settings)
+        Configuration.update(settings)
     }
 
     override fun symbol(params: WorkspaceSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {

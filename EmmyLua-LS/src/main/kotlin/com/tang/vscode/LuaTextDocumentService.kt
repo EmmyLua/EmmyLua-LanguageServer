@@ -314,7 +314,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 val pos = file.getPosition(position.position.line, position.position.character)
                 val psi = file.psi
                 if (psi != null) {
-                    CompletionService.collectCompletion(psi, pos, Consumer {
+                    CompletionService.collectCompletion(psi, pos, Configuration, Consumer {
                         checker.checkCanceled()
                         list.items.add(it.asCompletionItem)
                     })

@@ -8,6 +8,7 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.lang.PsiBuilderFactory
 import com.intellij.psi.PsiFile
 import com.intellij.util.Consumer
+import com.tang.intellij.lua.IConfiguration
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
@@ -32,7 +33,7 @@ object CompletionService {
 
     private val docContributor = LuaDocCompletionContributor()
 
-    fun collectCompletion(psi: PsiFile, pos: Int, consumer: Consumer<LookupElement>) {
+    fun collectCompletion(psi: PsiFile, pos: Int, config: IConfiguration, consumer: Consumer<LookupElement>) {
         //val element = psi.findElementAt(pos)
         val text = psi.text.replaceRange(pos, pos, "emmy")
 
@@ -51,7 +52,7 @@ object CompletionService {
 
         val result = CompletionResultSetImpl(consumer)
         val prefix = findPrefix(text, pos)
-        result.prefixMatcher = CamelHumpMatcher(prefix)
+        result.prefixMatcher = CamelHumpMatcher(prefix, config.completionCaseSensitive)
 
         parameters.originalFile.putUserData(CompletionSession.KEY, CompletionSession(parameters, result))
 
