@@ -127,7 +127,7 @@ class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFi
                 diagnostic.range = it.textRange.toRange(this)
                 diagnostics.add(diagnostic)
             } else if (it is LuaExprStat) {
-                if (it.expr !is LuaCallExpr) {
+                if (it.expr !is LuaCallExpr && PsiTreeUtil.findChildOfType(it, PsiErrorElement::class.java) == null) {
                     val diagnostic = Diagnostic()
                     diagnostic.message = "non-complete statement"
                     diagnostic.severity = DiagnosticSeverity.Error
