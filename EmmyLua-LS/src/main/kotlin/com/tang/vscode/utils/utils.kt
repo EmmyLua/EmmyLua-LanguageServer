@@ -75,6 +75,18 @@ fun getDocumentSymbols(psi: PsiElement, file: ILuaFile): List<DocumentSymbol> {
             o.getDocumentSymbol(file)?.let { list.add(it) }
         }
 
+        override fun visitClosureExpr(o: LuaClosureExpr) {
+            val range = o.textRange.toRange(file)
+            val symbol = DocumentSymbol(
+                    "function${o.paramSignature}",
+                    SymbolKind.Function,
+                    range,
+                    range
+            )
+            symbol.children = getDocumentSymbols(o, file)
+            list.add(symbol)
+        }
+
         override fun visitBlock(o: LuaBlock) {
             o.acceptChildren(this)
         }
@@ -93,13 +105,12 @@ private fun PsiNamedElement.getDocumentSymbol(file: ILuaFile): DocumentSymbol? {
         is LuaClassMethodDef -> {
             val fTy = guessType(SearchContext(project))
             if (fTy is ITyFunction) {
-                val info = DocumentSymbol(
+                DocumentSymbol(
                         "${this.classMethodName.text}${fTy.mainSignature.paramSignature}",
                         SymbolKind.Method,
                         range,
                         selectionRange
                 )
-                info
             } else null
         }
         is LuaClassField -> {
@@ -111,31 +122,28 @@ private fun PsiNamedElement.getDocumentSymbol(file: ILuaFile): DocumentSymbol? {
             )
         }
         is LuaNameDef -> {
-            val info = DocumentSymbol(
+            DocumentSymbol(
                     "local $name",
                     SymbolKind.Variable,
                     range,
                     selectionRange
             )
-            info
         }
         is LuaLocalFuncDef -> {
-            val information = DocumentSymbol(
+            DocumentSymbol(
                     "local function $name",
                     SymbolKind.Function,
                     range,
                     selectionRange
             )
-            information
         }
         is LuaFuncDef -> {
-            val information = DocumentSymbol(
+            DocumentSymbol(
                     "function $name",
                     SymbolKind.Function,
                     range,
                     selectionRange
             )
-            information
         }
         else -> null
     }
