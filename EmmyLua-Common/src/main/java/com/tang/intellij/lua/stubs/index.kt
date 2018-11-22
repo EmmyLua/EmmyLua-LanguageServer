@@ -7,10 +7,13 @@ import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.comment.LuaCommentUtil
 import com.tang.intellij.lua.comment.psi.LuaDocClassDef
 import com.tang.intellij.lua.comment.psi.LuaDocFieldDef
+import com.tang.intellij.lua.comment.psi.LuaDocTableDef
+import com.tang.intellij.lua.comment.psi.LuaDocTableField
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyClass
 import com.tang.intellij.lua.ty.TyUnion
+import com.tang.intellij.lua.ty.getDocTableTypeName
 import com.tang.intellij.lua.ty.getTableTypeName
 
 fun index(file: LuaPsiFile) {
@@ -37,6 +40,7 @@ private fun index(psi: LuaPsiElement, sink: IndexSink) {
     when (psi) {
         is LuaDocClassDef -> index(psi, sink)
         is LuaDocFieldDef -> index(psi, sink)
+        is LuaDocTableField -> index(psi, sink)
         is LuaClassMethodDef -> index(psi, sink)
         is LuaIndexExpr -> index(psi, sink)
         is LuaTableExpr -> index(psi, sink)
@@ -74,6 +78,16 @@ private fun index(field: LuaDocFieldDef, sink: IndexSink) {
             sink.occurrence(StubKeys.SHORT_NAME, name, field)
         }
     }
+}
+
+private fun index(field: LuaDocTableField, sink: IndexSink) {
+    val name = field.name
+    val p = field.parent as LuaDocTableDef
+    val className = getDocTableTypeName(p)
+
+    sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), field)
+    sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), field)
+    sink.occurrence(StubKeys.SHORT_NAME, name, field)
 }
 
 private fun index(methodDef: LuaClassMethodDef, sink: IndexSink) {
