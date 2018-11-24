@@ -52,15 +52,15 @@ public class FixingLayoutMatcher extends MinusculeMatcher {
     }
 
     if (hasLetters && onlyWrongLetters) {
-      throw new Error();
-      /*char[] alternatePattern = new char[pattern.length()];
+      char[] alternatePattern = new char[pattern.length()];
       for (int i = 0; i < pattern.length(); i++) {
         char c = pattern.charAt(i);
-        Character newC = KeyboardLayoutUtil.getAsciiForChar(c);
-        alternatePattern[i] = newC == null ? c : newC;
+        //Character newC = KeyboardLayoutUtil.getAsciiForChar(c);
+        //alternatePattern[i] = newC == null ? c : newC;
+        alternatePattern[i] = c;
       }
 
-      return new String(alternatePattern);*/
+      return new String(alternatePattern);
     }
     return null;
   }
