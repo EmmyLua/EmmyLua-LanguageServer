@@ -22,6 +22,7 @@ import com.intellij.lang.PsiParser
 import com.intellij.lexer.Lexer
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.tree.IFileElementType
@@ -113,28 +114,41 @@ class LuaParserDefinition : ParserDefinition {
                 LuaTypes.DOUBLE_COLON,
                 LuaTypes.GOTO
         )
+        val LUA52_BIN_OP_SET = TokenSet.create(
+                LuaTypes.BIT_AND,
+                LuaTypes.BIT_LTLT,
+                LuaTypes.BIT_OR,
+                LuaTypes.BIT_RTRT,
+                LuaTypes.BIT_TILDE,
+                LuaTypes.DOUBLE_DIV
+        )
+        val LUA52_UNARY_OP_SET = TokenSet.create(
+                LuaTypes.BIT_TILDE
+        )
         val PRIMITIVE_TYPE_SET = TokenSet.create(
                 LuaTypes.FALSE,
                 LuaTypes.NIL,
                 LuaTypes.TRUE
         )
         val DOC_TAG_TOKENS = TokenSet.create(
-                LuaDocTypes.TAG_PARAM,
-                LuaDocTypes.TAG_RETURN,
-                LuaDocTypes.TAG_CLASS,
-                LuaDocTypes.TAG_MODULE,
-                LuaDocTypes.TAG_TYPE,
-                LuaDocTypes.TAG_FIELD,
-                LuaDocTypes.TAG_LANGUAGE,
-                LuaDocTypes.TAG_OVERLOAD,
-                LuaDocTypes.TAG_PRIVATE,
-                LuaDocTypes.TAG_PROTECTED,
-                LuaDocTypes.TAG_PUBLIC,
-                LuaDocTypes.TAG_SEE,
-                LuaDocTypes.TAG_GENERIC
+                LuaDocTypes.TAG_NAME_PARAM,
+                LuaDocTypes.TAG_NAME_RETURN,
+                LuaDocTypes.TAG_NAME_CLASS,
+                LuaDocTypes.TAG_NAME_MODULE,
+                LuaDocTypes.TAG_NAME_TYPE,
+                LuaDocTypes.TAG_NAME_FIELD,
+                LuaDocTypes.TAG_NAME_LANGUAGE,
+                LuaDocTypes.TAG_NAME_OVERLOAD,
+                LuaDocTypes.TAG_NAME_PRIVATE,
+                LuaDocTypes.TAG_NAME_PROTECTED,
+                LuaDocTypes.TAG_NAME_PUBLIC,
+                LuaDocTypes.TAG_NAME_SEE,
+                LuaDocTypes.TAG_NAME_GENERIC,
+                LuaDocTypes.TAG_NAME_VARARG
         )
         val DOC_KEYWORD_TOKENS = TokenSet.create(
-                LuaDocTypes.FUN
+                LuaDocTypes.FUN,
+                LuaDocTypes.VARARG
         )
 
         val FILE = IFileElementType(LuaLanguage.INSTANCE)

@@ -1,5 +1,5 @@
 
-def src = "D:/vscode-EmmyLua/IntelliJ-EmmyLua/src/main/java/"
+def src = "D:/Git/OpenSource/EmmyLua/IntelliJ-EmmyLua/src/main/java/"
 def dst = file("EmmyLua-Common/src/main/java")
 
 task copyCoreFiles() {

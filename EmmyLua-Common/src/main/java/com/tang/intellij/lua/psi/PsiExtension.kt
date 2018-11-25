@@ -26,9 +26,9 @@ import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Processor
 import com.tang.intellij.lua.comment.LuaCommentUtil
-import com.tang.intellij.lua.comment.psi.LuaDocClassDef
+import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocGenericDef
-import com.tang.intellij.lua.comment.psi.LuaDocOverloadDef
+import com.tang.intellij.lua.comment.psi.LuaDocTagOverload
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.lang.type.LuaString
 import com.tang.intellij.lua.search.SearchContext
@@ -222,7 +222,7 @@ val LuaFuncBodyOwner.overloads: Array<IFunSignature> get() {
     if (this is LuaCommentOwner) {
         val comment = comment
         if (comment != null) {
-            val children = PsiTreeUtil.findChildrenOfAnyType(comment, LuaDocOverloadDef::class.java)
+            val children = PsiTreeUtil.findChildrenOfAnyType(comment, LuaDocTagOverload::class.java)
             val colonCall = this is LuaClassMethodDef && !this.isStatic
             children.forEach {
                 val fty = it.functionTy
@@ -235,12 +235,12 @@ val LuaFuncBodyOwner.overloads: Array<IFunSignature> get() {
 }
 
 val LuaFuncBodyOwner.tyParams: Array<TyParameter> get() {
-    /*if (this is StubBasedPsiElementBase<*>) {
+    if (this is StubBasedPsiElementBase<*>) {
         val stub = this.stub
         if (stub is LuaFuncBodyOwnerStub<*>) {
             return stub.tyParams
         }
-    }*/
+    }
 
     val list = mutableListOf<TyParameter>()
     if (this is LuaCommentOwner) {
@@ -255,6 +255,7 @@ enum class LuaLiteralKind {
     Bool,
     Number,
     Nil,
+    Varargs,
     Unknown;
 
     companion object {
@@ -275,6 +276,7 @@ val LuaLiteralExpr.kind: LuaLiteralKind get() {
         LuaTypes.FALSE -> LuaLiteralKind.Bool
         LuaTypes.NIL -> LuaLiteralKind.Nil
         LuaTypes.NUMBER -> LuaLiteralKind.Number
+        LuaTypes.ELLIPSIS -> LuaLiteralKind.Varargs
         else -> LuaLiteralKind.Unknown
     }
 }
@@ -289,18 +291,24 @@ val LuaLiteralExpr.stringValue: String get() {
 
 val LuaLiteralExpr.boolValue: Boolean get() = text == "true"
 
-val LuaLiteralExpr.numberValue: Float get() = text.toFloat()
+val LuaLiteralExpr.numberValue: Float get() {
+    val t = text
+    if (t.startsWith("0x", true)) {
+        return "${t}p0".toFloat()
+    }
+    return text.toFloat()
+}
 
 val LuaComment.docTy: ITy? get() {
-    return this.typeDef?.type
+    return this.tagType?.type
 }
 
 val LuaComment.ty: ITy? get() {
-    val cls = classDef?.type
-    return cls ?: typeDef?.type
+    val cls = tagClass?.type
+    return cls ?: tagType?.type
 }
 
-val LuaDocClassDef.aliasName: String? get() {
+val LuaDocTagClass.aliasName: String? get() {
     val owner = LuaCommentUtil.findOwner(this)
     when (owner) {
         is LuaAssignStat -> {

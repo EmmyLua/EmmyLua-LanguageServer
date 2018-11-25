@@ -10,15 +10,16 @@ import com.intellij.psi.util.PsiTreeUtil;
 import static com.tang.intellij.lua.comment.psi.LuaDocTypes.*;
 import com.intellij.extapi.psi.ASTWrapperPsiElement;
 import com.tang.intellij.lua.comment.psi.*;
+import com.tang.intellij.lua.ty.ITy;
 
-public class LuaDocLanDefImpl extends ASTWrapperPsiElement implements LuaDocLanDef {
+public class LuaDocVarargParamImpl extends ASTWrapperPsiElement implements LuaDocVarargParam {
 
-  public LuaDocLanDefImpl(@NotNull ASTNode node) {
+  public LuaDocVarargParamImpl(@NotNull ASTNode node) {
     super(node);
   }
 
   public void accept(@NotNull LuaDocVisitor visitor) {
-    visitor.visitLanDef(this);
+    visitor.visitVarargParam(this);
   }
 
   public void accept(@NotNull PsiElementVisitor visitor) {
@@ -28,14 +29,13 @@ public class LuaDocLanDefImpl extends ASTWrapperPsiElement implements LuaDocLanD
 
   @Override
   @Nullable
-  public LuaDocCommentString getCommentString() {
-    return PsiTreeUtil.getChildOfType(this, LuaDocCommentString.class);
+  public LuaDocTy getTy() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocTy.class);
   }
 
-  @Override
-  @Nullable
-  public PsiElement getId() {
-    return findChildByType(ID);
+  @NotNull
+  public ITy getType() {
+    return LuaDocPsiImplUtilKt.getType(this);
   }
 
 }

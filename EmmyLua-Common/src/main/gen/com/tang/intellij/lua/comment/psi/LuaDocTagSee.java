@@ -4,13 +4,17 @@ package com.tang.intellij.lua.comment.psi;
 import java.util.List;
 import org.jetbrains.annotations.*;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiReference;
 
-public interface LuaDocTagDef extends LuaDocTag {
+public interface LuaDocTagSee extends LuaDocTag {
 
   @Nullable
-  LuaDocCommentString getCommentString();
+  LuaDocClassNameRef getClassNameRef();
 
-  @NotNull
-  PsiElement getTagName();
+  @Nullable
+  PsiElement getId();
+
+  @Nullable
+  PsiReference getReference();
 
 }

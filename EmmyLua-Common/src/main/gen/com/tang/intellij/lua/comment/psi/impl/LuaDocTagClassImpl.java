@@ -16,22 +16,22 @@ import com.tang.intellij.lua.ty.ITyClass;
 import com.intellij.psi.stubs.IStubElementType;
 import com.intellij.psi.tree.IElementType;
 
-public class LuaDocClassDefImpl extends StubBasedPsiElementBase<LuaDocClassStub> implements LuaDocClassDef {
+public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocClassStub> implements LuaDocTagClass {
 
-  public LuaDocClassDefImpl(@NotNull LuaDocClassStub stub, @NotNull IStubElementType type) {
+  public LuaDocTagClassImpl(@NotNull LuaDocClassStub stub, @NotNull IStubElementType type) {
     super(stub, type);
   }
 
-  public LuaDocClassDefImpl(@NotNull ASTNode node) {
+  public LuaDocTagClassImpl(@NotNull ASTNode node) {
     super(node);
   }
 
-  public LuaDocClassDefImpl(LuaDocClassStub stub, IElementType type, ASTNode node) {
+  public LuaDocTagClassImpl(LuaDocClassStub stub, IElementType type, ASTNode node) {
     super(stub, type, node);
   }
 
   public void accept(@NotNull LuaDocVisitor visitor) {
-    visitor.visitClassDef(this);
+    visitor.visitTagClass(this);
   }
 
   public void accept(@NotNull PsiElementVisitor visitor) {
@@ -98,7 +98,7 @@ public class LuaDocClassDefImpl extends StubBasedPsiElementBase<LuaDocClassStub>
   @Override
   @Nullable
   public PsiElement getModule() {
-    return findChildByType(TAG_MODULE);
+    return findChildByType(TAG_NAME_MODULE);
   }
 
 }

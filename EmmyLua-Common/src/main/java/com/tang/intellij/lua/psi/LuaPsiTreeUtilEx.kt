@@ -53,7 +53,41 @@ object LuaPsiTreeUtilEx {
 
     fun walkUpNameDef(psi: PsiElement?, processor: Processor<PsiNamedElement>, nameExprProcessor: Processor<LuaAssignStat>? = null) {
         if (psi == null) return
-        walkUpPsiLocalName(psi, processor, nameExprProcessor)
+
+        var continueSearch = true
+        if (psi is STUB_PSI) {
+            val stub = psi.stub
+            if (stub != null) {
+                var cur: STUB_ELE = stub
+                do {
+                    val scope = cur.parentStub
+                    scope.walkUp(cur, Processor { next ->
+                        val element = next.psi
+                        when (element) {
+                            is LuaLocalDef -> {
+                                findStubOfType(next, LuaNameDef::class.java) {
+                                    continueSearch = processor.process(it)
+                                    continueSearch
+                                }
+                            }
+                            is LuaParamNameDef -> continueSearch = processor.process(element)
+                            is LuaLocalFuncDef -> continueSearch = processor.process(element)
+                            else -> { }
+                        }
+                        continueSearch
+                    })
+
+                    if (scope is LuaFileStub)
+                        break
+                    cur = scope
+                } while (continueSearch)
+
+                continueSearch = false
+            }
+        }
+
+        if (continueSearch)
+            walkUpPsiLocalName(psi, processor, nameExprProcessor)
     }
 
     /**
@@ -62,7 +96,7 @@ object LuaPsiTreeUtilEx {
      * @param processor 处理器
      */
     private fun walkUpPsiLocalName(element: PsiElement, processor: Processor<PsiNamedElement>, nameExprProcessor: Processor<LuaAssignStat>?) {
-        var curr: PsiElement = element
+        var curr: PsiElement = element.realContext
         do {
             var continueSearch = true
             val prev = curr.prevSibling
@@ -93,7 +127,29 @@ object LuaPsiTreeUtilEx {
     }
 
     fun walkUpLocalFuncDef(psi: PsiElement, processor: Processor<LuaLocalFuncDef>) {
-        walkUpPsiLocalFunc(psi, processor)
+        var continueSearch = true
+        if (psi is STUB_PSI) {
+            val stub = psi.stub
+            if (stub != null) {
+                var cur: STUB_ELE = stub
+                do {
+                    val scope = cur.parentStub
+                    scope.walkUp(cur, Processor { next ->
+                        val psiElement = next.psi
+                        if (psiElement is LuaLocalFuncDef) {
+                            continueSearch = processor.process(psiElement)
+                        }
+                        continueSearch
+                    })
+                    if (scope is LuaFileStub)
+                        break
+                    cur = scope
+                } while (continueSearch)
+                continueSearch = false
+            }
+        }
+        if (continueSearch)
+            walkUpPsiLocalFunc(psi, processor)
     }
 
     /**

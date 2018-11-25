@@ -8,17 +8,29 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.util.PsiTreeUtil;
 import static com.tang.intellij.lua.comment.psi.LuaDocTypes.*;
+import com.intellij.extapi.psi.StubBasedPsiElementBase;
+import com.tang.intellij.lua.stubs.LuaDocTagTypeStub;
 import com.tang.intellij.lua.comment.psi.*;
 import com.tang.intellij.lua.ty.ITy;
+import com.intellij.psi.stubs.IStubElementType;
+import com.intellij.psi.tree.IElementType;
 
-public class LuaDocFunctionTyImpl extends LuaDocTyImpl implements LuaDocFunctionTy {
+public class LuaDocTagTypeImpl extends StubBasedPsiElementBase<LuaDocTagTypeStub> implements LuaDocTagType {
 
-  public LuaDocFunctionTyImpl(@NotNull ASTNode node) {
+  public LuaDocTagTypeImpl(@NotNull LuaDocTagTypeStub stub, @NotNull IStubElementType type) {
+    super(stub, type);
+  }
+
+  public LuaDocTagTypeImpl(@NotNull ASTNode node) {
     super(node);
   }
 
+  public LuaDocTagTypeImpl(LuaDocTagTypeStub stub, IElementType type, ASTNode node) {
+    super(stub, type, node);
+  }
+
   public void accept(@NotNull LuaDocVisitor visitor) {
-    visitor.visitFunctionTy(this);
+    visitor.visitTagType(this);
   }
 
   public void accept(@NotNull PsiElementVisitor visitor) {
@@ -27,31 +39,20 @@ public class LuaDocFunctionTyImpl extends LuaDocTyImpl implements LuaDocFunction
   }
 
   @Override
-  @NotNull
-  public List<LuaDocFunctionParam> getFunctionParamList() {
-    return PsiTreeUtil.getChildrenOfTypeAsList(this, LuaDocFunctionParam.class);
+  @Nullable
+  public LuaDocCommentString getCommentString() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocCommentString.class);
   }
 
   @Override
   @Nullable
-  public LuaDocTypeList getTypeList() {
-    return PsiTreeUtil.getChildOfType(this, LuaDocTypeList.class);
-  }
-
-  @Override
-  @Nullable
-  public LuaDocVarargParam getVarargParam() {
-    return PsiTreeUtil.getChildOfType(this, LuaDocVarargParam.class);
+  public LuaDocTy getTy() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocTy.class);
   }
 
   @NotNull
   public ITy getType() {
     return LuaDocPsiImplUtilKt.getType(this);
-  }
-
-  @NotNull
-  public ITy getReturnType() {
-    return LuaDocPsiImplUtilKt.getReturnType(this);
   }
 
 }

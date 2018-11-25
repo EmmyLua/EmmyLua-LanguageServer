@@ -9,11 +9,13 @@ import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
 import com.tang.intellij.lua.ty.TyClass
+import com.tang.intellij.lua.ty.TyParameter
 
 // fake stubs!
 
 abstract class FakeStubElement<T : PsiElement> : StubElement<T> {
     override fun getPsi(): T? = null
+    override fun getParentStub(): StubElement<*>? = null
     override fun getChildrenStubs(): MutableList<StubElement<PsiElement>> {
         TODO()
     }
@@ -28,6 +30,8 @@ abstract class LuaStubBase<T : PsiElement> : FakeStubElement<T>()
 interface LuaFuncBodyOwnerStub<T : LuaFuncBodyOwner> : StubElement<T> {
     fun guessReturnTy(searchContext: SearchContext):ITy
     val returnDocTy:ITy?
+    val varargTy: ITy?
+    val tyParams: Array<TyParameter>
     val params: Array<LuaParamInfo>
     val overloads: Array<IFunSignature>
 }
@@ -101,13 +105,13 @@ interface LuaClassMethodStub : LuaFuncBodyOwnerStub<LuaClassMethod> {
 interface LuaLocalFuncDefStub : StubElement<LuaLocalFuncDef>, LuaFuncBodyOwnerStub<LuaLocalFuncDef> {
     val name: String
 }
-interface LuaDocClassStub : StubElement<LuaDocClassDef> {
+interface LuaDocClassStub : StubElement<LuaDocTagClass> {
     val className: String
     val aliasName: String?
     val superClassName: String?
     val classType: TyClass
 }
-interface LuaDocFieldDefStub : LuaClassMemberStub<LuaDocFieldDef> {
+interface LuaDocTagFieldStub : LuaClassMemberStub<LuaDocTagField> {
     val name: String
 
     val type: ITy
@@ -121,6 +125,6 @@ interface LuaDocTableFieldDefStub : LuaClassMemberStub<LuaDocTableField> {
     val name: String
     val parentTypeName: String
 }
-interface LuaDocTypeDefStub : StubElement<LuaDocTypeDef>
+interface LuaDocTagTypeStub : StubElement<LuaDocTagType>
 
 interface LuaFileStub : StubElement<LuaPsiFile>

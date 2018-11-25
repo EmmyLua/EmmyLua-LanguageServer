@@ -20,8 +20,8 @@ import com.intellij.lang.documentation.DocumentationProvider
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiTreeUtil
-import com.tang.intellij.lua.comment.psi.LuaDocClassDef
-import com.tang.intellij.lua.comment.psi.LuaDocFieldDef
+import com.tang.intellij.lua.comment.psi.LuaDocTagClass
+import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
@@ -65,7 +65,7 @@ class LuaDocumentationProvider : DocumentationProvider {
         val sb = StringBuilder()
         when (element) {
             is LuaParamNameDef -> renderParamNameDef(sb, element)
-            is LuaDocClassDef -> renderClassDef(sb, element)
+            is LuaDocTagClass -> renderClassDef(sb, element)
             is LuaClassMember -> renderClassMember(sb, element)
             is LuaNameDef -> { //local xx
                 sb.wrapTag("pre") {
@@ -137,7 +137,7 @@ class LuaDocumentationProvider : DocumentationProvider {
         if (classMember is LuaCommentOwner)
             renderComment(sb, classMember.comment)
         else {
-            if (classMember is LuaDocFieldDef)
+            if (classMember is LuaDocTagField)
                 renderCommentString("  ", null, sb, classMember.commentString)
             else if (classMember is LuaIndexExpr) {
                 val p1 = classMember.parent

@@ -8,29 +8,17 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.util.PsiTreeUtil;
 import static com.tang.intellij.lua.comment.psi.LuaDocTypes.*;
-import com.intellij.extapi.psi.StubBasedPsiElementBase;
-import com.tang.intellij.lua.stubs.LuaDocTypeDefStub;
+import com.intellij.extapi.psi.ASTWrapperPsiElement;
 import com.tang.intellij.lua.comment.psi.*;
-import com.tang.intellij.lua.ty.ITy;
-import com.intellij.psi.stubs.IStubElementType;
-import com.intellij.psi.tree.IElementType;
 
-public class LuaDocTypeDefImpl extends StubBasedPsiElementBase<LuaDocTypeDefStub> implements LuaDocTypeDef {
+public class LuaDocTagLanImpl extends ASTWrapperPsiElement implements LuaDocTagLan {
 
-  public LuaDocTypeDefImpl(@NotNull LuaDocTypeDefStub stub, @NotNull IStubElementType type) {
-    super(stub, type);
-  }
-
-  public LuaDocTypeDefImpl(@NotNull ASTNode node) {
+  public LuaDocTagLanImpl(@NotNull ASTNode node) {
     super(node);
   }
 
-  public LuaDocTypeDefImpl(LuaDocTypeDefStub stub, IElementType type, ASTNode node) {
-    super(stub, type, node);
-  }
-
   public void accept(@NotNull LuaDocVisitor visitor) {
-    visitor.visitTypeDef(this);
+    visitor.visitTagLan(this);
   }
 
   public void accept(@NotNull PsiElementVisitor visitor) {
@@ -46,13 +34,8 @@ public class LuaDocTypeDefImpl extends StubBasedPsiElementBase<LuaDocTypeDefStub
 
   @Override
   @Nullable
-  public LuaDocTy getTy() {
-    return PsiTreeUtil.getChildOfType(this, LuaDocTy.class);
-  }
-
-  @NotNull
-  public ITy getType() {
-    return LuaDocPsiImplUtilKt.getType(this);
+  public PsiElement getId() {
+    return findChildByType(ID);
   }
 
 }

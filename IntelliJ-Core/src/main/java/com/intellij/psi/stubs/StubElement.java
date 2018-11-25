@@ -17,4 +17,6 @@ public interface StubElement<T extends PsiElement> {
 
     @NotNull
     List<StubElement> getChildrenStubs();
+
+    StubElement getParentStub();
 }

@@ -6,7 +6,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNameIdentifierOwner
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.PsiReference
-import com.tang.intellij.lua.comment.psi.LuaDocClassDef
+import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyFunction
@@ -48,7 +48,7 @@ fun PsiNamedElement.getSymbol(): SymbolInformation {
     val kind = when (this) {
         is LuaClassMethod -> SymbolKind.Method
         is LuaClassField -> SymbolKind.Field
-        is LuaDocClassDef -> SymbolKind.Class
+        is LuaDocTagClass -> SymbolKind.Class
         else -> SymbolKind.Variable
     }
     return SymbolInformation(text, kind, loc)

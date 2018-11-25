@@ -8,8 +8,8 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
 import com.intellij.util.Processor
 import com.tang.intellij.lua.Constants
-import com.tang.intellij.lua.comment.psi.LuaDocClassDef
 import com.tang.intellij.lua.comment.psi.LuaDocClassNameRef
+import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocVisitor
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.editor.completion.CompletionService
@@ -103,10 +103,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 if (element is LuaComment) {
                     element.acceptChildren(object : LuaDocVisitor() {
 
-                        override fun visitClassDef(o: LuaDocClassDef) {
+                        override fun visitTagClass(o: LuaDocTagClass) {
                             val identifier = o.nameIdentifier
                             docTypeNames.add(identifier.textRange.toRange(file))
-                            super.visitClassDef(o)
+                            super.visitTagClass(o)
                         }
 
                         override fun visitClassNameRef(o: LuaDocClassNameRef) {

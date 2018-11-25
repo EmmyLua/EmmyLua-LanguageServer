@@ -5,8 +5,8 @@ import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.comment.LuaCommentUtil
-import com.tang.intellij.lua.comment.psi.LuaDocClassDef
-import com.tang.intellij.lua.comment.psi.LuaDocFieldDef
+import com.tang.intellij.lua.comment.psi.LuaDocTagClass
+import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.comment.psi.LuaDocTableDef
 import com.tang.intellij.lua.comment.psi.LuaDocTableField
 import com.tang.intellij.lua.psi.*
@@ -38,8 +38,8 @@ private fun indexImpl(file: LuaPsiFile, sink: IndexSink) {
 
 private fun index(psi: LuaPsiElement, sink: IndexSink) {
     when (psi) {
-        is LuaDocClassDef -> index(psi, sink)
-        is LuaDocFieldDef -> index(psi, sink)
+        is LuaDocTagClass -> index(psi, sink)
+        is LuaDocTagField -> index(psi, sink)
         is LuaDocTableField -> index(psi, sink)
         is LuaClassMethodDef -> index(psi, sink)
         is LuaIndexExpr -> index(psi, sink)
@@ -50,13 +50,13 @@ private fun index(psi: LuaPsiElement, sink: IndexSink) {
     }
 }
 
-private fun index(doc: LuaDocClassDef, sink: IndexSink) {
+private fun index(doc: LuaDocTagClass, sink: IndexSink) {
     val name = doc.type.className
     sink.occurrence(StubKeys.CLASS, name, doc)
     sink.occurrence(StubKeys.SHORT_NAME, name, doc)
 }
 
-private fun index(field: LuaDocFieldDef, sink: IndexSink) {
+private fun index(field: LuaDocTagField, sink: IndexSink) {
     val name = field.name
     if (name != null) {
         var className: String? = null
@@ -66,7 +66,7 @@ private fun index(field: LuaDocFieldDef, sink: IndexSink) {
             className = classRef.id.text
         } else {
             val comment = LuaCommentUtil.findContainer(field)
-            val classDef = comment.classDef
+            val classDef = comment.tagClass
             if (classDef != null) {
                 className = classDef.name
             }

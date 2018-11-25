@@ -1589,22 +1589,22 @@ public class LuaParser implements PsiParser, LightPsiParser {
     return r || p;
   }
 
-  final static Parser checkFuncPrefix_parser_ = new Parser() {
+  static final Parser checkFuncPrefix_parser_ = new Parser() {
     public boolean parse(PsiBuilder b, int l) {
       return checkFuncPrefix(b, l + 1);
     }
   };
-  final static Parser parList_recover_parser_ = new Parser() {
+  static final Parser parList_recover_parser_ = new Parser() {
     public boolean parse(PsiBuilder b, int l) {
       return parList_recover(b, l + 1);
     }
   };
-  final static Parser stat_recover_parser_ = new Parser() {
+  static final Parser stat_recover_parser_ = new Parser() {
     public boolean parse(PsiBuilder b, int l) {
       return stat_recover(b, l + 1);
     }
   };
-  final static Parser tableField_recover_parser_ = new Parser() {
+  static final Parser tableField_recover_parser_ = new Parser() {
     public boolean parse(PsiBuilder b, int l) {
       return tableField_recover(b, l + 1);
     }

@@ -18,7 +18,7 @@ package com.tang.intellij.lua.stubs.index
 
 import com.intellij.util.Processor
 import com.intellij.util.containers.ContainerUtil
-import com.tang.intellij.lua.comment.psi.LuaDocFieldDef
+import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaClassMethod
 import com.tang.intellij.lua.psi.LuaTableField
@@ -69,11 +69,11 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
 
         fun find(type: ITyClass, fieldName: String, context: SearchContext): LuaClassMember? {
             var perfect: LuaClassMember? = null
-            var docField: LuaDocFieldDef? = null
+            var docField: LuaDocTagField? = null
             var tableField: LuaTableField? = null
             processAll(type, fieldName, context, Processor {
                 when (it) {
-                    is LuaDocFieldDef -> {
+                    is LuaDocTagField -> {
                         docField = it
                         false
                     }

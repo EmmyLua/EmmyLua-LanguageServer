@@ -44,4 +44,8 @@ public class StubBasedPsiElementBase<T extends StubElement> extends ASTWrapperPs
     public T getStub() {
         return null;
     }
+
+    public T getGreenStub() {
+        return null;
+    }
 }

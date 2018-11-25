@@ -91,11 +91,11 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
         var child: PsiElement? = comment.firstChild
         while (child != null) {
             when (child) {
-                is LuaDocParamDef -> {
+                is LuaDocTagParam -> {
                     renderDocParam(sb, child)
                     sb.append("\n")
                 }
-                is LuaDocReturnDef -> {
+                is LuaDocTagReturn -> {
                     val typeList = child.typeList
                     if (typeList != null) {
                         sb.appendLine("@_return_ : (")
@@ -109,11 +109,11 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
                         sb.append("\n")
                     }
                 }
-                is LuaDocClassDef -> renderClassDef(sb, child)
-                is LuaDocFieldDef -> renderFieldDef(sb, child)
-                is LuaDocOverloadDef -> renderOverload(sb, child)
-                is LuaDocTypeDef -> renderTypeDef(sb, child)
-                is LuaDocSeeRefTag -> renderSee(sb, child)
+                is LuaDocTagClass -> renderClassDef(sb, child)
+                is LuaDocTagField -> renderFieldDef(sb, child)
+                is LuaDocTagOverload -> renderOverload(sb, child)
+                is LuaDocTagType -> renderTypeDef(sb, child)
+                is LuaDocTagSee -> renderSee(sb, child)
                 else -> {
                     val elementType = child.node.elementType
                     if (elementType === LuaDocTypes.STRING) {
@@ -126,7 +126,7 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
     }
 }
 
-internal fun renderClassDef(sb: StringBuilder, def: LuaDocClassDef) {
+internal fun renderClassDef(sb: StringBuilder, def: LuaDocTagClass) {
     val cls = def.type
     sb.append("class ")
     sb.wrapTag("b") { sb.appendClassLink(cls.displayName) }
@@ -139,13 +139,13 @@ internal fun renderClassDef(sb: StringBuilder, def: LuaDocClassDef) {
     sb.append("\n")
 }
 
-internal fun renderFieldDef(sb: StringBuilder, def: LuaDocFieldDef) {
+internal fun renderFieldDef(sb: StringBuilder, def: LuaDocTagField) {
     sb.appendLine("@_field_ `${def.name}`: ")
     renderTypeUnion(null, null, sb, def.ty)
     renderCommentString("  ", null, sb, def.commentString)
 }
 
-internal fun renderDocParam(sb: StringBuilder, child: LuaDocParamDef) {
+internal fun renderDocParam(sb: StringBuilder, child: LuaDocTagParam) {
     val paramNameRef = child.paramNameRef
     if (paramNameRef != null) {
         sb.appendLine("@_param_ `${paramNameRef.text}`: ")
@@ -175,18 +175,18 @@ internal fun renderTypeUnion(prefix: String?, postfix: String?, sb: StringBuilde
     }
 }
 
-internal fun renderOverload(sb: StringBuilder, overloadDef: LuaDocOverloadDef) {
+internal fun renderOverload(sb: StringBuilder, overloadDef: LuaDocTagOverload) {
     overloadDef.functionTy?.getType()?.let {
         sb.appendLine("@_overload_ ")
         renderTy(sb, it)
     }
 }
 
-internal fun renderTypeDef(sb: StringBuilder, typeDef: LuaDocTypeDef) {
+internal fun renderTypeDef(sb: StringBuilder, typeDef: LuaDocTagType) {
     renderTy(sb, typeDef.type)
 }
 
-internal fun renderSee(sb: StringBuilder, see: LuaDocSeeRefTag) {
+internal fun renderSee(sb: StringBuilder, see: LuaDocTagSee) {
     sb.appendLine("@_see_ ")
     see.classNameRef?.resolveType()?.let {
         renderTy(sb, it)

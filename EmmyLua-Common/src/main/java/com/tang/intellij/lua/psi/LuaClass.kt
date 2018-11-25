@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2009 JetBrains s.r.o.
+ * Copyright (c) 2017. tangzx(love.tangzx@qq.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-/*
- * @author max
- */
-package com.intellij.psi;
+package com.tang.intellij.lua.psi
 
-import com.intellij.psi.stubs.IStubElementType;
-import com.intellij.psi.stubs.StubElement;
+import com.intellij.navigation.NavigationItem
+import com.intellij.psi.PsiElement
+import com.tang.intellij.lua.ty.ITyClass
 
-public interface StubBasedPsiElement<Stub extends StubElement> extends PsiElement {
-  IStubElementType getElementType();
-  Stub getStub();
-  Stub getGreenStub();
+interface LuaClass : PsiElement, NavigationItem {
+    val type: ITyClass
 }
