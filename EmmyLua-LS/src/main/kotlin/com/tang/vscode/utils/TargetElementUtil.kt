@@ -5,11 +5,13 @@ import com.intellij.psi.*
 object TargetElementUtil {
     fun findTarget(file: PsiFile?, pos: Int): PsiElement? {
         file ?: return null
+        return doFindTarget(file, pos) ?: doFindTarget(file, pos - 1)
+    }
 
-        val element = file.findElementAt(pos)
-        var cur = element
+    private fun doFindTarget(file: PsiFile, pos: Int): PsiElement? {
+        var cur = file.findElementAt(pos)
         if (cur is PsiWhiteSpace)
-            cur = file.findElementAt(pos - 1)
+            return null
 
         while (cur != null && cur !is PsiFile) {
             if (cur is PsiNamedElement) {
