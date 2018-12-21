@@ -54,7 +54,7 @@ class LuaShortNamesManagerImpl : LuaShortNamesManager() {
     }
 
     override fun processAllMembers(type: ITyClass, fieldName: String, context: SearchContext, processor: Processor<LuaClassMember>): Boolean {
-        //return LuaClassMemberIndex.processAll(type, fieldName, context, processor)
+        LuaClassMemberIndex.processAll(type, fieldName, context, processor)
         return true
     }
 
