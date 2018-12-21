@@ -36,10 +36,10 @@ abstract class StubIndex<K, Psi : PsiElement> {
     }
 
     @Synchronized
-    fun processKeys(project: Project, scope: GlobalSearchScope, processor: Processor<K>) {
+    fun processKeys(project: Project, scope: GlobalSearchScope, processor: Processor<K>): Boolean {
         if (lock)
-            return
-        ContainerUtil.process(indexMap.keys, processor)
+            return true
+        return ContainerUtil.process(indexMap.keys, processor)
     }
 
     @Synchronized

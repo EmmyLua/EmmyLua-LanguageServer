@@ -144,7 +144,8 @@ class LuaParserDefinition : ParserDefinition {
                 LuaDocTypes.TAG_NAME_PUBLIC,
                 LuaDocTypes.TAG_NAME_SEE,
                 LuaDocTypes.TAG_NAME_GENERIC,
-                LuaDocTypes.TAG_NAME_VARARG
+                LuaDocTypes.TAG_NAME_VARARG,
+                LuaDocTypes.TAG_NAME_ALIAS
         )
         val DOC_KEYWORD_TOKENS = TokenSet.create(
                 LuaDocTypes.FUN,

@@ -9,29 +9,28 @@ import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.util.PsiTreeUtil;
 import static com.tang.intellij.lua.comment.psi.LuaDocTypes.*;
 import com.intellij.extapi.psi.StubBasedPsiElementBase;
-import com.tang.intellij.lua.stubs.LuaDocTagClassStub;
+import com.tang.intellij.lua.stubs.LuaDocTagAliasStub;
 import com.tang.intellij.lua.comment.psi.*;
-import com.intellij.navigation.ItemPresentation;
-import com.tang.intellij.lua.ty.ITyClass;
+import com.tang.intellij.lua.ty.ITy;
 import com.intellij.psi.stubs.IStubElementType;
 import com.intellij.psi.tree.IElementType;
 
-public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocTagClassStub> implements LuaDocTagClass {
+public class LuaDocTagAliasImpl extends StubBasedPsiElementBase<LuaDocTagAliasStub> implements LuaDocTagAlias {
 
-  public LuaDocTagClassImpl(@NotNull LuaDocTagClassStub stub, @NotNull IStubElementType type) {
+  public LuaDocTagAliasImpl(@NotNull LuaDocTagAliasStub stub, @NotNull IStubElementType type) {
     super(stub, type);
   }
 
-  public LuaDocTagClassImpl(@NotNull ASTNode node) {
+  public LuaDocTagAliasImpl(@NotNull ASTNode node) {
     super(node);
   }
 
-  public LuaDocTagClassImpl(LuaDocTagClassStub stub, IElementType type, ASTNode node) {
+  public LuaDocTagAliasImpl(LuaDocTagAliasStub stub, IElementType type, ASTNode node) {
     super(stub, type, node);
   }
 
   public void accept(@NotNull LuaDocVisitor visitor) {
-    visitor.visitTagClass(this);
+    visitor.visitTagAlias(this);
   }
 
   public void accept(@NotNull PsiElementVisitor visitor) {
@@ -41,27 +40,17 @@ public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocTagClassSt
 
   @Override
   @Nullable
-  public LuaDocCommentString getCommentString() {
-    return PsiTreeUtil.getChildOfType(this, LuaDocCommentString.class);
+  public LuaDocTy getTy() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocTy.class);
   }
 
   @Override
-  @NotNull
+  @Nullable
   public PsiElement getId() {
-    return notNullChild(findChildByType(ID));
+    return findChildByType(ID);
   }
 
-  @NotNull
-  public ITyClass getType() {
-    return LuaDocPsiImplUtilKt.getType(this);
-  }
-
-  @NotNull
-  public ItemPresentation getPresentation() {
-    return LuaDocPsiImplUtilKt.getPresentation(this);
-  }
-
-  @NotNull
+  @Nullable
   public PsiElement getNameIdentifier() {
     return LuaDocPsiImplUtilKt.getNameIdentifier(this);
   }
@@ -71,7 +60,7 @@ public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocTagClassSt
     return LuaDocPsiImplUtilKt.setName(this, newName);
   }
 
-  @NotNull
+  @Nullable
   public String getName() {
     return LuaDocPsiImplUtilKt.getName(this);
   }
@@ -81,24 +70,8 @@ public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocTagClassSt
   }
 
   @NotNull
-  public String toString() {
-    return LuaDocPsiImplUtilKt.toString(this);
-  }
-
-  public boolean isDeprecated() {
-    return LuaDocPsiImplUtilKt.isDeprecated(this);
-  }
-
-  @Override
-  @Nullable
-  public LuaDocClassNameRef getSuperClassNameRef() {
-    return PsiTreeUtil.getChildOfType(this, LuaDocClassNameRef.class);
-  }
-
-  @Override
-  @Nullable
-  public PsiElement getModule() {
-    return findChildByType(TAG_NAME_MODULE);
+  public ITy getType() {
+    return LuaDocPsiImplUtilKt.getType(this);
   }
 
 }

@@ -57,11 +57,6 @@ public class LuaCallExprImpl extends LuaCallExprMixin implements LuaCallExpr {
   }
 
   @Nullable
-  public LuaFuncBodyOwner resolveFuncBodyOwner(@NotNull SearchContext context) {
-    return LuaPsiImplUtilKt.resolveFuncBodyOwner(this, context);
-  }
-
-  @Nullable
   public PsiElement getFirstStringArg() {
     return LuaPsiImplUtilKt.getFirstStringArg(this);
   }

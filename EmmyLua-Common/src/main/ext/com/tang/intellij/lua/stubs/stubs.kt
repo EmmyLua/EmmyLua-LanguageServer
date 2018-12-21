@@ -42,6 +42,7 @@ interface LuaDocTyStub {
 
 interface LuaClassMemberStub<T : PsiElement> : StubElement<T>, LuaDocTyStub {
     val visibility: Visibility
+    val isDeprecated: Boolean
 }
 
 interface LuaExprStub<T : LuaExpr> : StubElement<T>
@@ -77,6 +78,7 @@ interface LuaTableExprStub : StubElement<LuaTableExpr>, LuaExprStub<LuaTableExpr
 interface LuaLiteralExprStub : StubElement<LuaLiteralExpr>, LuaExprStub<LuaLiteralExpr> {
     val kind: LuaLiteralKind
     val string: String?
+    val tooLargerString: Boolean
 }
 
 interface LuaIndexExprStub : LuaExprStub<LuaIndexExpr>, LuaClassMemberStub<LuaIndexExpr> {
@@ -105,11 +107,12 @@ interface LuaClassMethodStub : LuaFuncBodyOwnerStub<LuaClassMethod> {
 interface LuaLocalFuncDefStub : StubElement<LuaLocalFuncDef>, LuaFuncBodyOwnerStub<LuaLocalFuncDef> {
     val name: String
 }
-interface LuaDocClassStub : StubElement<LuaDocTagClass> {
+interface LuaDocTagClassStub : StubElement<LuaDocTagClass> {
     val className: String
     val aliasName: String?
     val superClassName: String?
     val classType: TyClass
+    val isDeprecated: Boolean
 }
 interface LuaDocTagFieldStub : LuaClassMemberStub<LuaDocTagField> {
     val name: String
@@ -121,10 +124,15 @@ interface LuaDocTagFieldStub : LuaClassMemberStub<LuaDocTagField> {
 interface LuaDocTableDefStub : StubElement<LuaDocTableDef> {
     val className: String
 }
-interface LuaDocTableFieldDefStub : LuaClassMemberStub<LuaDocTableField> {
+interface LuaDocTableFieldStub : LuaClassMemberStub<LuaDocTableField> {
     val name: String
     val parentTypeName: String
 }
 interface LuaDocTagTypeStub : StubElement<LuaDocTagType>
 
 interface LuaFileStub : StubElement<LuaPsiFile>
+
+interface LuaDocTagAliasStub : StubElement<LuaDocTagClass> {
+    val name: String
+    val type: ITy
+}

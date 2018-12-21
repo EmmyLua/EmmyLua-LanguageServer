@@ -34,9 +34,9 @@ class LuaClassIndex : StubIndex<String, LuaDocTagClass>() {
             return ContainerUtil.process(collection, processor)
         }
 
-        fun processKeys(project: Project, processor: Processor<String>) {
+        fun processKeys(project: Project, processor: Processor<String>): Boolean {
             val scope = GlobalSearchScope.allScope(project)
-            instance.processKeys(project, scope, processor)
+            return instance.processKeys(project, scope, processor)
         }
     }
 }

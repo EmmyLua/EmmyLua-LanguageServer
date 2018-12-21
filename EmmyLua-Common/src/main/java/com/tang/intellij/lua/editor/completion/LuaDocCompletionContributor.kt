@@ -18,6 +18,7 @@ package com.tang.intellij.lua.editor.completion
 
 import com.intellij.codeInsight.completion.*
 import com.intellij.codeInsight.lookup.LookupElementBuilder
+import com.intellij.lang.Language
 import com.intellij.patterns.PlatformPatterns.psiElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
@@ -29,8 +30,8 @@ import com.tang.intellij.lua.lang.LuaIcons
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.psi.LuaClassField
 import com.tang.intellij.lua.psi.LuaFuncBodyOwner
+import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
-import com.tang.intellij.lua.stubs.index.LuaClassIndex
 import com.tang.intellij.lua.ty.ITyClass
 
 /**
@@ -85,8 +86,13 @@ class LuaDocCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, SHOW_CLASS, object : CompletionProvider<CompletionParameters>() {
             override fun addCompletions(completionParameters: CompletionParameters, processingContext: ProcessingContext, completionResultSet: CompletionResultSet) {
                 val project = completionParameters.position.project
-                LuaClassIndex.processKeys(project, Processor{
+                LuaShortNamesManager.getInstance(project).processAllClassNames(project, Processor{
                     completionResultSet.addElement(LookupElementBuilder.create(it).withIcon(LuaIcons.CLASS))
+                    true
+                })
+
+                LuaShortNamesManager.getInstance(project).processAllAlias(project, Processor { key ->
+                    completionResultSet.addElement(LookupElementBuilder.create(key).withIcon(LuaIcons.Alias))
                     true
                 })
                 completionResultSet.stopHere()
@@ -157,14 +163,14 @@ class LuaDocCompletionContributor : CompletionContributor() {
 
         // 在 @param 之后提示 optional
         private val SHOW_OPTIONAL = psiElement().afterLeaf(
-                psiElement(LuaDocTypes.TAG_PARAM))
+                psiElement(LuaDocTypes.TAG_NAME_PARAM))
 
         // 在 extends 之后提示类型
         private val SHOW_CLASS = psiElement().withParent(LuaDocClassNameRef::class.java)
 
         // 在 @field 之后提示 public / protected
         private val SHOW_ACCESS_MODIFIER = psiElement().afterLeaf(
-                psiElement().withElementType(LuaDocTypes.TAG_FIELD)
+                psiElement().withElementType(LuaDocTypes.TAG_NAME_FIELD)
         )
 
         private val SHOW_FIELD = psiElement(LuaDocTypes.ID).inside(LuaDocTagField::class.java)

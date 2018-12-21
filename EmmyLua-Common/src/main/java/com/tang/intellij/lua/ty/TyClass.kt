@@ -28,8 +28,6 @@ import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.psi.search.LuaClassInheritorsSearch
 import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
-import com.tang.intellij.lua.stubs.index.LuaClassIndex
-import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 
 interface ITyClass : ITy {
     val className: String
@@ -45,6 +43,10 @@ interface ITyClass : ITy {
     fun findMember(name: String, searchContext: SearchContext): LuaClassMember?
     fun findMemberType(name: String, searchContext: SearchContext): ITy?
     fun findSuperMember(name: String, searchContext: SearchContext): LuaClassMember?
+
+    fun recoverAlias(context: SearchContext, aliasSubstitutor: TyAliasSubstitutor): ITy {
+        return this
+    }
 }
 
 fun ITyClass.isVisibleInScope(project: Project, contextTy: ITy, visibility: Visibility): Boolean {
@@ -94,11 +96,11 @@ abstract class TyClass(override val className: String,
         val clazzName = className
         val project = context.project
 
-        val memberIndex = LuaClassMemberIndex.instance
-        val list = memberIndex.get(clazzName.hashCode(), project, ProjectAndLibrariesScope(project))
+        val manager = LuaShortNamesManager.getInstance(project)
+        val list = manager.getClassMembers(clazzName, project, ProjectAndLibrariesScope(project))
 
         processAlias(Processor { alias ->
-            val classMembers = memberIndex.get(alias.hashCode(), project, ProjectAndLibrariesScope(project))
+            val classMembers = manager.getClassMembers(alias, project, ProjectAndLibrariesScope(project))
             list.addAll(classMembers)
         })
 
@@ -114,7 +116,7 @@ abstract class TyClass(override val className: String,
     }
 
     override fun findMember(name: String, searchContext: SearchContext): LuaClassMember? {
-        return LuaClassMemberIndex.find(this, name, searchContext)
+        return LuaShortNamesManager.getInstance(searchContext.project).findMember(this, name, searchContext)
     }
 
     override fun findMemberType(name: String, searchContext: SearchContext): ITy? {
@@ -144,7 +146,7 @@ abstract class TyClass(override val className: String,
     }
 
     open fun doLazyInit(searchContext: SearchContext) {
-        val classDef = LuaShortNamesManager.findClass(className, searchContext)
+        val classDef = LuaShortNamesManager.getInstance(searchContext.project).findClass(className, searchContext)
         if (classDef != null && aliasName == null) {
             val tyClass = classDef.type
             aliasName = tyClass.aliasName
@@ -156,7 +158,7 @@ abstract class TyClass(override val className: String,
         lazyInit(context)
         val clsName = superClassName
         if (clsName != null) {
-            return Ty.getBuiltin(clsName) ?: LuaClassIndex.find(clsName, context)?.type
+            return Ty.getBuiltin(clsName) ?: LuaShortNamesManager.getInstance(context.project).findClass(clsName, context)?.type
         }
         return null
     }
@@ -209,7 +211,7 @@ abstract class TyClass(override val className: String,
     }
 }
 
-class TyPsiDocClass(val tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
+class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
 
     init {
         val supperRef = tagClass.superClassNameRef
@@ -230,6 +232,11 @@ open class TySerializedClass(name: String,
     init {
         aliasName = alias
         this.flags = flags
+    }
+
+    override fun recoverAlias(context: SearchContext, aliasSubstitutor: TyAliasSubstitutor): ITy {
+        val alias = LuaShortNamesManager.getInstance(context.project).findAlias(className, context.project, context.getScope())
+        return alias?.type?.substitute(aliasSubstitutor) ?: this
     }
 }
 
@@ -318,4 +325,8 @@ class TyDocTable(val table: LuaDocTableDef) : TyClass(getDocTableTypeName(table)
     }
 }
 
-class TySerializedDocTable(name: String) : TySerializedClass(name)
+class TySerializedDocTable(name: String) : TySerializedClass(name) {
+    override fun recoverAlias(context: SearchContext, aliasSubstitutor: TyAliasSubstitutor): ITy {
+        return this
+    }
+}

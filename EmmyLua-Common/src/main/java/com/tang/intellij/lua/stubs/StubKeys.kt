@@ -17,6 +17,7 @@
 package com.tang.intellij.lua.stubs
 
 import com.intellij.util.indexing.IndexId
+import com.tang.intellij.lua.comment.psi.LuaDocTagAlias
 import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaPsiElement
@@ -26,4 +27,5 @@ object StubKeys {
     val SHORT_NAME: IndexId<String, LuaPsiElement> = IndexId.create<String, LuaPsiElement>("lua.index.short_name")
     val CLASS: IndexId<String, LuaDocTagClass> = IndexId.create<String, LuaDocTagClass>("lua.index.class")
     val SUPER_CLASS: IndexId<String, LuaDocTagClass> = IndexId.create<String, LuaDocTagClass>("lua.index.super_class")
+    val ALIAS: IndexId<String, LuaDocTagAlias> = IndexId.create<String, LuaDocTagAlias>("lua.index.alias")
 }

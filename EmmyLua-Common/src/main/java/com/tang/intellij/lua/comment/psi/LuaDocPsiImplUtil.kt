@@ -155,7 +155,7 @@ fun getType(tagReturn: LuaDocTagReturn): ITy {
 
 /**
  * 优化：从stub中取名字
- * @param tagClass LuaDocTagClass
+ * @param tagClass LuaDocClassDef
  * *
  * @return string
  */
@@ -194,7 +194,8 @@ fun getType(tagClass: LuaDocTagClass): ITyClass {
 }
 
 fun isDeprecated(tagClass: LuaDocTagClass): Boolean {
-    return LuaCommentUtil.findContainer(tagClass).isDeprecated
+    val stub = tagClass.stub
+    return stub?.isDeprecated ?: LuaCommentUtil.findContainer(tagClass).isDeprecated
 }
 
 /**
@@ -322,4 +323,14 @@ fun getNameIdentifier(g: LuaDocGenericDef): PsiElement? {
 
 fun isDeprecated(member: LuaClassMember): Boolean {
     return false
+}
+
+fun getNameIdentifier(g: LuaDocTagAlias): PsiElement? {
+    return g.id
+}
+
+fun getType(alias: LuaDocTagAlias): ITy {
+    val stub = alias.stub
+    val ty = stub?.type ?: alias.ty?.getType()
+    return ty ?: Ty.UNKNOWN
 }

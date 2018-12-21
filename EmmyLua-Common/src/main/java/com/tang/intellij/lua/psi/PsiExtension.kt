@@ -281,10 +281,17 @@ val LuaLiteralExpr.kind: LuaLiteralKind get() {
     }
 }
 
+/**
+ * too larger to write to stub
+ */
+val LuaLiteralExpr.tooLargerString: Boolean get() {
+    return stub?.tooLargerString ?: (stringValue.length >= 1024 * 10)
+}
+
 val LuaLiteralExpr.stringValue: String get() {
-    /*val stub = stub
+    val stub = stub
     if (stub != null && !stub.tooLargerString)
-        return stub.string ?: ""*/
+        return stub.string ?: ""
     val content = LuaString.getContent(text)
     return content.value
 }
@@ -340,7 +347,8 @@ val LuaIndexExpr.docTy: ITy? get() {
 }
 
 val LuaIndexExpr.prefixExpr: LuaExpr get() {
-    return firstChild as LuaExpr
+    return PsiTreeUtil.getStubChildOfType(this, LuaExpr::class.java)!!
+    //return firstChild as LuaExpr
 }
 
 val LuaExpr.assignStat: LuaAssignStat? get() {

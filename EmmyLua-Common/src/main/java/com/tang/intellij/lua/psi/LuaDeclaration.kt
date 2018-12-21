@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package com.tang.intellij.lua.lang;
-
-import com.intellij.lang.Language;
+package com.tang.intellij.lua.psi
 
 /**
- * Created by TangZhiXu on 2015/11/15.
- * Email:272669294@qq.com
+ * 定义
+ * Created by TangZX on 2016/11/22.
  */
-public class LuaLanguage extends Language {
+interface LuaDeclaration : LuaCommentOwner
 
-    public static final int INDEX_VERSION = 34;
-
-    public static final LuaLanguage INSTANCE = new LuaLanguage();
-
-    public LuaLanguage() {
-        super("Lua");
-    }
-}
+interface LuaDeclarationScope : LuaPsiElement

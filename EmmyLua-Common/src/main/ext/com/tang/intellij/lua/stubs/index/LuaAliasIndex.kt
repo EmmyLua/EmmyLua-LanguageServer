@@ -14,21 +14,15 @@
  * limitations under the License.
  */
 
-package com.tang.intellij.lua.lang;
+package com.tang.intellij.lua.stubs.index
 
-import com.intellij.lang.Language;
+import com.tang.intellij.lua.comment.psi.LuaDocTagAlias
+import com.tang.intellij.lua.stubs.StubKeys
 
-/**
- * Created by TangZhiXu on 2015/11/15.
- * Email:272669294@qq.com
- */
-public class LuaLanguage extends Language {
-
-    public static final int INDEX_VERSION = 34;
-
-    public static final LuaLanguage INSTANCE = new LuaLanguage();
-
-    public LuaLanguage() {
-        super("Lua");
+class LuaAliasIndex : StubIndex<String, LuaDocTagAlias>() {
+    companion object {
+        val instance = LuaAliasIndex()
     }
+
+    override fun getKey() = StubKeys.ALIAS
 }

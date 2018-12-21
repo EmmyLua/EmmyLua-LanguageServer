@@ -5,10 +5,7 @@ import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.comment.LuaCommentUtil
-import com.tang.intellij.lua.comment.psi.LuaDocTagClass
-import com.tang.intellij.lua.comment.psi.LuaDocTagField
-import com.tang.intellij.lua.comment.psi.LuaDocTableDef
-import com.tang.intellij.lua.comment.psi.LuaDocTableField
+import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyClass
@@ -41,6 +38,7 @@ private fun index(psi: LuaPsiElement, sink: IndexSink) {
         is LuaDocTagClass -> index(psi, sink)
         is LuaDocTagField -> index(psi, sink)
         is LuaDocTableField -> index(psi, sink)
+        is LuaDocTagAlias -> index(psi, sink)
         is LuaClassMethodDef -> index(psi, sink)
         is LuaIndexExpr -> index(psi, sink)
         is LuaTableExpr -> index(psi, sink)
@@ -88,6 +86,11 @@ private fun index(field: LuaDocTableField, sink: IndexSink) {
     sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), field)
     sink.occurrence(StubKeys.CLASS_MEMBER, "$className*$name".hashCode(), field)
     sink.occurrence(StubKeys.SHORT_NAME, name, field)
+}
+
+private fun index(alias: LuaDocTagAlias, sink: IndexSink) {
+    val name = alias.name!!
+    sink.occurrence(StubKeys.ALIAS, name, alias)
 }
 
 private fun index(methodDef: LuaClassMethodDef, sink: IndexSink) {

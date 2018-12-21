@@ -5,6 +5,7 @@ import javax.swing.*;
 public class LuaIcons {
     public static final Icon FILE = null;
     public static final Icon UNITY = null;
+    public static final Icon Alias = null;
     public static final Icon CLASS = null;
     public static final Icon CLASS_FIELD = null;
     public static final Icon CLASS_METHOD = null;

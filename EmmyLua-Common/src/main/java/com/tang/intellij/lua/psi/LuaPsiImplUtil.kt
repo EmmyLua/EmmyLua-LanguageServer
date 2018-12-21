@@ -197,27 +197,6 @@ fun guessParentType(callExpr: LuaCallExpr, context: SearchContext): ITy {
 }
 
 /**
- * 找出函数体
- * @param callExpr call expr
- * *
- * @return LuaFuncBodyOwner
- */
-fun resolveFuncBodyOwner(callExpr: LuaCallExpr, context: SearchContext): LuaFuncBodyOwner? {
-    return recursionGuard(callExpr, Computable {
-        var owner: LuaFuncBodyOwner? = null
-        val expr = callExpr.expr
-        if (expr is LuaIndexExpr) {
-            val resolve = resolve(expr, context)
-            if (resolve is LuaFuncBodyOwner)
-                owner = resolve
-        } else if (expr is LuaNameExpr) {
-            owner = resolveFuncBodyOwner(expr, context)
-        }
-        owner
-    })
-}
-
-/**
  * 获取第一个字符串参数
  * @param callExpr callExpr
  * *
@@ -407,6 +386,10 @@ private fun getParamsInner(funcBodyOwner: LuaFuncBodyOwner): Array<LuaParamInfo>
     var comment: LuaComment? = null
     if (funcBodyOwner is LuaCommentOwner) {
         comment = LuaCommentUtil.findComment(funcBodyOwner)
+    } else {
+        val commentOwner = PsiTreeUtil.getParentOfType(funcBodyOwner, LuaCommentOwner::class.java)
+        if (commentOwner != null)
+            comment = LuaCommentUtil.findComment(commentOwner)
     }
 
     val paramNameList = funcBodyOwner.paramNameDefList
@@ -624,12 +607,12 @@ fun getExpr(exprStat: LuaExprStat): LuaExpr {
 }
 
 fun isDeprecated(member: LuaClassMember): Boolean {
-    /*if (member is StubBasedPsiElement<*>) {
+    if (member is StubBasedPsiElement<*>) {
         val stub = member.stub
         if (stub is LuaClassMemberStub) {
             return stub.isDeprecated
         }
-    }*/
+    }
 
     if (member is LuaCommentOwner) {
         val comment = member.comment

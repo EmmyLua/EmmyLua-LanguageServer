@@ -17,44 +17,30 @@
 package com.tang.intellij.lua.psi.search
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
 import com.tang.intellij.lua.ext.ExtensionPointName
 import com.tang.intellij.lua.psi.LuaClass
+import com.tang.intellij.lua.psi.LuaClassMember
+import com.tang.intellij.lua.psi.LuaTypeAlias
+import com.tang.intellij.lua.psi.LuaTypeDef
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.ty.ITyClass
 
 abstract class LuaShortNamesManager {
     companion object {
         val EP_NAME = ExtensionPointName.create<LuaShortNamesManager>("com.tang.intellij.lua.luaShortNamesManager")
 
-        fun findClass(name: String, project: Project, scope: GlobalSearchScope): LuaClass? {
-            for (ep in EP_NAME.extensions) {
-                val c = ep.findClass(name, project, scope)
-                if (c != null)
-                    return c
-            }
-            return null
-        }
+        private val KEY = Key.create<LuaShortNamesManager>("com.tang.intellij.lua.luaShortNamesManager")
 
-        fun findClass(name: String, context: SearchContext): LuaClass? {
-            for (ep in EP_NAME.extensions) {
-                val c = ep.findClass(name, context)
-                if (c != null)
-                    return c
+        fun getInstance(project: Project): LuaShortNamesManager {
+            var manager = project.getUserData(KEY)
+            if (manager == null) {
+                manager = LuaShortNamesManagerImpl()
+                project.putUserData(KEY, manager)
             }
-            return null
-        }
-
-        fun processAllClassNames(project: Project, processor: Processor<String>) {
-            for (ep in EP_NAME.extensions) {
-                ep.processAllClassNames(project, processor)
-            }
-        }
-
-        fun processClassesWithName(name: String, project: Project, scope: GlobalSearchScope, processor: Processor<LuaClass>) {
-            for (ep in EP_NAME.extensions) {
-                ep.processClassesWithName(name, project, scope, processor)
-            }
+            return manager
         }
     }
 
@@ -62,7 +48,25 @@ abstract class LuaShortNamesManager {
 
     abstract fun findClass(name: String, project: Project, scope: GlobalSearchScope): LuaClass?
 
-    abstract fun processAllClassNames(project: Project, processor: Processor<String>)
+    abstract fun findMember(type: ITyClass, fieldName: String, context: SearchContext): LuaClassMember?
 
-    abstract fun processClassesWithName(name: String, project: Project, scope: GlobalSearchScope, processor: Processor<LuaClass>)
+    abstract fun processAllClassNames(project: Project, processor: Processor<String>): Boolean
+
+    abstract fun processClassesWithName(name: String, project: Project, scope: GlobalSearchScope, processor: Processor<LuaClass>): Boolean
+
+    abstract fun getClassMembers(clazzName: String, project: Project, scope: GlobalSearchScope): MutableCollection<LuaClassMember>
+
+    abstract fun processAllMembers(type: ITyClass, fieldName: String, context: SearchContext, processor: Processor<LuaClassMember>): Boolean
+
+    open fun findAlias(name: String, project: Project, scope: GlobalSearchScope): LuaTypeAlias? {
+        return null
+    }
+
+    open fun processAllAlias(project: Project, processor: Processor<String>): Boolean {
+        return true
+    }
+
+    open fun findTypeDef(name: String, project: Project, scope: GlobalSearchScope): LuaTypeDef? {
+        return findClass(name, project, scope) ?: findAlias(name, project, scope)
+    }
 }
