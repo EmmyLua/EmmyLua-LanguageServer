@@ -7,8 +7,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.tang.intellij.lua.stubs.LuaFileStub
 
-//import com.tang.vscode.api.impl.LuaFile
-
 class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile, LuaTypeGuessable, LuaDeclarationScope {
 
     private var virtualFile: VirtualFile? = null
@@ -51,6 +49,10 @@ class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile
     val stub: LuaFileStub? = null
 
     val fileElement: ASTNode? = node
+
+    override fun getModificationStamp(): Long {
+        return 0
+    }
 
     companion object {
         private var idCount = 0

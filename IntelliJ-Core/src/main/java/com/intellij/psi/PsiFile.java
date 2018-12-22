@@ -51,4 +51,6 @@ public interface PsiFile extends PsiNamedElement {
 
     @NotNull
     VirtualFile getVirtualFile();
+
+    Long getModificationStamp();
 }
