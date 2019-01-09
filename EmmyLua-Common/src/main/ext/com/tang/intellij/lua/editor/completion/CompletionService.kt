@@ -29,9 +29,11 @@ class CompletionResultSetImpl(private val consumer: Consumer<LookupElement>) : C
 }
 
 object CompletionService {
-    private val contributor = LuaCompletionContributor()
-
-    private val docContributor = LuaDocCompletionContributor()
+    private val contributors = arrayOf(
+            LuaCompletionContributor(),
+            SmartCompletionContributor(),
+            LuaDocCompletionContributor()
+    )
 
     fun collectCompletion(psi: PsiFile, pos: Int, config: IConfiguration, consumer: Consumer<LookupElement>) {
         //val element = psi.findElementAt(pos)
@@ -56,8 +58,7 @@ object CompletionService {
 
         parameters.originalFile.putUserData(CompletionSession.KEY, CompletionSession(parameters, result))
 
-        contributor.fillCompletionVariants(parameters, result)
-        docContributor.fillCompletionVariants(parameters, result)
+        contributors.forEach { it.fillCompletionVariants(parameters, result) }
     }
 
     private fun findPrefix(text: String, pos: Int): String {
