@@ -7,13 +7,17 @@ object Configuration : IConfiguration {
 
     private var settings: JsonObject? = null
 
-    private var _sourceRoots = mutableListOf<String>()
+    private var mySourceRoots = mutableListOf<String>()
 
-    val sourceRoots get() = _sourceRoots
+    val sourceRoots get() = mySourceRoots
 
-    private var _completionCaseSensitive = false
+    private var myCompletionCaseSensitive = false
 
-    override val completionCaseSensitive get() = _completionCaseSensitive
+    override val completionCaseSensitive get() = myCompletionCaseSensitive
+
+    private var myShowCodeLens = false
+
+    val showCodeLens get() = myShowCodeLens
 
     fun update(settings: JsonObject) {
         this.settings = settings
@@ -21,18 +25,21 @@ object Configuration : IConfiguration {
         //case sensitive
         val caseSensitive = path("emmylua.completion.caseSensitive")
         if (caseSensitive != null) {
-            _completionCaseSensitive = caseSensitive.asBoolean
+            myCompletionCaseSensitive = caseSensitive.asBoolean
         }
 
         // source roots
-        _sourceRoots.clear()
+        mySourceRoots.clear()
         val sourceRoots = path("emmylua.source.roots")
         if (sourceRoots is JsonArray) {
             sourceRoots.forEach {
                 if (it is JsonPrimitive)
-                    _sourceRoots.add(it.asString)
+                    mySourceRoots.add(it.asString)
             }
         }
+
+        // show codeLens
+        myShowCodeLens = path("emmylua.codeLens")?.asBoolean == true
     }
 
     private fun path(path: String): JsonElement? {

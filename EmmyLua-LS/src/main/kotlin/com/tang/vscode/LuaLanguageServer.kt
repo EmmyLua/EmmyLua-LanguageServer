@@ -82,7 +82,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.definitionProvider = true
         capabilities.hoverProvider = true
         capabilities.referencesProvider = true
-        //capabilities.codeLensProvider = CodeLensOptions(true)
+        capabilities.codeLensProvider = CodeLensOptions(true)
         capabilities.documentHighlightProvider = true
         capabilities.renameProvider = true
         capabilities.signatureHelpProvider = SignatureHelpOptions(listOf(",", "("))
