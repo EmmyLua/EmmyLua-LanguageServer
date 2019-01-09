@@ -17,7 +17,6 @@
 package com.tang.intellij.lua.editor.completion
 
 import com.intellij.codeInsight.completion.*
-import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.patterns.PlatformPatterns
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
@@ -27,6 +26,7 @@ import com.tang.intellij.lua.psi.shouldBe
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.TyAliasSubstitutor
 import com.tang.intellij.lua.ty.TyStringLiteral
+import org.eclipse.lsp4j.CompletionItemKind
 
 class SmartCompletionContributor : CompletionContributor() {
     init {
@@ -37,7 +37,8 @@ class SmartCompletionContributor : CompletionContributor() {
                 val ty = expr.shouldBe(SearchContext(expr.project)).substitute(TyAliasSubstitutor(expr.project))
                 ty.each {
                     if (it is TyStringLiteral) {
-                        val lookupElement = LookupElementBuilder.create(it.content)
+                        val lookupElement = LuaLookupElement(it.content)
+                        lookupElement.kind = CompletionItemKind.Enum
                         completionResultSet.addElement(PrioritizedLookupElement.withPriority(lookupElement, 111111999.0))
                     }
                 }

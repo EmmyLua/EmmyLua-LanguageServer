@@ -89,8 +89,9 @@ private fun index(field: LuaDocTableField, sink: IndexSink) {
 }
 
 private fun index(alias: LuaDocTagAlias, sink: IndexSink) {
-    val name = alias.name!!
-    sink.occurrence(StubKeys.ALIAS, name, alias)
+    val name = alias.name
+    if (name != null)
+        sink.occurrence(StubKeys.ALIAS, name, alias)
 }
 
 private fun index(methodDef: LuaClassMethodDef, sink: IndexSink) {
