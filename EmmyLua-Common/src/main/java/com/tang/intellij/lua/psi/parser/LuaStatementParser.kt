@@ -19,6 +19,7 @@ package com.tang.intellij.lua.psi.parser
 import com.intellij.lang.PsiBuilder
 import com.intellij.lang.parser.GeneratedParserUtilBase
 import com.intellij.psi.tree.IElementType
+import com.tang.intellij.lua.psi.LuaParserUtil
 import com.tang.intellij.lua.psi.LuaTypes.*
 
 object LuaStatementParser : GeneratedParserUtilBase() {
@@ -45,7 +46,7 @@ object LuaStatementParser : GeneratedParserUtilBase() {
         b.advanceLexer() // do
 
         // block
-        lazyBlock(b, l)
+        LuaParserUtil.lazyBlock(b, l)
 
         expectError(b, END) { "'end'" } // end
 
@@ -65,20 +66,20 @@ object LuaStatementParser : GeneratedParserUtilBase() {
         expectError(b, THEN) { "'then'" }
 
         // block
-        lazyBlock(b, l)
+        LuaParserUtil.lazyBlock(b, l)
 
         // elseif
         while (b.tokenType == ELSEIF) {
             b.advanceLexer()
             expectExpr(b, l + 1)
             expectError(b, THEN) { "'then'" }
-            lazyBlock(b, l)
+            LuaParserUtil.lazyBlock(b, l)
         }
 
         // else
         if (b.tokenType == ELSE) {
             b.advanceLexer()
-            lazyBlock(b, l)
+            LuaParserUtil.lazyBlock(b, l)
         }
 
         expectError(b, END) { "'end'" }
@@ -96,7 +97,7 @@ object LuaStatementParser : GeneratedParserUtilBase() {
         expectError(b, DO) { "'do'" }
 
         // block
-        lazyBlock(b, l)
+        LuaParserUtil.lazyBlock(b, l)
 
         expectError(b, END) { "'end'" } // end
 
@@ -110,7 +111,7 @@ object LuaStatementParser : GeneratedParserUtilBase() {
         b.advanceLexer() // repeat
 
         // block
-        lazyBlock(b, l)
+        LuaParserUtil.lazyBlock(b, l)
 
         expectError(b, UNTIL) { "'until'" }
 
@@ -161,7 +162,7 @@ object LuaStatementParser : GeneratedParserUtilBase() {
         }
 
         expectError(b, DO) { "'do'" } // do
-        lazyBlock(b, l) // block
+        LuaParserUtil.lazyBlock(b, l) // block
         expectError(b, END) { "'end'" } // do
 
         doneStat(b, m, type)
@@ -288,7 +289,7 @@ object LuaStatementParser : GeneratedParserUtilBase() {
         expectError(b, RPAREN) { "')'" }
 
         // block
-        lazyBlock(b, l)
+        LuaParserUtil.lazyBlock(b, l)
 
         expectError(b, END) { "'end'" }
 
@@ -399,17 +400,5 @@ object LuaStatementParser : GeneratedParserUtilBase() {
     private fun doneStat(b:PsiBuilder, m: PsiBuilder.Marker, type: IElementType) {
         expect(b, SEMI)
         done(m, type)
-    }
-
-    private fun lazyBlock(b: PsiBuilder, l: Int) {
-        val m = b.mark()
-        parseStatements(b, l + 1)
-        m.done(BLOCK)
-    }
-
-    private fun parseStatements(b: PsiBuilder, l: Int) {
-        while (true) {
-            LuaStatementParser.parseStatement(b, l + 1) ?: break
-        }
     }
 }

@@ -104,7 +104,8 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
 
   public static final TokenSet[] EXTENDS_SETS_ = new TokenSet[] {
     create_token_set_(ARR_TY, FUNCTION_TY, GENERAL_TY, GENERIC_TY,
-      PAR_TY, TABLE_TY, TY, UNION_TY),
+      PAR_TY, STRING_LITERAL_TY, TABLE_TY, TY,
+      UNION_TY),
   };
 
   /* ********************************************************** */
@@ -318,6 +319,44 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     if (!recursion_guard_(b, l, "fieldList_0_2")) return false;
     consumeToken(b, COMMA);
     return true;
+  }
+
+  /* ********************************************************** */
+  // '<' generic_def (',' generic_def)* '>'
+  static boolean function_generic(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "function_generic")) return false;
+    if (!nextTokenIs(b, LT)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_);
+    r = consumeToken(b, LT);
+    p = r; // pin = 1
+    r = r && report_error_(b, generic_def(b, l + 1));
+    r = p && report_error_(b, function_generic_2(b, l + 1)) && r;
+    r = p && consumeToken(b, GT) && r;
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  // (',' generic_def)*
+  private static boolean function_generic_2(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "function_generic_2")) return false;
+    while (true) {
+      int c = current_position_(b);
+      if (!function_generic_2_0(b, l + 1)) break;
+      if (!empty_element_parsed_guard_(b, "function_generic_2", c)) break;
+    }
+    return true;
+  }
+
+  // ',' generic_def
+  private static boolean function_generic_2_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "function_generic_2_0")) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeToken(b, COMMA);
+    r = r && generic_def(b, l + 1);
+    exit_section_(b, m, null, r);
+    return r;
   }
 
   /* ********************************************************** */
@@ -922,6 +961,7 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   // 4: POSTFIX(arr_ty)
   // 5: ATOM(general_ty)
   // 6: ATOM(par_ty)
+  // 7: ATOM(string_literal_ty)
   public static boolean ty(PsiBuilder b, int l, int g) {
     if (!recursion_guard_(b, l, "ty")) return false;
     addVariant(b, "<ty>");
@@ -931,6 +971,7 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     if (!r) r = table_ty(b, l + 1);
     if (!r) r = general_ty(b, l + 1);
     if (!r) r = par_ty(b, l + 1);
+    if (!r) r = string_literal_ty(b, l + 1);
     p = r;
     r = r && ty_0(b, l + 1, g);
     exit_section_(b, l, m, null, r, p, null);
@@ -965,31 +1006,40 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     return r;
   }
 
-  // fun '(' function_param_list ')' (':' type_list)?
+  // fun function_generic? '(' function_param_list ')' (':' type_list)?
   public static boolean function_ty(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "function_ty")) return false;
     if (!nextTokenIsSmart(b, FUN)) return false;
     boolean r, p;
     Marker m = enter_section_(b, l, _NONE_, FUNCTION_TY, null);
-    r = consumeTokensSmart(b, 1, FUN, LPAREN);
+    r = consumeTokenSmart(b, FUN);
     p = r; // pin = 1
-    r = r && report_error_(b, function_param_list(b, l + 1));
+    r = r && report_error_(b, function_ty_1(b, l + 1));
+    r = p && report_error_(b, consumeToken(b, LPAREN)) && r;
+    r = p && report_error_(b, function_param_list(b, l + 1)) && r;
     r = p && report_error_(b, consumeToken(b, RPAREN)) && r;
-    r = p && function_ty_4(b, l + 1) && r;
+    r = p && function_ty_5(b, l + 1) && r;
     exit_section_(b, l, m, r, p, null);
     return r || p;
   }
 
+  // function_generic?
+  private static boolean function_ty_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "function_ty_1")) return false;
+    function_generic(b, l + 1);
+    return true;
+  }
+
   // (':' type_list)?
-  private static boolean function_ty_4(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "function_ty_4")) return false;
-    function_ty_4_0(b, l + 1);
+  private static boolean function_ty_5(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "function_ty_5")) return false;
+    function_ty_5_0(b, l + 1);
     return true;
   }
 
   // ':' type_list
-  private static boolean function_ty_4_0(PsiBuilder b, int l) {
-    if (!recursion_guard_(b, l, "function_ty_4_0")) return false;
+  private static boolean function_ty_5_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "function_ty_5_0")) return false;
     boolean r;
     Marker m = enter_section_(b);
     r = consumeTokenSmart(b, EXTENDS);
@@ -1044,6 +1094,17 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     r = p && consumeToken(b, RPAREN) && r;
     exit_section_(b, l, m, r, p, null);
     return r || p;
+  }
+
+  // STRING_LITERAL
+  public static boolean string_literal_ty(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "string_literal_ty")) return false;
+    if (!nextTokenIsSmart(b, STRING_LITERAL)) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeTokenSmart(b, STRING_LITERAL);
+    exit_section_(b, m, STRING_LITERAL_TY, r);
+    return r;
   }
 
   static final Parser after_dash_recover_parser_ = new Parser() {
