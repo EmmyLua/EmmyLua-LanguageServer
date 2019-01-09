@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("UNUSED_PARAMETER", "unused")
+
 package com.tang.intellij.lua.psi
 
 import com.intellij.openapi.project.Project

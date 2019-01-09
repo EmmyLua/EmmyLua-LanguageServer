@@ -1,3 +1,5 @@
+@file:Suppress("UNUSED_PARAMETER")
+
 package com.tang.intellij.lua.ext
 
 class ExtensionPointName<T> {

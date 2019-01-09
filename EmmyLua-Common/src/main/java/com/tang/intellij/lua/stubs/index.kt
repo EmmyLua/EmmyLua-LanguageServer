@@ -1,3 +1,5 @@
+@file:Suppress("UNUSED_PARAMETER", "unused")
+
 package com.tang.intellij.lua.stubs
 
 import com.intellij.psi.PsiElement
