@@ -9,6 +9,7 @@ import com.intellij.util.Consumer
 import com.intellij.util.Processor
 import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.comment.psi.LuaDocClassNameRef
+import com.tang.intellij.lua.comment.psi.LuaDocTagAlias
 import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocVisitor
 import com.tang.intellij.lua.comment.psi.api.LuaComment
@@ -62,7 +63,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val params = mutableListOf<Range>()
         val globals = mutableListOf<Range>()
         val docTypeNames = mutableListOf<Range>()
-        val upvalues = mutableListOf<Range>()
+        val upValues = mutableListOf<Range>()
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
                 params.add(o.textRange.toRange(file))
@@ -96,7 +97,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 }
 
                 if (isUpValue(o, context))
-                    upvalues.add(o.textRange.toRange(file))
+                    upValues.add(o.textRange.toRange(file))
             }
 
             override fun visitElement(element: PsiElement) {
@@ -116,6 +117,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         override fun visitElement(element: PsiElement) {
                             element.acceptChildren(this)
                         }
+
+                        override fun visitTagAlias(o: LuaDocTagAlias) {
+                            val identifier = o.nameIdentifier
+                            if (identifier != null)
+                                docTypeNames.add(identifier.textRange.toRange(file))
+                            super.visitTagAlias(o)
+                        }
                     })
                 } else
                     super.visitElement(element)
@@ -129,21 +137,21 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             all.add(Annotator(uri, globals, AnnotatorType.Global))
         if (docTypeNames.isNotEmpty())
             all.add(Annotator(uri, docTypeNames, AnnotatorType.DocName))
-        if (upvalues.isNotEmpty())
-            all.add(Annotator(uri, upvalues, AnnotatorType.Upvalue))
+        if (upValues.isNotEmpty())
+            all.add(Annotator(uri, upValues, AnnotatorType.Upvalue))
         return all
     }
 
     override fun resolveCompletionItem(item: CompletionItem): CompletableFuture<CompletionItem> {
-        return computeAsync { _ ->
+        return computeAsync {
             val data = item.data
             if (data is JsonPrimitive) {
                 val arr = data.asString.split("|")
                 if (arr.size >= 2) {
                     val cls = arr[0]
                     val name = arr[1]
-                    LuaClassMemberIndex.process(cls, name, SearchContext(workspace.project), Processor {
-                        val doc = documentProvider.generateDoc(it, it)
+                    LuaClassMemberIndex.process(cls, name, SearchContext(workspace.project), Processor { member ->
+                        val doc = documentProvider.generateDoc(member, member)
                         val content = MarkupContent()
                         content.kind = "markdown"
                         content.value = doc
@@ -177,7 +185,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun documentHighlight(position: TextDocumentPositionParams): CompletableFuture<MutableList<out DocumentHighlight>> {
-        return computeAsync { _ ->
+        return computeAsync {
             val list = mutableListOf<DocumentHighlight>()
             withPsiFile(position) { file, psiFile, i ->
                 val target = TargetElementUtil.findTarget(psiFile, i)
@@ -186,13 +194,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                     // self highlight
                     if (def.containingFile == psiFile) {
-                        def.nameRange?.let { list.add(DocumentHighlight(it.toRange(file))) }
+                        def.nameRange?.let { range -> list.add(DocumentHighlight(range.toRange(file))) }
                     }
 
                     // references highlight
                     val search = ReferencesSearch.search(def, GlobalSearchScope.fileScope(psiFile))
-                    search.forEach {
-                        list.add(DocumentHighlight(it.getRangeInFile(file)))
+                    search.forEach { reference ->
+                        list.add(DocumentHighlight(reference.getRangeInFile(file)))
                     }
                 }
             }
@@ -285,7 +293,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun rename(params: RenameParams): CompletableFuture<WorkspaceEdit> {
-        return computeAsync { _ ->
+        return computeAsync {
             val changes = mutableListOf<TextDocumentEdit>()
             withPsiFile(params.textDocument, params.position) { _, psiFile, i ->
                 val target = TargetElementUtil.findTarget(psiFile, i) ?: return@withPsiFile
@@ -293,20 +301,20 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 val map = mutableMapOf<String, MutableList<TextEdit>>()
                 val def = target.reference?.resolve() ?: target
 
-                def.nameRange?.let {
+                def.nameRange?.let { range ->
                     val refFile = def.containingFile.virtualFile as LuaFile
                     val uri = refFile.uri.toString()
                     val list = map.getOrPut(uri) { mutableListOf() }
-                    list.add(TextEdit(it.toRange(refFile), params.newName))
+                    list.add(TextEdit(range.toRange(refFile), params.newName))
                 }
 
                 // references
                 val search = ReferencesSearch.search(def)
-                search.forEach {
-                    val refFile = it.element.containingFile.virtualFile as LuaFile
+                search.forEach { reference ->
+                    val refFile = reference.element.containingFile.virtualFile as LuaFile
                     val uri = refFile.uri.toString()
                     val list = map.getOrPut(uri) { mutableListOf() }
-                    list.add(TextEdit(it.getRangeInFile(refFile), params.newName))
+                    list.add(TextEdit(reference.getRangeInFile(refFile), params.newName))
                 }
 
                 map.forEach { t, u ->
@@ -340,7 +348,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> {
-        return computeAsync { _ ->
+        return computeAsync {
             val list = mutableListOf<Either<SymbolInformation, DocumentSymbol>>()
             val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
