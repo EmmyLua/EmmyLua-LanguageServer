@@ -22,7 +22,8 @@ import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
 import java.net.URI
-import java.net.URLDecoder
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -30,7 +31,6 @@ import java.util.concurrent.CompletableFuture
  * Created by Client on 2018/3/20.
  */
 class LuaWorkspaceService : WorkspaceService, IWorkspace {
-    private var _root: URI = URI("file:///")
     private val _rootList = mutableListOf<IFolder>()
     private val _rootWSFolders = mutableListOf<URI>()
     private val _baseFolders = mutableListOf<IFolder>()
@@ -63,7 +63,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                 FileChangeType.Created -> addFile(change.uri)
                 FileChangeType.Deleted -> removeFile(change.uri)
                 FileChangeType.Changed -> {
-                    removeRoot(change.uri)
+                    removeFile(change.uri)
                     addFile(change.uri)
                 }
                 else -> { }
@@ -105,13 +105,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             loadWorkspace()
     }
 
-    var root: URI
-        get() = _root
-        set(value) {
-            _root = value
-            addWSRoot(value)
-        }
-
     override fun eachRoot(processor: (ws: IFolder) -> Boolean) {
         for (root in _rootList) {
             if (!processor(root))
@@ -131,15 +124,13 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         return ws ?: addWSRoot(uri)
     }
 
-    private fun findOrCreate(uri: URI, autoCreate: Boolean): Pair<IFolder?, Boolean> {
-        val split = uri.path.split('/')
+    private fun findOrCreate(path: Path, autoCreate: Boolean): Pair<IFolder?, Boolean> {
         var isCreated = false
 
-        val driver = split[1]
-        val base = _baseFolders.find { it.getName() == driver }
+        val driver = path.root
+        val base = _baseFolders.find { it.path == driver }
         var folder = base ?: if (autoCreate) {
-            val u = URI("${uri.scheme}:///$driver/")
-            val newBase = Folder(u, driver)
+            val newBase = Folder(driver, driver.toFile().name)
             _baseFolders.add(newBase)
             isCreated = true
             newBase
@@ -148,10 +139,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         if (folder == null)
             return Pair(folder, false)
 
-        for (i in 2 until split.size) {
-            val name = split[i]
-            if (i == split.lastIndex && name.isEmpty())
-                break
+        for (i in 0 until path.nameCount) {
+            val name = path.getName(i).toFile().name
             val find = folder?.findFile(name) as? IFolder
             folder = if (find != null) find else {
                 val create = folder?.createFolder(name)
@@ -164,10 +153,11 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun addWSRoot(uri: URI): IFolder {
-        val exist = _rootList.find { it.uri == uri }
+        val path = Paths.get(uri)
+        val exist = _rootList.find { it.path == path }
         if (exist != null) return exist
 
-        val pair = findOrCreate(uri, true)
+        val pair = findOrCreate(path, true)
         val folder = pair.first!!
         if (pair.second)
             _rootList.add(folder)
@@ -175,10 +165,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun removeRoot(uri: String) {
-        val uri2 = if (uri.endsWith("/")) uri else "$uri/"
-        val u = URI(URLDecoder.decode(uri2, "UTF-8"))
+        val path = Paths.get(URI(uri))
         _rootList.removeIf { folder ->
-            if (folder.matchUri(u)) {
+            if (folder.path == path) {
                 folder.walkFiles {
                     it.unindex()
                     true
@@ -255,24 +244,22 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         project.process {
             val file = it.virtualFile
             if (file is LuaFile && file.diagnostics.isNotEmpty()) {
-                client?.publishDiagnostics(PublishDiagnosticsParams(file.uri.toString(), file.diagnostics))
+                client?.publishDiagnostics(PublishDiagnosticsParams(file.path.toString(), file.diagnostics))
             }
             true
         }
     }
 
     override fun findFile(uri: String): IVirtualFile? {
-        val u = URI(uri)
-        if (u.scheme != "file")
-            return null
-        val pair = findOrCreate(u.resolve(""), false)
+        val u = Paths.get(URI(uri))
+        val pair = findOrCreate(u.parent, false)
         val root = pair.first
-        return root?.findFile(File(u.path).name)
+        return root?.findFile(u.toFile().name)
     }
 
     override fun addFile(file: File, text: String?): ILuaFile {
-        val uri = file.toURI()
-        val pair = findOrCreate(uri.resolve(""), true)
+        val path = file.toPath()
+        val pair = findOrCreate(path.parent, true)
         val root = pair.first!!
         return root.addFile(file.name, text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes()))
     }

@@ -15,7 +15,6 @@ import com.tang.vscode.api.impl.LuaFile
 import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.CancelChecker
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures
-import java.net.URLEncoder
 import java.util.concurrent.CompletableFuture
 
 fun range(sLine: Int, sChar: Int, eLine: Int, eChar: Int): Range {
@@ -40,7 +39,7 @@ val PsiElement.nameRange: TextRange? get() {
 fun PsiNamedElement.getSymbol(): SymbolInformation {
     val file = containingFile.virtualFile as LuaFile
     val range = nameRange ?: textRange
-    val loc = Location(file.uri.toString(), range.toRange(file))
+    val loc = Location(file.path.toString(), range.toRange(file))
     var text = name
     if (this is LuaFuncBodyOwner) {
         text = "$text${this.paramSignature}"
@@ -164,8 +163,4 @@ fun <R> computeAsync(code :(CancelChecker) -> R) : CompletableFuture<R> {
         ProgressManager.setCancelChecker(it)
         code(it)
     }
-}
-
-fun encodeURI(name: String): String {
-    return URLEncoder.encode(name)
 }

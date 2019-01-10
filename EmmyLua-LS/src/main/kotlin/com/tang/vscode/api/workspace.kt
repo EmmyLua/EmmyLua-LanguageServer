@@ -7,6 +7,7 @@ import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import java.io.File
 import java.net.URI
+import java.nio.file.Path
 
 interface IWorkspace {
     fun addFile(file: File, text: String? = null): ILuaFile
@@ -37,7 +38,8 @@ interface IFolder : IVirtualFile {
 interface IVirtualFile {
     val isFolder: Boolean
     fun getName(): String
-    val uri: URI
+    val path: Path
+    val uri get() = path.toUri()
     val parent: IFolder
     fun matchUri(uri: URI): Boolean
 }

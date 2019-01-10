@@ -2,12 +2,12 @@ package com.tang.vscode.api.impl
 
 import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.IVirtualFile
-import java.io.File
 import java.net.URI
+import java.nio.file.Path
 
-abstract class VirtualFileBase(override val uri: URI) : IVirtualFile {
+abstract class VirtualFileBase(override val path: Path) : IVirtualFile {
     private var parentFolder: IFolder? = null
-    private val file by lazy { File(uri.path) }
+    private val file by lazy { path.toFile() }
 
     override val isFolder: Boolean
         get() = false
@@ -21,6 +21,6 @@ abstract class VirtualFileBase(override val uri: URI) : IVirtualFile {
     }
 
     override fun matchUri(uri: URI): Boolean {
-        return uri == this.uri
+        return uri == this.path.toUri()
     }
 }

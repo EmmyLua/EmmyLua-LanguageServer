@@ -3,10 +3,9 @@ package com.tang.vscode.api.impl
 import com.tang.vscode.api.IFolder
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.api.IVirtualFile
-import com.tang.vscode.utils.encodeURI
-import java.net.URI
+import java.nio.file.Path
 
-open class Folder(uri: URI, private val myName: String? = null)
+open class Folder(uri: Path, private val myName: String? = null)
     : VirtualFileBase(uri), IFolder {
 
     private val children = mutableListOf<IVirtualFile>()
@@ -67,7 +66,7 @@ open class Folder(uri: URI, private val myName: String? = null)
     override fun getFile(name: String, recursive: Boolean): IVirtualFile? {
         var f: IVirtualFile? = null
         walkFiles {
-            if (it.uri.path.indexOf(name) != -1) {
+            if (it.path.endsWith(name)) {
                 f = it
                 return@walkFiles false
             }
@@ -80,8 +79,7 @@ open class Folder(uri: URI, private val myName: String? = null)
         get() = true
 
     override fun addFile(name: String, text: CharSequence): ILuaFile {
-        val safeName = encodeURI(name)
-        val luaFile = LuaFile(this.uri.resolve(safeName))
+        val luaFile = LuaFile(this.path.resolve(name))
         luaFile.text = text
         addFile(luaFile)
         return luaFile
@@ -101,7 +99,7 @@ open class Folder(uri: URI, private val myName: String? = null)
     }
 
     override fun createFolder(name: String): IFolder {
-        val u = uri.resolve("${encodeURI(name)}/")
+        val u = path.resolve(name)
         val folder = Folder(u)
         addFile(folder)
         return folder

@@ -18,7 +18,6 @@ import org.eclipse.lsp4j.services.LanguageClient
 import org.eclipse.lsp4j.services.LanguageClientAware
 import org.eclipse.lsp4j.services.LanguageServer
 import org.eclipse.lsp4j.services.WorkspaceService
-import java.net.URI
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
@@ -58,9 +57,10 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
         if (params.rootUri != null)
-            workspaceService.root = URI(params.rootUri)
+            workspaceService.addRoot(params.rootUri)
 
         initIntellijEnv()
+
 
         val json = params.initializationOptions as? JsonObject
         if (json != null) {

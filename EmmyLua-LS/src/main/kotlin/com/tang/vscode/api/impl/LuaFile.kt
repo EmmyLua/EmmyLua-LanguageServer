@@ -20,11 +20,11 @@ import com.tang.vscode.utils.toRange
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
-import java.net.URI
+import java.nio.file.Path
 
 internal data class Line(val line: Int, val startOffset:Int, val stopOffset: Int, val str: String)
 
-class LuaFile(override val uri: URI) : VirtualFileBase(uri), ILuaFile, VirtualFile {
+class LuaFile(override val path: Path) : VirtualFileBase(path), ILuaFile, VirtualFile {
     private var _text: CharSequence = ""
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
