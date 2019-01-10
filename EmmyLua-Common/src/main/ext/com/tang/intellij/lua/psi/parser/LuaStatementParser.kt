@@ -19,6 +19,7 @@ package com.tang.intellij.lua.psi.parser
 import com.intellij.lang.PsiBuilder
 import com.intellij.lang.parser.GeneratedParserUtilBase
 import com.intellij.psi.tree.IElementType
+import com.tang.intellij.lua.psi.LuaParserUtil
 import com.tang.intellij.lua.psi.LuaTypes.*
 
 object LuaStatementParser : GeneratedParserUtilBase() {
@@ -405,6 +406,7 @@ object LuaStatementParser : GeneratedParserUtilBase() {
         val m = b.mark()
         parseStatements(b, l + 1)
         m.done(BLOCK)
+        m.setCustomEdgeTokenBinders(LuaParserUtil.MY_LEFT_COMMENT_BINDER, null)
     }
 
     private fun parseStatements(b: PsiBuilder, l: Int) {
