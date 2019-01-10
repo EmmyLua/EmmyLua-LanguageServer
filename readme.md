@@ -12,13 +12,11 @@ For an exhaustive list of features see the [intellij plugin description](https:/
 
 * [install JDK](https://www3.ntu.edu.sg/home/ehchua/programming/howto/JDK_Howto.html)
 
-* [install Gradle](https://gradle.org/install/)
-
 ## Building
 
 Run from root:
 
-    $ gradle shadowJar
+    $ gradlew shadowJar
 
 
 The `EmmyLua-LS-all.jar` file will be created in `EmmyLua-LanguageServer/EmmyLua-LS/build` .
