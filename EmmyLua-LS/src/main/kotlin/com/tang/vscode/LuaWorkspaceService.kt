@@ -251,10 +251,14 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun findFile(uri: String): IVirtualFile? {
-        val u = Paths.get(URI(uri))
-        val pair = findOrCreate(u.parent, false)
+        val u = URI(uri)
+        if (u.scheme != "file")
+            return null
+
+        val path = Paths.get(u)
+        val pair = findOrCreate(path.parent, false)
         val root = pair.first
-        return root?.findFile(u.toFile().name)
+        return root?.findFile(path.toFile().name)
     }
 
     override fun addFile(file: File, text: String?): ILuaFile {
@@ -266,6 +270,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     private fun addFile(uri: String) {
         val u = URI(uri)
+        if (u.scheme != "file")
+            return
         addFile(File(u.path))
     }
 
