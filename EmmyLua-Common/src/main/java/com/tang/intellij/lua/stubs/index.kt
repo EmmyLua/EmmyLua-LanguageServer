@@ -54,6 +54,10 @@ private fun index(doc: LuaDocTagClass, sink: IndexSink) {
     val name = doc.type.className
     sink.occurrence(StubKeys.CLASS, name, doc)
     sink.occurrence(StubKeys.SHORT_NAME, name, doc)
+    val superClassName = doc.type.superClassName
+    if (superClassName != null) {
+        sink.occurrence(StubKeys.SUPER_CLASS, superClassName, doc)
+    }
 }
 
 private fun index(field: LuaDocTagField, sink: IndexSink) {
