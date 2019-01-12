@@ -2,6 +2,7 @@ package com.tang.vscode
 
 import com.google.gson.JsonPrimitive
 import com.intellij.openapi.project.ProjectCoreUtil
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
@@ -60,19 +61,19 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     private fun findAnnotators(file: ILuaFile): List<Annotator> {
-        val params = mutableListOf<Range>()
-        val globals = mutableListOf<Range>()
-        val docTypeNames = mutableListOf<Range>()
-        val upValues = mutableListOf<Range>()
+        val params = mutableListOf<TextRange>()
+        val globals = mutableListOf<TextRange>()
+        val docTypeNames = mutableListOf<TextRange>()
+        val upValues = mutableListOf<TextRange>()
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
-                params.add(o.textRange.toRange(file))
+                params.add(o.textRange)
             }
 
             override fun visitFuncDef(o: LuaFuncDef) {
                 val name = o.nameIdentifier
                 if (name != null && o.forwardDeclaration == null) {
-                    globals.add(name.textRange.toRange(file))
+                    globals.add(name.textRange)
                 }
                 super.visitFuncDef(o)
             }
@@ -84,20 +85,20 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 val context = SearchContext(o.project)
                 val resolve = resolveInFile(o.name, o, context)
                 when (resolve) {
-                    is LuaParamNameDef -> params.add(o.textRange.toRange(file))
-                    is LuaFuncDef -> globals.add(o.textRange.toRange(file))
+                    is LuaParamNameDef -> params.add(o.textRange)
+                    is LuaFuncDef -> globals.add(o.textRange)
                     is LuaNameDef -> {} //local
                     is LuaLocalFuncDef -> {} //local
                     else -> {
                         if (o.firstChild.textMatches(Constants.WORD_SELF)) {
                             // SELF
                         } else
-                            globals.add(o.textRange.toRange(file))
+                            globals.add(o.textRange)
                     }
                 }
 
                 if (isUpValue(o, context))
-                    upValues.add(o.textRange.toRange(file))
+                    upValues.add(o.textRange)
             }
 
             override fun visitElement(element: PsiElement) {
@@ -106,12 +107,12 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                         override fun visitTagClass(o: LuaDocTagClass) {
                             val identifier = o.nameIdentifier
-                            docTypeNames.add(identifier.textRange.toRange(file))
+                            docTypeNames.add(identifier.textRange)
                             super.visitTagClass(o)
                         }
 
                         override fun visitClassNameRef(o: LuaDocClassNameRef) {
-                            docTypeNames.add(o.textRange.toRange(file))
+                            docTypeNames.add(o.textRange)
                         }
 
                         override fun visitElement(element: PsiElement) {
@@ -121,7 +122,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         override fun visitTagAlias(o: LuaDocTagAlias) {
                             val identifier = o.nameIdentifier
                             if (identifier != null)
-                                docTypeNames.add(identifier.textRange.toRange(file))
+                                docTypeNames.add(identifier.textRange)
                             super.visitTagAlias(o)
                         }
                     })
@@ -132,13 +133,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val all = mutableListOf<Annotator>()
         val uri = file.uri.toString()
         if (params.isNotEmpty())
-            all.add(Annotator(uri, params, AnnotatorType.Param))
+            all.add(Annotator(uri, params.map { it.toRange(file) }, AnnotatorType.Param))
         if (globals.isNotEmpty())
-            all.add(Annotator(uri, globals, AnnotatorType.Global))
+            all.add(Annotator(uri, globals.map { it.toRange(file) }, AnnotatorType.Global))
         if (docTypeNames.isNotEmpty())
-            all.add(Annotator(uri, docTypeNames, AnnotatorType.DocName))
+            all.add(Annotator(uri, docTypeNames.map { it.toRange(file) }, AnnotatorType.DocName))
         if (upValues.isNotEmpty())
-            all.add(Annotator(uri, upValues, AnnotatorType.Upvalue))
+            all.add(Annotator(uri, upValues.map { it.toRange(file) }, AnnotatorType.Upvalue))
         return all
     }
 
