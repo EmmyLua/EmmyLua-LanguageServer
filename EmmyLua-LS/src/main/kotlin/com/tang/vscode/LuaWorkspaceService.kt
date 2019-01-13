@@ -244,7 +244,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         project.process {
             val file = it.virtualFile
             if (file is LuaFile && file.diagnostics.isNotEmpty()) {
-                client?.publishDiagnostics(PublishDiagnosticsParams(file.path.toString(), file.diagnostics))
+                client?.publishDiagnostics(PublishDiagnosticsParams(file.uri.toString(), file.diagnostics))
             }
             true
         }
