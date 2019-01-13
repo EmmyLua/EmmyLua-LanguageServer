@@ -39,7 +39,7 @@ val PsiElement.nameRange: TextRange? get() {
 fun PsiNamedElement.getSymbol(): SymbolInformation {
     val file = containingFile.virtualFile as LuaFile
     val range = nameRange ?: textRange
-    val loc = Location(file.path.toString(), range.toRange(file))
+    val loc = Location(file.uri.toString(), range.toRange(file))
     var text = name
     if (this is LuaFuncBodyOwner) {
         text = "$text${this.paramSignature}"
