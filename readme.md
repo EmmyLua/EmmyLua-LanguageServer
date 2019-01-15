@@ -27,7 +27,7 @@ To run the language server use:
 
     $ java -cp EmmyLua-LS-all.jar com.tang.vscode.MainKt`
 
-## Adding to an IDE
+## Adding to an Sublime
 
 Just pass the instantiating instruction to the LSP plugin.
 
@@ -60,4 +60,59 @@ Example: adding EmmyLua to [SublimeText](https://www.sublimetext.com/) with [Sub
         }
     }
 }
+```
+
+## Adding to Emacs
+add following code to your `~/.emacs` or `.emacs.d/init.el` .
+``` emacs-lisp
+(use-package lsp-mode
+  :ensure t
+  :commands lsp
+  :hook ((lua-mode) . lsp)
+  :config
+
+  ;; register emmy-lua-lsp
+  (lsp-register-client
+   (make-lsp-client :new-connection
+                    (lsp-stdio-connection
+                     (list
+                      "/usr/bin/java"
+                      "-cp"
+                      (expand-file-name "EmmyLua-LS-all.jar" user-emacs-directory)
+                      "com.tang.vscode.MainKt"))
+                    :major-modes '(lua-mode)
+                    :server-id 'emmy-lua))
+  )
+
+(use-package company-lsp
+  :ensure t
+  :after lsp-mode
+  :config
+  (setq company-lsp-enable-recompletion t)
+  )
+
+(defun company-lua-mode-setup()
+  "Create lua company backend."
+  (setq-local company-backends '(
+                                 (
+                                  company-lsp
+                                  company-lua
+                                  company-keywords
+                                  company-gtags
+                                  company-yasnippet
+                                  )
+                                 company-capf
+                                 company-dabbrev-code
+                                 company-files
+                                 )
+       ))
+
+(use-package lua-mode
+  :ensure t
+  :mode "\\.lua$"
+  :interpreter "lua"
+  :hook (lua-mode . company-lua-mode-setup)
+  :config
+  )
+
 ```
