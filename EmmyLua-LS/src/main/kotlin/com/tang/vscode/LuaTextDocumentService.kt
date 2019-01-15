@@ -31,7 +31,6 @@ import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.services.TextDocumentService
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
@@ -210,7 +209,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun onTypeFormatting(params: DocumentOnTypeFormattingParams): CompletableFuture<MutableList<out TextEdit>> {
-        throw NotImplementedException()
+        TODO()
     }
 
     override fun definition(position: TextDocumentPositionParams): CompletableFuture<MutableList<out Location>> {
@@ -233,7 +232,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun rangeFormatting(params: DocumentRangeFormattingParams): CompletableFuture<MutableList<out TextEdit>> {
-        throw NotImplementedException()
+        TODO()
     }
 
     override fun codeLens(params: CodeLensParams): CompletableFuture<MutableList<out CodeLens>> {
@@ -431,7 +430,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun formatting(params: DocumentFormattingParams?): CompletableFuture<MutableList<out TextEdit>> {
-        throw NotImplementedException()
+        TODO()
     }
 
     override fun didChange(params: DidChangeTextDocumentParams) {
