@@ -116,3 +116,6 @@ add following code to your `~/.emacs` or `.emacs.d/init.el` .
   )
 
 ```
+work with company-mode and lua-mode in Emacs 26.1:
+
+![work-with-emacs](img/work-with-emacs.png)
