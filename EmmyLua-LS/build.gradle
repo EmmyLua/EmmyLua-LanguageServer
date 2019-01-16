@@ -10,7 +10,7 @@ buildscript {
 
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.2.30"
-    id 'com.github.johnrengelman.plugin-shadow' version '2.0.3'
+    id 'com.github.johnrengelman.shadow' version '4.0.3'
 }
 
 apply plugin: "java"
