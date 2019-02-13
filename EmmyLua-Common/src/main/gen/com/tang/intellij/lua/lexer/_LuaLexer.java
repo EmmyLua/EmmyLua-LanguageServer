@@ -419,7 +419,7 @@ public class _LuaLexer implements FlexLexer {
   private boolean zzEOFDone;
 
   /* user code: */
-    private LuaLanguageLevel level;
+    private LuaLanguageLevel level = LuaLanguageLevel.LUA54;
     public _LuaLexer(LuaLanguageLevel level) {
         this((Reader) null);
         this.level = level;
