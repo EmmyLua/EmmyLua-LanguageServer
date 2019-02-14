@@ -10,7 +10,7 @@ import java.net.URI
 import java.nio.file.Path
 
 interface IWorkspace {
-    fun addFile(file: File, text: String? = null): ILuaFile
+    fun addFile(file: File, text: String? = null): ILuaFile?
     fun findFile(uri: String): IVirtualFile?
     fun removeFile(uri: String)
     fun eachRoot(processor: (f: IFolder) -> Boolean)

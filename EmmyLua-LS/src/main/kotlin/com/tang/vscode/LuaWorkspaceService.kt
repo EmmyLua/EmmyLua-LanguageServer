@@ -229,9 +229,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
         allFiles.forEachIndexed { index, file ->
             val findFile = findFile(file.toURI().toString())
+            monitor.setProgress("Emmy load file: ${file.canonicalPath}", (index + 1) / allFiles.size.toFloat())
             if (findFile == null)
                 addFile(file)
-            monitor.setProgress("Emmy load file: ${file.canonicalPath}", (index + 1) / allFiles.size.toFloat())
         }
         monitor.done()
         sendAllDiagnostics()
@@ -261,11 +261,18 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         return root?.findFile(path.toFile().name)
     }
 
-    override fun addFile(file: File, text: String?): ILuaFile {
+    override fun addFile(file: File, text: String?): ILuaFile? {
         val path = file.toPath()
         val pair = findOrCreate(path.parent, true)
         val root = pair.first!!
-        return root.addFile(file.name, text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes()))
+        val content: CharSequence
+        try {
+            content = text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes())
+        } catch (e: Exception) {
+            System.err.println("Invalidate lua file: ${file.canonicalPath}")
+            return null
+        }
+        return root.addFile(file.name, content)
     }
 
     private fun addFile(uri: String) {
