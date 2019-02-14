@@ -22,7 +22,7 @@ import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import java.nio.file.Path
 
-internal data class Line(val line: Int, val startOffset:Int, val stopOffset: Int, val str: String)
+internal data class Line(val line: Int, val startOffset:Int, val stopOffset: Int)
 
 class LuaFile(override val path: Path) : VirtualFileBase(path), ILuaFile, VirtualFile {
     private var _text: CharSequence = ""
@@ -45,7 +45,7 @@ class LuaFile(override val path: Path) : VirtualFileBase(path), ILuaFile, Virtua
                 // incremental updating
                 it.range.start.line >= _lines.size -> {
                     sb += it.text
-                    _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character, it.text))
+                    _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character))
                 }
                 else -> {
                     val sline = _lines[it.range.start.line]
@@ -85,16 +85,14 @@ class LuaFile(override val path: Path) : VirtualFileBase(path), ILuaFile, Virtua
 
             if (c == '\n' || rn) {
                 val lbSize = if (rn) 2 else 1
-                val str = _text.substring(lineStart, pos)
-                val line = Line(lineCount++, lineStart, pos, str)
+                val line = Line(lineCount++, lineStart, pos)
                 _lines.add(line)
                 lineStart = pos + lbSize
                 pos += lbSize
             } else pos++
 
             if (pos >= length) {
-                val str = _text.substring(lineStart, length)
-                val line = Line(lineCount, lineStart, pos, str)
+                val line = Line(lineCount, lineStart, pos)
                 _lines.add(line)
                 break
             }
