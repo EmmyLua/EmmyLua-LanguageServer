@@ -15,16 +15,16 @@ import com.tang.intellij.lua.psi.LuaCallExpr
 import com.tang.intellij.lua.psi.LuaExprStat
 import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.stubs.IndexSink
+import com.tang.vscode.FileURI
 import com.tang.vscode.api.ILuaFile
 import com.tang.vscode.utils.toRange
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
-import java.nio.file.Path
 
 internal data class Line(val line: Int, val startOffset:Int, val stopOffset: Int)
 
-class LuaFile(override val path: Path) : VirtualFileBase(path), ILuaFile, VirtualFile {
+class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, VirtualFile {
     private var _text: CharSequence = ""
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null

@@ -3,6 +3,7 @@ package com.tang.vscode.api
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiFile
+import com.tang.vscode.FileURI
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import java.io.File
@@ -38,8 +39,8 @@ interface IFolder : IVirtualFile {
 interface IVirtualFile {
     val isFolder: Boolean
     fun getName(): String
-    val path: Path
-    val uri get() = path.toUri()
+    val path: Path get() = uri.path
+    val uri: FileURI
     val parent: IFolder
     fun matchUri(uri: URI): Boolean
 }
