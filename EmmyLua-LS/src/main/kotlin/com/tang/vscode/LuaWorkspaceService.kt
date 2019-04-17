@@ -22,7 +22,6 @@ import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
 import java.net.URI
-import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -125,11 +124,11 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     private fun findOrCreate(uri: FileURI, autoCreate: Boolean): Pair<IFolder?, Boolean> {
         var isCreated = false
-        val path = uri.path
+        val path = uri
         val driver = path.root
-        val base = _baseFolders.find { it.path == driver }
+        val base = _baseFolders.find { it.uri == driver }
         var folder = base ?: if (autoCreate) {
-            val newBase = Folder(FileURI(uri.scheme, driver))
+            val newBase = Folder(driver)
             _baseFolders.add(newBase)
             isCreated = true
             newBase
@@ -138,8 +137,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         if (folder == null)
             return Pair(folder, false)
 
-        for (i in 0 until path.nameCount) {
-            val name = path.getName(i).toFile().name
+        for (i in 1 until path.nameCount) {
+            val name = path.getName(i)
             val find = folder?.findFile(name) as? IFolder
             folder = if (find != null) find else {
                 val create = folder?.createFolder(name)
@@ -152,7 +151,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun addWSRoot(uri: URI): IFolder {
-        val fileURI = FileURI(uri)
+        val fileURI = FileURI(uri, true)
         val exist = _rootList.find { it.uri == fileURI }
         if (exist != null) return exist
 
@@ -164,9 +163,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun removeRoot(uri: String) {
-        val path = Paths.get(URI(uri))
+        val path = FileURI(uri, true)
         _rootList.removeIf { folder ->
-            if (folder.path == path) {
+            if (folder.uri == path) {
                 folder.walkFiles {
                     it.unindex()
                     true
@@ -250,19 +249,17 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun findFile(uri: String): IVirtualFile? {
-        val u = URI(uri)
-        if (u.scheme != "file")
-            return null
-
-        val fileURI = FileURI(u)
-        val pair = findOrCreate(fileURI.parent, false)
+        val fileURI = FileURI(uri, false)
+        val parent = fileURI.parent ?: return null
+        val pair = findOrCreate(parent, false)
         val root = pair.first
         return root?.findFile(fileURI.name)
     }
 
     override fun addFile(file: File, text: String?): ILuaFile? {
-        val fileURI = FileURI(file.toURI())
-        val pair = findOrCreate(fileURI.parent, true)
+        val fileURI = FileURI(file.toURI(), false)
+        val parent = fileURI.parent ?: return null
+        val pair = findOrCreate(parent, true)
         val root = pair.first!!
         val content: CharSequence
         try {

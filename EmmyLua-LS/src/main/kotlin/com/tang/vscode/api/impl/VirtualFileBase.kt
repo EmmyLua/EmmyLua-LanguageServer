@@ -20,6 +20,6 @@ abstract class VirtualFileBase(override val uri: FileURI) : IVirtualFile {
     }
 
     override fun matchUri(uri: URI): Boolean {
-        return uri == this.path.toUri()
+        return uri == this.uri.raw
     }
 }

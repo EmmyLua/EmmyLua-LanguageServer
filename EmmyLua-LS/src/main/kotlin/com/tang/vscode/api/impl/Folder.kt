@@ -66,7 +66,7 @@ open class Folder(fileURI: FileURI, private val myName: String? = null)
     override fun getFile(name: String, recursive: Boolean): IVirtualFile? {
         var f: IVirtualFile? = null
         walkFiles {
-            if (it.path.endsWith(name)) {
+            if (it.uri.endsWith(name)) {
                 f = it
                 return@walkFiles false
             }
@@ -79,7 +79,7 @@ open class Folder(fileURI: FileURI, private val myName: String? = null)
         get() = true
 
     override fun addFile(name: String, text: CharSequence): ILuaFile {
-        val luaFile = LuaFile(uri.resolve(name))
+        val luaFile = LuaFile(uri.resolve(name, false))
         luaFile.text = text
         addFile(luaFile)
         return luaFile
@@ -99,8 +99,7 @@ open class Folder(fileURI: FileURI, private val myName: String? = null)
     }
 
     override fun createFolder(name: String): IFolder {
-        val u = uri.resolve(name)
-        val folder = Folder(u)
+        val folder = Folder(uri.resolve(name, true))
         addFile(folder)
         return folder
     }
