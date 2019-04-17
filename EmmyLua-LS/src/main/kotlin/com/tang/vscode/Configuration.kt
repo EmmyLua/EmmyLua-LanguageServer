@@ -1,5 +1,6 @@
 package com.tang.vscode
 
+import com.esotericsoftware.wildcard.Paths
 import com.google.gson.*
 import com.tang.intellij.lua.IConfiguration
 
@@ -17,10 +18,36 @@ object Configuration : IConfiguration {
 
     private var myShowCodeLens = false
 
+    private val associations = mutableListOf<String>()
+
     val showCodeLens get() = myShowCodeLens
+
+    fun searchFiles(dir: String): Paths {
+        val path = Paths()
+        associations.forEach {
+            path.glob(dir, it)
+        }
+        return path
+    }
 
     fun update(settings: JsonObject) {
         this.settings = settings
+
+        //files.associations
+        val ass = path("files.associations")
+        associations.clear()
+        associations.add("**/*.lua")
+        if (ass is JsonObject) {
+            for (entry in ass.entrySet()) {
+                val lan = entry.value.asString
+                if (lan.toLowerCase() == "lua") {
+                    var wildcard = entry.key
+                    if (!wildcard.startsWith("**/"))
+                        wildcard = "**/$wildcard"
+                    associations.add(wildcard)
+                }
+            }
+        }
 
         //case sensitive
         val caseSensitive = path("emmylua.completion.caseSensitive")

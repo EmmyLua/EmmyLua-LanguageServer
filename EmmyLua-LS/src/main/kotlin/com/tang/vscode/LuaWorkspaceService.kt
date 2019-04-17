@@ -190,10 +190,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun collectFiles(file: File, list: MutableList<File>) {
-        if (file.isFile && file.extension == "lua") {
-            list.add(file)
-        } else if (file.isDirectory) {
-            file.listFiles().forEach { collectFiles(it, list) }
+        Configuration.searchFiles(file.canonicalPath).forEach { filePath ->
+            list.add(File(filePath))
         }
     }
 
