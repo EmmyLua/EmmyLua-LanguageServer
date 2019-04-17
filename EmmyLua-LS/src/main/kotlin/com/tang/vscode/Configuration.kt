@@ -22,6 +22,10 @@ object Configuration : IConfiguration {
 
     val showCodeLens get() = myShowCodeLens
 
+    var clientType = "unknown"
+
+    val isVSCode get() = clientType == "vsc"
+
     fun searchFiles(dir: String): Paths {
         val path = Paths()
         associations.forEach {

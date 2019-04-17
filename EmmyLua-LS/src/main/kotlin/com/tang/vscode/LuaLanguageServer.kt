@@ -69,6 +69,9 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
                 workspaceService.addRoot(stdFolder.asString)
             val workspaceFolders = json["workspaceFolders"] as? JsonArray
             workspaceFolders?.forEach { workspaceService.addRoot(it.asString) }
+            val clientType = json["client"] as? JsonPrimitive
+            if (clientType != null)
+                Configuration.clientType = clientType.asString
         }
 
         val res = InitializeResult()

@@ -198,11 +198,13 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     fun loadWorkspace() {
         loadWorkspace(object : IProgressMonitor {
             override fun done() {
-                client?.progressReport(ProgressReport("Finished!", 1f))
+                if (Configuration.isVSCode)
+                    client?.progressReport(ProgressReport("Finished!", 1f))
             }
 
             override fun setProgress(text: String, percent: Float) {
-                client?.progressReport(ProgressReport(text, percent))
+                if (Configuration.isVSCode)
+                    client?.progressReport(ProgressReport(text, percent))
             }
         })
     }
