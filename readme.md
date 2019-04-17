@@ -25,7 +25,7 @@ The `EmmyLua-LS-all.jar` file will be created in `EmmyLua-LanguageServer/EmmyLua
 
 To run the language server use:
 
-    $ java -cp EmmyLua-LS-all.jar com.tang.vscode.MainKt`
+    $ java -cp EmmyLua-LS-all.jar com.tang.vscode.MainKt
 
 ## Adding to an Sublime
 
