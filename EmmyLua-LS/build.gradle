@@ -23,7 +23,7 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     compile 'org.eclipse.lsp4j:org.eclipse.lsp4j:0.5.0.M1'
     compile project(":EmmyLua-Common")
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.yevdo:jwildcard:1.4'
 }
 
 sourceSets {

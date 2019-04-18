@@ -1,8 +1,8 @@
 package com.tang.vscode
 
-import com.esotericsoftware.wildcard.Paths
 import com.google.gson.*
 import com.tang.intellij.lua.IConfiguration
+import com.yevdo.jwildcard.JWildcard
 
 object Configuration : IConfiguration {
 
@@ -26,12 +26,8 @@ object Configuration : IConfiguration {
 
     val isVSCode get() = clientType == "vsc"
 
-    fun searchFiles(dir: String): Paths {
-        val path = Paths()
-        associations.forEach {
-            path.glob(dir, it)
-        }
-        return path
+    fun matchFile(name: String): Boolean {
+        return associations.any { JWildcard.matches(it, name) }
     }
 
     fun update(settings: JsonObject) {
@@ -40,14 +36,12 @@ object Configuration : IConfiguration {
         //files.associations
         val ass = path("files.associations")
         associations.clear()
-        associations.add("**/*.lua")
+        associations.add("*.lua")
         if (ass is JsonObject) {
             for (entry in ass.entrySet()) {
                 val lan = entry.value.asString
                 if (lan.toLowerCase() == "lua") {
-                    var wildcard = entry.key
-                    if (!wildcard.startsWith("**/"))
-                        wildcard = "**/$wildcard"
+                    val wildcard = entry.key
                     associations.add(wildcard)
                 }
             }
