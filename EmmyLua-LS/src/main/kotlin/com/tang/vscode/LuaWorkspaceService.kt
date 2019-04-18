@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture
 class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val _rootList = mutableListOf<IFolder>()
     private val _rootWSFolders = mutableListOf<URI>()
-    private val _baseFolders = mutableListOf<IFolder>()
+    private val _schemeMap = mutableMapOf<String, IFolder>()
     private var client: LuaLanguageClient? = null
 
     inner class WProject : UserDataHolderBase(), Project {
@@ -122,22 +122,21 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         return ws ?: addWSRoot(uri)
     }
 
-    private fun findOrCreate(uri: FileURI, autoCreate: Boolean): Pair<IFolder?, Boolean> {
+    private fun getSchemeFolder(path: FileURI, autoCreate: Boolean): IFolder? {
+        var folder: IFolder? = _schemeMap[path.scheme]
+        if (folder == null && autoCreate) {
+            folder = Folder(FileURI("${path.scheme}:/", true))
+            _schemeMap[path.scheme] = folder
+        }
+        return folder
+    }
+
+    private fun findOrCreate(path: FileURI, autoCreate: Boolean): Pair<IFolder?, Boolean> {
         var isCreated = false
-        val path = uri
-        val driver = path.root
-        val base = _baseFolders.find { it.uri == driver }
-        var folder = base ?: if (autoCreate) {
-            val newBase = Folder(driver)
-            _baseFolders.add(newBase)
-            isCreated = true
-            newBase
-        } else null
-
+        var folder = getSchemeFolder(path, autoCreate)
         if (folder == null)
-            return Pair(folder, false)
-
-        for (i in 1 until path.nameCount) {
+            return Pair(folder, isCreated)
+        for (i in 0 until path.nameCount) {
             val name = path.getName(i)
             val find = folder?.findFile(name) as? IFolder
             folder = if (find != null) find else {
@@ -146,7 +145,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                 create
             }
         }
-
         return Pair(folder, isCreated)
     }
 
@@ -250,31 +248,36 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     override fun findFile(uri: String): IVirtualFile? {
         val fileURI = FileURI(uri, false)
-        val parent = fileURI.parent ?: return null
-        val pair = findOrCreate(parent, false)
-        val root = pair.first
-        return root?.findFile(fileURI.name)
+        val parent = fileURI.parent
+        val folder: IFolder? = if (parent == null)
+            getSchemeFolder(fileURI, false)
+        else
+            findOrCreate(parent, false).first
+        return folder?.findFile(fileURI.name)
     }
 
     override fun addFile(file: File, text: String?): ILuaFile? {
         val fileURI = FileURI(file.toURI(), false)
-        val parent = fileURI.parent ?: return null
-        val pair = findOrCreate(parent, true)
-        val root = pair.first!!
+        val parent = fileURI.parent
+        val folder: IFolder? = if (parent == null)
+            getSchemeFolder(fileURI, true)
+        else
+            findOrCreate(parent, true).first
+
         val content: CharSequence
+        if (folder == null)
+            return null
         try {
             content = text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes())
         } catch (e: Exception) {
             System.err.println("Invalidate lua file: ${file.canonicalPath}")
             return null
         }
-        return root.addFile(file.name, content)
+        return folder.addFile(file.name, content)
     }
 
     private fun addFile(uri: String) {
         val u = URI(uri)
-        if (u.scheme != "file")
-            return
         addFile(File(u.path))
     }
 

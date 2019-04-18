@@ -15,7 +15,7 @@ class FileURI {
         val str = uri.toString()
         _uri = if (isFolder && !str.endsWith('/')) URI("$str/") else uri
         _scheme = _uri.scheme
-        _uriString = _uri.toString()
+        _uriString = _uri.toString().toLowerCase()
         _isFolder = isFolder
     }
 
