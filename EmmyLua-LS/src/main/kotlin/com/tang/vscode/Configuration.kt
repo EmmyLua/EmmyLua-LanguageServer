@@ -4,6 +4,10 @@ import com.google.gson.*
 import com.tang.intellij.lua.IConfiguration
 import com.yevdo.jwildcard.JWildcard
 
+class ConfigurationUpdateResult(
+    val associationChanged: Boolean
+)
+
 object Configuration : IConfiguration {
 
     private var settings: JsonObject? = null
@@ -30,11 +34,22 @@ object Configuration : IConfiguration {
         return associations.any { JWildcard.matches(it, name) }
     }
 
-    fun update(settings: JsonObject) {
+    private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
+        if (a.size != b.size)
+            return false
+        for (i in 0 until a.size) {
+            if (a[i] != b[i])
+                return false
+        }
+        return true
+    }
+
+    fun update(settings: JsonObject): ConfigurationUpdateResult {
         this.settings = settings
 
         //files.associations
         val ass = path("files.associations")
+        val oriAssociations = ArrayList(associations)
         associations.clear()
         associations.add("*.lua")
         if (ass is JsonObject) {
@@ -46,6 +61,8 @@ object Configuration : IConfiguration {
                 }
             }
         }
+        associations.sort()
+        val associationChanged = !listEquals(oriAssociations, associations)
 
         //case sensitive
         val caseSensitive = path("emmylua.completion.caseSensitive")
@@ -62,9 +79,12 @@ object Configuration : IConfiguration {
                     mySourceRoots.add(it.asString)
             }
         }
+        mySourceRoots.sort()
 
         // show codeLens
         myShowCodeLens = path("emmylua.codeLens")?.asBoolean == true
+
+        return ConfigurationUpdateResult(associationChanged)
     }
 
     private fun path(path: String): JsonElement? {

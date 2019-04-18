@@ -32,6 +32,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val _rootList = mutableListOf<IFolder>()
     private val _rootWSFolders = mutableListOf<URI>()
     private val _schemeMap = mutableMapOf<String, IFolder>()
+    private var _isLoading = false
     private var client: LuaLanguageClient? = null
 
     inner class WProject : UserDataHolderBase(), Project {
@@ -71,7 +72,11 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
         val settings = params.settings as? JsonObject ?: return
-        Configuration.update(settings)
+        val ret = Configuration.update(settings)
+        if (ret.associationChanged) {
+            clearWorkspace()
+            loadWorkspace()
+        }
     }
 
     override fun symbol(params: WorkspaceSymbolParams): CompletableFuture<MutableList<out SymbolInformation>> {
@@ -164,15 +169,19 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val path = FileURI(uri, true)
         _rootList.removeIf { folder ->
             if (folder.uri == path) {
-                folder.walkFiles {
-                    it.unindex()
-                    true
-                }
-                folder.parent.removeFile(folder)
+                removeFolder(folder)
                 return@removeIf true
             }
             false
         }
+    }
+
+    private fun removeFolder(folder: IFolder) {
+        folder.walkFiles {
+            it.unindex()
+            true
+        }
+        folder.parent.removeFile(folder)
     }
 
     fun addRoot(uri: String) {
@@ -194,9 +203,23 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
     }
 
+    private fun clearWorkspace() {
+        if (_isLoading)
+            return
+        _rootList.forEach { folder ->
+            removeFolder(folder)
+        }
+        _schemeMap.clear()
+        _rootList.clear()
+    }
+
     fun loadWorkspace() {
+        if (_isLoading)
+            return
+        _isLoading = true
         loadWorkspace(object : IProgressMonitor {
             override fun done() {
+                _isLoading = false
                 if (Configuration.isVSCode)
                     client?.progressReport(ProgressReport("Finished!", 1f))
             }
