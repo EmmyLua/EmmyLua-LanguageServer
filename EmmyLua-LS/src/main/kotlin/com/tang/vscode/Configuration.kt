@@ -4,9 +4,21 @@ import com.google.gson.*
 import com.tang.intellij.lua.IConfiguration
 import com.yevdo.jwildcard.JWildcard
 
+private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
+    if (a.size != b.size)
+        return false
+    for (i in 0 until a.size) {
+        if (a[i] != b[i])
+            return false
+    }
+    return true
+}
+
 class ConfigurationUpdateResult(
     val associationChanged: Boolean
 )
+
+private const val DEFAULT_ASSOCIATION = "*.lua"
 
 object Configuration : IConfiguration {
 
@@ -22,7 +34,7 @@ object Configuration : IConfiguration {
 
     private var myShowCodeLens = false
 
-    private val associations = mutableListOf<String>()
+    private val associations = mutableListOf(DEFAULT_ASSOCIATION)
 
     val showCodeLens get() = myShowCodeLens
 
@@ -34,16 +46,6 @@ object Configuration : IConfiguration {
         return associations.any { JWildcard.matches(it, name) }
     }
 
-    private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
-        if (a.size != b.size)
-            return false
-        for (i in 0 until a.size) {
-            if (a[i] != b[i])
-                return false
-        }
-        return true
-    }
-
     fun update(settings: JsonObject): ConfigurationUpdateResult {
         this.settings = settings
 
@@ -51,7 +53,7 @@ object Configuration : IConfiguration {
         val ass = path("files.associations")
         val oriAssociations = ArrayList(associations)
         associations.clear()
-        associations.add("*.lua")
+        associations.add(DEFAULT_ASSOCIATION)
         if (ass is JsonObject) {
             for (entry in ass.entrySet()) {
                 val lan = entry.value.asString

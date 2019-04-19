@@ -32,7 +32,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val _rootList = mutableListOf<IFolder>()
     private val _rootWSFolders = mutableListOf<URI>()
     private val _schemeMap = mutableMapOf<String, IFolder>()
-    private var _isLoading = false
     private var client: LuaLanguageClient? = null
 
     inner class WProject : UserDataHolderBase(), Project {
@@ -74,7 +73,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val settings = params.settings as? JsonObject ?: return
         val ret = Configuration.update(settings)
         if (ret.associationChanged) {
-            clearWorkspace()
             loadWorkspace()
         }
     }
@@ -203,23 +201,24 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
     }
 
-    private fun clearWorkspace() {
-        if (_isLoading)
-            return
-        _rootList.forEach { folder ->
-            removeFolder(folder)
+    private fun cleanWorkspace() {
+        val removeList = mutableListOf<ILuaFile>()
+        project.process { psiFile ->
+            val file = psiFile.virtualFile
+            if (file is ILuaFile) {
+                if (!Configuration.matchFile(file.name)) {
+                    removeList.add(file)
+                }
+            }
+            true
         }
-        _schemeMap.clear()
-        _rootList.clear()
+        removeList.forEach { it.parent.removeFile(it) }
     }
 
     fun loadWorkspace() {
-        if (_isLoading)
-            return
-        _isLoading = true
+        cleanWorkspace()
         loadWorkspace(object : IProgressMonitor {
             override fun done() {
-                _isLoading = false
                 if (Configuration.isVSCode)
                     client?.progressReport(ProgressReport("Finished!", 1f))
             }
@@ -233,16 +232,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     private fun loadWorkspace(monitor: IProgressMonitor) {
         monitor.setProgress("load workspace folders", 0f)
-        client?.workspaceFolders()?.whenCompleteAsync { wsFolders, _ ->
-            wsFolders?.forEach { addRoot(it.uri) }
-            loadWorkspaceImpl(monitor)
-        }
-    }
-
-    private fun loadWorkspaceImpl(monitor: IProgressMonitor) {
         val allFiles = mutableListOf<File>()
         val arr = _rootWSFolders.toTypedArray()
-        _rootWSFolders.clear()
         arr.forEach { uri ->
             val folder = File(uri.path)
             collectFiles(folder, allFiles)
@@ -316,6 +307,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     fun dispose() {
+        _schemeMap.clear()
         _rootWSFolders.clear()
         _rootList.forEach { it.removeAll() }
         _rootList.clear()
