@@ -81,7 +81,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 if (o.parent is LuaExprStat) // non-complete stat
                     return
 
-                val context = SearchContext(o.project)
+                val context = SearchContext.get(o.project)
                 val resolve = resolveInFile(o.name, o, context)
                 when (resolve) {
                     is LuaParamNameDef -> params.add(o.textRange)
@@ -150,7 +150,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 if (arr.size >= 2) {
                     val cls = arr[0]
                     val name = arr[1]
-                    LuaClassMemberIndex.process(cls, name, SearchContext(workspace.project), Processor { member ->
+                    LuaClassMemberIndex.process(cls, name, SearchContext.get(workspace.project), Processor { member ->
                         val doc = documentProvider.generateDoc(member, member)
                         val content = MarkupContent()
                         content.kind = "markdown"
@@ -398,7 +398,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     }
                 }
 
-                callExpr?.guessParentType(SearchContext(psiFile.project))?.let { ty ->
+                callExpr?.guessParentType(SearchContext.get(psiFile.project))?.let { ty ->
                     if (ty is ITyFunction) {
                         val active = ty.findPerfectSignature(nCommas + 1)
                         var idx = 0

@@ -102,7 +102,7 @@ private fun PsiNamedElement.getDocumentSymbol(file: ILuaFile): DocumentSymbol? {
     val selectionRange = (nameRange ?: textRange).toRange(file)
     val symbol = when (this) {
         is LuaClassMethodDef -> {
-            val fTy = guessType(SearchContext(project))
+            val fTy = guessType(SearchContext.get(project))
             if (fTy is ITyFunction) {
                 DocumentSymbol(
                         "${this.classMethodName.text}${fTy.mainSignature.paramSignature}",

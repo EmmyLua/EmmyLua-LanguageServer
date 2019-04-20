@@ -43,7 +43,7 @@ class LuaDocumentationProvider : DocumentationProvider {
         if (element != null) {
             when (element) {
                 is LuaTypeGuessable -> {
-                    val ty = element.guessType(SearchContext(element.project))
+                    val ty = element.guessType(SearchContext.get(element.project))
                     return buildString {
                         renderTy(this, ty)
                     }
@@ -58,7 +58,7 @@ class LuaDocumentationProvider : DocumentationProvider {
     }
 
     override fun getDocumentationElementForLink(psiManager: PsiManager, link: String, context: PsiElement?): PsiElement? {
-        return LuaClassIndex.find(link, SearchContext(psiManager.project))
+        return LuaClassIndex.find(link, SearchContext.get(psiManager.project))
     }
 
     override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
@@ -70,7 +70,7 @@ class LuaDocumentationProvider : DocumentationProvider {
             is LuaNameDef -> { //local xx
                 sb.wrapTag("pre") {
                     sb.append("local ${element.name}:")
-                    val ty = element.guessType(SearchContext(element.project))
+                    val ty = element.guessType(SearchContext.get(element.project))
                     renderTy(sb, ty)
                     sb.append("\n")
                 }
@@ -81,7 +81,7 @@ class LuaDocumentationProvider : DocumentationProvider {
             is LuaLocalFuncDef -> {
                 sb.wrapTag("pre") {
                     sb.append("local function ${element.name}")
-                    val type = element.guessType(SearchContext(element.project)) as ITyFunction
+                    val type = element.guessType(SearchContext.get(element.project)) as ITyFunction
                     renderSignature(sb, type.mainSignature)
                 }
                 renderComment(sb, element.comment)
@@ -93,7 +93,7 @@ class LuaDocumentationProvider : DocumentationProvider {
     }
 
     private fun renderClassMember(sb: StringBuilder, classMember: LuaClassMember) {
-        val context = SearchContext(classMember.project)
+        val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
         val ty = classMember.guessType(context)
 
@@ -155,7 +155,7 @@ class LuaDocumentationProvider : DocumentationProvider {
         if (docParamDef != null) {
             renderDocParam(sb, docParamDef)
         } else {
-            val ty = infer(paramNameDef, SearchContext(paramNameDef.project))
+            val ty = infer(paramNameDef, SearchContext.get(paramNameDef.project))
             sb.appendLine("@param `${paramNameDef.name}`:")
             renderTy(sb, ty)
         }

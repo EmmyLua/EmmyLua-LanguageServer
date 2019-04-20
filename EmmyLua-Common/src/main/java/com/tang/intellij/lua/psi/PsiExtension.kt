@@ -26,8 +26,8 @@ import com.intellij.psi.util.CachedValuesManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Processor
 import com.tang.intellij.lua.comment.LuaCommentUtil
-import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocGenericDef
+import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocTagOverload
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.lang.type.LuaString
@@ -54,7 +54,7 @@ import com.tang.intellij.lua.ty.*
  *
  * this closure should be `fun(sender: any, type: string):void`
  */
-fun LuaExpr.shouldBe(context: SearchContext): ITy {
+private fun LuaExpr.shouldBeInternal(context: SearchContext): ITy {
     val p1 = parent
     if (p1 is LuaExprList) {
         val p2 = p1.parent
@@ -86,6 +86,11 @@ fun LuaExpr.shouldBe(context: SearchContext): ITy {
         }
     }
     return Ty.UNKNOWN
+}
+
+fun LuaExpr.shouldBe(context: SearchContext): ITy {
+    val ty = shouldBeInternal(context)
+    return TyAliasSubstitutor.substitute(ty, context)
 }
 
 /**
@@ -444,19 +449,13 @@ val LuaBinaryExpr.right: LuaExpr? get() {
 
 fun LuaClassMethod.findOverridingMethod(context: SearchContext): LuaClassMethod? {
     val methodName = name ?: return null
-
     val type = guessClassType(context) ?: return null
-    var superType = type.getSuperClass(context)
-
-    while (superType != null && superType is TyClass) {
+    var superMethod: LuaClassMethod? = null
+    TyClass.processSuperClass(type, context) { superType->
         ProgressManager.checkCanceled()
         val superTypeName = superType.className
-        val superMethod = LuaClassMemberIndex.findMethod(superTypeName, methodName, context)
-        if (superMethod != null) {
-            return superMethod
-        }
-        superType = superType.getSuperClass(context)
+        superMethod = LuaClassMemberIndex.findMethod(superTypeName, methodName, context)
+        superMethod == null
     }
-
-    return null
+    return superMethod
 }

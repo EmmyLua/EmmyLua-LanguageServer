@@ -18,22 +18,21 @@ package com.tang.intellij.lua.ty
 
 import com.intellij.extapi.psi.StubBasedPsiElementBase
 import com.intellij.openapi.util.Computable
-import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.comment.LuaCommentUtil
 import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.comment.psi.LuaDocTagReturn
-import com.tang.intellij.lua.ext.ILuaTypeInfer
 import com.tang.intellij.lua.ext.recursionGuard
 import com.tang.intellij.lua.psi.*
+import com.tang.intellij.lua.search.GuardType
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.LuaFuncBodyOwnerStub
 
 fun infer(element: LuaTypeGuessable?, context: SearchContext): ITy {
     if (element == null)
         return Ty.UNKNOWN
-    return ILuaTypeInfer.infer(element, context)
+    return SearchContext.infer(element)
 }
 
 internal fun inferInner(element: LuaTypeGuessable, context: SearchContext): ITy {
@@ -73,7 +72,7 @@ private fun inferReturnTyInner(owner: LuaFuncBodyOwner, searchContext: SearchCon
     }
 
     //infer from return stat
-    return recursionGuard(owner, Computable {
+    return searchContext.withRecursionGuard(owner, GuardType.RecursionCall) {
         var type: ITy = Ty.VOID
         owner.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitReturnStat(o: LuaReturnStat) {
@@ -104,9 +103,8 @@ private fun inferReturnTyInner(owner: LuaFuncBodyOwner, searchContext: SearchCon
             override fun visitLocalDef(o: LuaLocalDef) {}
             override fun visitLocalFuncDef(o: LuaLocalFuncDef) {}
         })
-        CachedValueProvider.Result.create(type, owner)
         type
-    }) ?: Ty.UNKNOWN
+    }
 }
 
 private fun LuaParamNameDef.infer(context: SearchContext): ITy {
@@ -132,7 +130,7 @@ private fun LuaNameDef.infer(context: SearchContext): ITy {
         val localDef = PsiTreeUtil.getParentOfType(this, LuaLocalDef::class.java)
         if (localDef != null) {
             //计算 expr 返回类型
-            if (Ty.isInvalid(type) && !context.forStore) {
+            if (Ty.isInvalid(type) && !context.forStub) {
                 val nameList = localDef.nameList
                 val exprList = localDef.exprList
                 if (nameList != null && exprList != null) {
@@ -146,7 +144,7 @@ private fun LuaNameDef.infer(context: SearchContext): ITy {
             if (type !is ITyPrimitive)
                 type = type.union(TyClass.createAnonymousType(this))
             else if (type == Ty.TABLE)
-                type = TyClass.createAnonymousType(this)
+                type = type.union(TyClass.createAnonymousType(this))
         }
     }
     return type
@@ -235,26 +233,27 @@ private fun resolveParamType(paramNameDef: LuaParamNameDef, context: SearchConte
 
     // 如果是个类方法，则有可能在父类里
     if (paramOwner is LuaClassMethodDef) {
-        var classType: ITy? = paramOwner.guessClassType(context)
+        val classType = paramOwner.guessClassType(context)
         val methodName = paramOwner.name
-        while (classType != null) {
-            classType = classType.getSuperClass(context)
-            if (classType != null && methodName != null && classType is TyClass) {
-                val superMethod = classType.findMember(methodName, context)
+        var set: ITy = Ty.UNKNOWN
+        if (classType != null && methodName != null) {
+            TyClass.processSuperClass(classType, context) { superType ->
+                val superMethod = superType.findMember(methodName, context)
                 if (superMethod is LuaClassMethod) {
                     val params = superMethod.params//todo : 优化
                     for (param in params) {
                         if (paramName == param.name) {
-                            val types = param.ty
-                            var set: ITy = Ty.UNKNOWN
-                            TyUnion.each(types) { set = set.union(it) }
+                            set = param.ty
                             if (set != Ty.UNKNOWN)
-                                return set
+                                return@processSuperClass false
                         }
                     }
                 }
+                true
             }
         }
+        if (set !is TyUnknown)
+            return set
     }
 
     // module fun
@@ -274,13 +273,20 @@ private fun resolveParamType(paramNameDef: LuaParamNameDef, context: SearchConte
 
         // iterator support
         val type = callExpr?.guessType(context)
-        if (type is ITyFunction) {
-            val returnTy = type.mainSignature.returnTy
-            if (returnTy is TyTuple) {
-                return returnTy.list.getOrElse(paramIndex) { Ty.UNKNOWN }
-            } else if (paramIndex == 0) {
-                return returnTy
+        if (type != null) {
+            var result: ITy = Ty.UNKNOWN
+            TyUnion.each(type) {
+                if (it is ITyFunction) {
+                    val returnTy = it.mainSignature.returnTy
+                    if (returnTy is TyTuple) {
+                        result = result.union(returnTy.list.getOrElse(paramIndex) { Ty.UNKNOWN })
+                    } else if (paramIndex == 0) {
+                        result = result.union(returnTy)
+                    }
+                }
             }
+            if (result != Ty.UNKNOWN)
+                return result
         }
     }
     // for param = 1, 2 do end
@@ -296,11 +302,15 @@ private fun resolveParamType(paramNameDef: LuaParamNameDef, context: SearchConte
      * guess type for p1
      */
     if (paramOwner is LuaClosureExpr) {
+        var ret: ITy = Ty.UNKNOWN
         val shouldBe = paramOwner.shouldBe(context)
-        if (shouldBe is ITyFunction) {
-            val paramIndex = paramOwner.getIndexFor(paramNameDef)
-            return shouldBe.mainSignature.getParamTy(paramIndex)
+        shouldBe.each {
+            if (it is ITyFunction) {
+                val paramIndex = paramOwner.getIndexFor(paramNameDef)
+                ret = ret.union(it.mainSignature.getParamTy(paramIndex))
+            }
         }
+        return ret
     }
     return Ty.UNKNOWN
 }

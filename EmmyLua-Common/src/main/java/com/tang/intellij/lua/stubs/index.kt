@@ -106,7 +106,7 @@ private fun index(methodDef: LuaClassMethodDef, sink: IndexSink) {
     val expr = methodName.expr
     val classNameSet = mutableSetOf<String>()
 
-    val searchContext = SearchContext(methodDef.project, methodDef.containingFile, true)
+    val searchContext = SearchContext.get(methodDef.project)
     val ty = expr.guessType(searchContext)
     TyUnion.each(ty) {
         if (it is ITyClass)
@@ -133,14 +133,13 @@ private fun index(indexExpr: LuaIndexExpr, sink: IndexSink) {
     indexExpr.assignStat ?: return
     val name = indexExpr.name ?: return
 
-    val context = SearchContext(indexExpr.project, indexExpr.containingFile, true)
+    val context = SearchContext.get(indexExpr.project)
     val ty = indexExpr.guessParentType(context)
     val classNameSet = mutableSetOf<String>()
     TyUnion.each(ty) {
         if (it is ITyClass)
             classNameSet.add(it.className)
     }
-    context.forStore = false
 
     classNameSet.forEach { className ->
         sink.occurrence(StubKeys.CLASS_MEMBER, className.hashCode(), indexExpr)
@@ -170,7 +169,7 @@ private fun findTableExprTypeName(field: LuaTableField): String? {
     val p2 = p1?.parent as? LuaAssignStat
     var ty: String? = null
     if (p2 != null) {
-        val type = p2.getExprAt(0)?.guessType(SearchContext(p2.project, field.containingFile, true))
+        val type = p2.getExprAt(0)?.guessType(SearchContext.get(p2.project))
         if (type != null) {
             ty = TyUnion.getPerfectClass(type)?.className
         }
@@ -182,10 +181,9 @@ private fun findTableExprTypeName(field: LuaTableField): String? {
 
 private fun index(luaNameExpr: LuaNameExpr, sink: IndexSink) {
     luaNameExpr.assignStat ?: return
-    val psiFile = luaNameExpr.containingFile
     val name = luaNameExpr.name
     //val module = if (psiFile is LuaPsiFile) psiFile.moduleName ?: Constants.WORD_G else Constants.WORD_G
-    val isGlobal = resolveLocal(luaNameExpr, SearchContext(luaNameExpr.project, psiFile)) == null
+    val isGlobal = resolveLocal(luaNameExpr, SearchContext.get(luaNameExpr.project)) == null
     if (isGlobal) {
         sink.occurrence(StubKeys.CLASS_MEMBER, Constants.WORD_G.hashCode(), luaNameExpr)
         sink.occurrence(StubKeys.CLASS_MEMBER, "${Constants.WORD_G}*$name".hashCode(), luaNameExpr)

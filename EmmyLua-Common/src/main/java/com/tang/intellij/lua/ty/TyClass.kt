@@ -110,8 +110,10 @@ abstract class TyClass(override val className: String,
 
         // super
         if (deep) {
-            val superType = getSuperClass(context) as? ITyClass ?: return
-            superType.processMembers(context, processor, deep)
+            processSuperClass(this, context) {
+                it.processMembers(context, processor, false)
+                true
+            }
         }
     }
 
@@ -125,13 +127,12 @@ abstract class TyClass(override val className: String,
 
     override fun findSuperMember(name: String, searchContext: SearchContext): LuaClassMember? {
         // Travel up the hierarchy to find the lowest member of this type on a superclass (excluding this class)
-        var superClass = getSuperClass(searchContext)
-        while (superClass != null && superClass is TyClass) {
-            val member = superClass.findMember(name, searchContext)
-            if (member != null) return member
-            superClass = superClass.getSuperClass(searchContext)
+        var member: LuaClassMember? = null
+        processSuperClass(this, searchContext) {
+            member = it.findMember(name, searchContext)
+            member == null
         }
-        return null
+        return member
     }
 
     override fun accept(visitor: ITyVisitor) {
@@ -157,7 +158,7 @@ abstract class TyClass(override val className: String,
     override fun getSuperClass(context: SearchContext): ITy? {
         lazyInit(context)
         val clsName = superClassName
-        if (clsName != null) {
+        if (clsName != null && clsName != className) {
             return Ty.getBuiltin(clsName) ?: LuaShortNamesManager.getInstance(context.project).findClass(clsName, context)?.type
         }
         return null
@@ -171,13 +172,12 @@ abstract class TyClass(override val className: String,
         // Lazy init for superclass
         this.doLazyInit(context)
         // Check if any of the superclasses are type
-        var superClass = getSuperClass(context)
-        while (superClass != null) {
-            if (other == superClass) return true
-            superClass = superClass.getSuperClass(context)
+        var isSubType = false
+        processSuperClass(this, context) { superType ->
+            isSubType = superType == other
+            !isSubType
         }
-
-        return false
+        return isSubType
     }
 
     override fun substitute(substitutor: ITySubstitutor): ITy {
@@ -208,6 +208,24 @@ abstract class TyClass(override val className: String,
                 return createSerializedClass(name, name, null, null, TyFlags.GLOBAL).union(g)
             return g
         }
+
+        fun processSuperClass(start: ITyClass, searchContext: SearchContext, processor: (ITyClass) -> Boolean): Boolean {
+            val processedName = mutableSetOf<String>()
+            var cur: ITy? = start
+            while (cur != null) {
+                val cls = cur.getSuperClass(searchContext)
+                if (cls is ITyClass) {
+                    if (!processedName.add(cls.className)) {
+                        // todo: Infinite inheritance
+                        return false
+                    }
+                    if (!processor(cls))
+                        return false
+                }
+                cur = cls
+            }
+            return true
+        }
     }
 }
 
@@ -235,6 +253,8 @@ open class TySerializedClass(name: String,
     }
 
     override fun recoverAlias(context: SearchContext, aliasSubstitutor: TyAliasSubstitutor): ITy {
+        if (this.isAnonymous || this.isGlobal)
+            return this
         val alias = LuaShortNamesManager.getInstance(context.project).findAlias(className, context.project, context.getScope())
         return alias?.type?.substitute(aliasSubstitutor) ?: this
     }

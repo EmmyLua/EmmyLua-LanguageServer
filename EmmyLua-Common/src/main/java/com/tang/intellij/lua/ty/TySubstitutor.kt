@@ -57,7 +57,7 @@ class GenericAnalyzer(arg: ITy, private val par: ITy) : TyVisitor() {
     }
 
     override fun visitFun(f: ITyFunction) {
-        TyUnion.each(cur) { it ->
+        TyUnion.each(cur) {
             if (it is ITyFunction) {
                 visitSig(it.mainSignature, f.mainSignature)
             }
@@ -111,13 +111,23 @@ open class TySubstitutor : ITySubstitutor {
     }
 }
 
-class TyAliasSubstitutor(val project: Project) : ITySubstitutor {
+class TyAliasSubstitutor private constructor(val project: Project) : ITySubstitutor {
+    companion object {
+        fun substitute(ty: ITy, context: SearchContext): ITy {
+            /*if (context.forStub)
+                return ty*/
+            return ty.substitute(TyAliasSubstitutor(context.project))
+        }
+    }
+
     override fun substitute(function: ITyFunction): ITy {
-        return function
+        return TySerializedFunction(function.mainSignature.substitute(this),
+                function.signatures.map { it.substitute(this) }.toTypedArray(),
+                function.flags)
     }
 
     override fun substitute(clazz: ITyClass): ITy {
-        return clazz.recoverAlias(SearchContext(project), this)
+        return clazz.recoverAlias(SearchContext.get(project), this)
     }
 
     override fun substitute(generic: ITyGeneric): ITy {
