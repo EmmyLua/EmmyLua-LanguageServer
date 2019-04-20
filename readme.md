@@ -63,25 +63,16 @@ Example: adding EmmyLua to [SublimeText](https://www.sublimetext.com/) with [Sub
 ```
 
 ## Adding to Emacs
+you can use [lsp-lua-emmy](https://github.com/phenix3443/lsp-lua-emmy) as lsp client.
+
 add following code to your `~/.emacs` or `.emacs.d/init.el` .
+
 ``` emacs-lisp
 (use-package lsp-mode
   :ensure t
   :commands lsp
   :hook ((lua-mode) . lsp)
   :config
-
-  ;; register emmy-lua-lsp
-  (lsp-register-client
-   (make-lsp-client :new-connection
-                    (lsp-stdio-connection
-                     (list
-                      "/usr/bin/java"
-                      "-cp"
-                      (expand-file-name "EmmyLua-LS-all.jar" user-emacs-directory)
-                      "com.tang.vscode.MainKt"))
-                    :major-modes '(lua-mode)
-                    :server-id 'emmy-lua))
   )
 
 (use-package company-lsp
@@ -89,10 +80,20 @@ add following code to your `~/.emacs` or `.emacs.d/init.el` .
   :after lsp-mode
   :config
   (setq company-lsp-enable-recompletion t)
+  (setq lsp-auto-configure nil)         ;该功能会自动执行(push company-lsp company-backends)
   )
 
-(defun company-lua-mode-setup()
-  "Create lua company backend."
+(use-package lsp-lua-emmy
+  :demand
+  :ensure nil
+  :load-path "~/github/lsp-lua-emmy"
+  :hook (lua-mode . lsp)
+  :config
+  (setq lsp-lua-emmy-jar-path (expand-file-name "EmmyLua-LS-all.jar" user-emacs-directory))
+  )
+
+(defun set-company-backends-for-lua()
+  "Set lua company backend."
   (setq-local company-backends '(
                                  (
                                   company-lsp
@@ -104,15 +105,17 @@ add following code to your `~/.emacs` or `.emacs.d/init.el` .
                                  company-capf
                                  company-dabbrev-code
                                  company-files
-                                 )
-       ))
+                                 )))
 
 (use-package lua-mode
   :ensure t
   :mode "\\.lua$"
   :interpreter "lua"
-  :hook (lua-mode . company-lua-mode-setup)
+  :hook (lua-mode . set-company-backends-for-lua)
   :config
+  (setq lua-indent-level 4)
+  (setq lua-indent-string-contents t)
+  (setq lua-prefix-key nil)
   )
 
 ```
