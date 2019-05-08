@@ -1,5 +1,10 @@
 # Emmy Lua Language Server
 
+Version | CI status | Download
+--------|---------- | ----------
+IDEA 171|[![Build status](https://ci.appveyor.com/api/projects/status/djgeh5fq4jhe5xc2?svg=true)](https://ci.appveyor.com/project/EmmyLua/emmylua-languageserver)|[EmmyLua-LS-all.jar](https://ci.appveyor.com/project/EmmyLua/emmylua-languageserver/build/artifacts)
+
+
 Emmy lua Language server have lots of features for lua language, including:
 * Find usages
 * Go to definition
