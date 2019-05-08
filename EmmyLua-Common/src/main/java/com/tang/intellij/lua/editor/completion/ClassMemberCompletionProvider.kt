@@ -16,17 +16,16 @@
 
 package com.tang.intellij.lua.editor.completion
 
+import com.intellij.codeInsight.completion.CompletionInitializationContext
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.PrefixMatcher
+import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.util.Processor
 import com.tang.intellij.lua.lang.LuaIcons
-import com.tang.intellij.lua.psi.LuaClassField
-import com.tang.intellij.lua.psi.LuaClassMember
-import com.tang.intellij.lua.psi.LuaIndexExpr
-import com.tang.intellij.lua.psi.LuaPsiTreeUtil
+import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.*
 
@@ -57,7 +56,8 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
             val isColon = indexExpr.colon != null
             val project = indexExpr.project
             val contextTy = LuaPsiTreeUtil.findContextClass(indexExpr)
-            val prefixType = SearchContext.with(project) { indexExpr.guessParentType(it) }
+            val context = SearchContext.get(project)
+            val prefixType = indexExpr.guessParentType(context)
             if (!Ty.isInvalid(prefixType)) {
                 complete(isColon, project, contextTy, prefixType, completionResultSet, completionResultSet.prefixMatcher, null)
             }
@@ -73,7 +73,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                     val it = d.firstDeclaration.psi
                     val txt = it.name
                     if (it is LuaTypeGuessable && txt != null && prefixName != txt && matcher.prefixMatches(txt)) {
-                        val type = SearchContext.infer(it)
+                        val type = it.guessType(context)
                         if (!Ty.isInvalid(prefixType)) {
                             val prefixMatcher = completionResultSet.prefixMatcher
                             val resultSet = completionResultSet.withPrefixMatcher("$prefixName*$postfixName")

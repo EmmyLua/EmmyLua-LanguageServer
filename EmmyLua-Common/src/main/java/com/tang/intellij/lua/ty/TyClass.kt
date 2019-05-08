@@ -18,7 +18,6 @@ package com.tang.intellij.lua.ty
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.psi.search.ProjectAndLibrariesScope
 import com.intellij.util.Processor
 import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.comment.psi.LuaDocTableDef
@@ -85,7 +84,9 @@ abstract class TyClass(override val className: String,
 
     override fun processAlias(processor: Processor<String>): Boolean {
         val alias = aliasName
-        if (alias != null && !processor.process(alias))
+        if (alias == null || alias == className)
+            return true
+        if (!processor.process(alias))
             return false
         if (!isGlobal && !isAnonymous && LuaSettings.instance.isRecognizeGlobalNameAsType)
             return processor.process(getGlobalTypeName(className))
@@ -97,10 +98,12 @@ abstract class TyClass(override val className: String,
         val project = context.project
 
         val manager = LuaShortNamesManager.getInstance(project)
-        val list = manager.getClassMembers(clazzName, project, ProjectAndLibrariesScope(project))
+        val members = manager.getClassMembers(clazzName, context)
+        val list = mutableListOf<LuaClassMember>()
+        list.addAll(members)
 
         processAlias(Processor { alias ->
-            val classMembers = manager.getClassMembers(alias, project, ProjectAndLibrariesScope(project))
+            val classMembers = manager.getClassMembers(alias, context)
             list.addAll(classMembers)
         })
 
@@ -255,7 +258,7 @@ open class TySerializedClass(name: String,
     override fun recoverAlias(context: SearchContext, aliasSubstitutor: TyAliasSubstitutor): ITy {
         if (this.isAnonymous || this.isGlobal)
             return this
-        val alias = LuaShortNamesManager.getInstance(context.project).findAlias(className, context.project, context.getScope())
+        val alias = LuaShortNamesManager.getInstance(context.project).findAlias(className, context)
         return alias?.type?.substitute(aliasSubstitutor) ?: this
     }
 }

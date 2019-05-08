@@ -29,9 +29,6 @@ import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.ty.ITyClass
 
 class LuaShortNamesManagerImpl : LuaShortNamesManager() {
-    override fun findClass(name: String, project: Project, scope: GlobalSearchScope): LuaClass? {
-        return LuaClassIndex.find(name, project, scope)
-    }
 
     override fun findClass(name: String, context: SearchContext): LuaClass? {
         return LuaClassIndex.find(name, context)
@@ -45,12 +42,12 @@ class LuaShortNamesManagerImpl : LuaShortNamesManager() {
         return LuaClassIndex.processKeys(project, processor)
     }
 
-    override fun processClassesWithName(name: String, project: Project, scope: GlobalSearchScope, processor: Processor<LuaClass>): Boolean {
-        return LuaClassIndex.process(name, project, scope, Processor { processor.process(it) })
+    override fun processClassesWithName(name: String, context: SearchContext, processor: Processor<LuaClass>): Boolean {
+        return LuaClassIndex.process(name, context.project, context.scope, Processor { processor.process(it) })
     }
 
-    override fun getClassMembers(clazzName: String, project: Project, scope: GlobalSearchScope): MutableCollection<LuaClassMember> {
-        return LuaClassMemberIndex.instance.get(clazzName.hashCode(), project, scope)
+    override fun getClassMembers(clazzName: String, context: SearchContext): Collection<LuaClassMember> {
+        return LuaClassMemberIndex.instance.get(clazzName.hashCode(), context.project, context.scope)
     }
 
     override fun processAllMembers(type: ITyClass, fieldName: String, context: SearchContext, processor: Processor<LuaClassMember>): Boolean {
@@ -58,8 +55,8 @@ class LuaShortNamesManagerImpl : LuaShortNamesManager() {
         return true
     }
 
-    override fun findAlias(name: String, project: Project, scope: GlobalSearchScope): LuaTypeAlias? {
-        return LuaAliasIndex.instance.get(name, project, scope).firstOrNull()
+    override fun findAlias(name: String, context: SearchContext): LuaTypeAlias? {
+        return LuaAliasIndex.instance.get(name, context.project, context.scope).firstOrNull()
     }
 
     override fun processAllAlias(project: Project, processor: Processor<String>): Boolean {

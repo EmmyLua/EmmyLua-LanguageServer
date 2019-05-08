@@ -54,6 +54,10 @@ class SearchContext private constructor(val project: Project) {
             return with(psi.project) { it.inferAndCache(psi) }
         }
 
+        fun infer(psi: LuaTypeGuessable, context: SearchContext): ITy {
+            return with(context) { it.inferAndCache(psi) }
+        }
+
         fun <T> with(ctx: SearchContext, action: (ctx: SearchContext) -> T): T {
             return if (ctx.myInStack) {
                 action(ctx)
@@ -100,6 +104,7 @@ class SearchContext private constructor(val project: Project) {
     private var myInStack = false
     private val myGuardList = mutableListOf<InferRecursionGuard>()
     private val myInferCache = mutableMapOf<LuaTypeGuessable, ITy>()
+    private var myScope: GlobalSearchScope? = null
 
     fun <T> withIndex(index: Int, action: () -> T): T {
         val savedIndex = this.index
@@ -111,17 +116,11 @@ class SearchContext private constructor(val project: Project) {
 
     fun guessTuple() = index < 0
 
-    private var scope: GlobalSearchScope? = null
-
-    fun getScope(): GlobalSearchScope {
-        if (scope == null) {
-            scope = if (isDumb) {
-                GlobalSearchScope.EMPTY_SCOPE
-            } else {
-                ProjectAndLibrariesScope(project)
-            }
+    val scope get(): GlobalSearchScope {
+        if (myScope == null) {
+            myScope = ProjectAndLibrariesScope(project)
         }
-        return scope!!
+        return myScope!!
     }
 
     val isDumb: Boolean
@@ -129,11 +128,12 @@ class SearchContext private constructor(val project: Project) {
 
     val forStub get() = myForStub
 
-    fun clone(): SearchContext {
-        val c = SearchContext(project)
-        c.myDumb = myDumb
-        c.myForStub = myForStub
-        return c
+    fun <T> withScope(scope: GlobalSearchScope, action: () -> T): T {
+        val oriScope = myScope
+        myScope = scope
+        val ret = action()
+        myScope = oriScope
+        return ret
     }
 
     fun withRecursionGuard(psi: PsiElement, type: GuardType, action: () -> ITy): ITy {

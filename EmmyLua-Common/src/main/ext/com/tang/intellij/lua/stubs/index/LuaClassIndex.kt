@@ -4,7 +4,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Processor
 import com.intellij.util.containers.ContainerUtil
-import com.intellij.util.indexing.IndexId
 import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.StubKeys
@@ -17,7 +16,7 @@ class LuaClassIndex : StubIndex<String, LuaDocTagClass>() {
         val instance = LuaClassIndex()
 
         fun find(name: String, context: SearchContext): LuaDocTagClass? {
-            return find(name, context.project, context.getScope())
+            return find(name, context.project, context.scope)
         }
 
         fun find(name: String, project: Project, scope: GlobalSearchScope): LuaDocTagClass? {
