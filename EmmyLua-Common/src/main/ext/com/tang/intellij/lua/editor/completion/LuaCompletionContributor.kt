@@ -64,6 +64,8 @@ class LuaCompletionContributor : CompletionContributor() {
 
         extend(CompletionType.BASIC, IN_TABLE_FIELD, TableCompletionProvider())*/
 
+        // require 路径提示
+        extend(CompletionType.BASIC, SHOW_REQUIRE_PATH, RequirePathCompletionProvider())
         //提示属性, 提示方法
         extend(CompletionType.BASIC, SHOW_CLASS_FIELD, ClassMemberCompletionProvider())
         //提示全局函数,local变量,local函数

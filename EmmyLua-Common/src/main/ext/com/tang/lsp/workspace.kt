@@ -1,9 +1,8 @@
-package com.tang.vscode.api
+package com.tang.lsp
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiFile
-import com.tang.vscode.FileURI
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import java.io.File

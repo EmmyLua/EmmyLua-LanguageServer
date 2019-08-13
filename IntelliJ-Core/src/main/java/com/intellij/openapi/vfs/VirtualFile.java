@@ -10,4 +10,6 @@ public interface VirtualFile {
     CharSequence getText();
 
     PsiFile getPsiFile();
+
+    String getPath();
 }

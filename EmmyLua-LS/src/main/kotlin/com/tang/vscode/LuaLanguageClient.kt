@@ -9,6 +9,9 @@ interface LuaLanguageClient : LanguageClient {
     @JsonNotification("emmy/annotator")
     fun annotator(ann: AnnotatorParams)
 
+    @JsonNotification("emmy/updateConfig")
+    fun updateConfig(params: UpdateConfigParams)
+
     @JsonNotification("emmy/progressReport")
     fun progressReport(report: ProgressReport)
 }

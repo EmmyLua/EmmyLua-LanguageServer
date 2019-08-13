@@ -15,9 +15,9 @@ import com.tang.intellij.lua.psi.LuaCallExpr
 import com.tang.intellij.lua.psi.LuaExprStat
 import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.stubs.IndexSink
-import com.tang.vscode.FileURI
-import com.tang.vscode.api.ILuaFile
-import com.tang.vscode.utils.toRange
+import com.tang.lsp.FileURI
+import com.tang.lsp.ILuaFile
+import com.tang.lsp.toRange
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -65,6 +65,10 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
     override fun getText(): CharSequence {
         return _text
+    }
+
+    override fun getPath(): String {
+        return uri.toString()
     }
 
     fun setText(str: CharSequence) {

@@ -4,12 +4,10 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.PsiReference
-import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.SearchScope
 import com.intellij.util.AbstractQuery
 import com.intellij.util.Processor
 import com.intellij.util.Query
-import com.tang.intellij.lua.psi.LuaPsiFile
 
 object ReferencesSearch {
     /**
@@ -33,7 +31,7 @@ object ReferencesSearch {
             val project = element.project
             val pattern = "\\b$name\\b".toRegex()
             project.process { file ->
-                if (scope.contains(file.virtualFile) && file is LuaPsiFile) {
+                if (scope.contains(file.virtualFile)) {
                     val text = file.virtualFile.text
                     if (text != null) {
                         var matchResult = pattern.find(text)

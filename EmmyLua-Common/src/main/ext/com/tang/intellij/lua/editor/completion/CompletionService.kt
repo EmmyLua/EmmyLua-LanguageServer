@@ -8,7 +8,7 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.lang.PsiBuilderFactory
 import com.intellij.psi.PsiFile
 import com.intellij.util.Consumer
-import com.tang.intellij.lua.IConfiguration
+import com.tang.intellij.lua.configuration.IConfigurationManager
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
@@ -35,8 +35,8 @@ object CompletionService {
             LuaDocCompletionContributor()
     )
 
-    fun collectCompletion(psi: PsiFile, pos: Int, config: IConfiguration, consumer: Consumer<LookupElement>) {
-        //val element = psi.findElementAt(pos)
+    fun collectCompletion(psi: PsiFile, pos: Int, consumer: Consumer<LookupElement>) {
+        val config = IConfigurationManager.get(psi.project)
         val text = psi.text.replaceRange(pos, pos, "emmy")
 
         val parser = LuaParser()

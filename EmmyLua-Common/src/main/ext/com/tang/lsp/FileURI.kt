@@ -1,28 +1,52 @@
-package com.tang.vscode
+package com.tang.lsp
 
+import java.io.File
 import java.net.URI
+import java.net.URLDecoder
 import java.net.URLEncoder
 
-private fun convertURI(s: String): String {
-    return s.replace("+", " ")
+private fun decodeURL(s: String): String {
+    //return s.replace("+", " ").replace("%3A", ":")
+    return URLDecoder.decode(s, "UTF-8")
+}
+
+private fun encodeURL(src: String): String {
+    return src.split(Regex("[/\\\\]")).joinToString("/") { URLEncoder.encode(it, "UTF-8") }
+}
+
+private fun toURI(uri: String): URI {
+    val u2 = decodeURL(uri)
+    val u3 = encodeURL(u2).replace("%3A", ":")
+    return URI(u3)
 }
 
 class FileURI {
 
-    constructor(uriString: String, isFolder: Boolean): this(URI(uriString), isFolder)
+    constructor(uriString: String, isFolder: Boolean): this(toURI(uriString), isFolder)
 
     constructor(uri: URI, isFolder: Boolean) {
-        val str = uri.toString()
-        _uri = if (isFolder && !str.endsWith('/')) URI("$str/") else uri
-        _scheme = _uri.scheme
+        val normalize = uri.normalize()
+        val str = normalize.toString()
+        _uri = if (isFolder && !str.endsWith('/')) toURI("$str/") else toURI(str)
+        _scheme = _uri.scheme ?: "file"
         _uriString = _uri.toString().toLowerCase()
         _isFolder = isFolder
+    }
+
+    companion object {
+        fun file(file: File): FileURI {
+            return FileURI(file.toURI(), file.isDirectory)
+        }
+
+        fun uri(src: String, isFolder: Boolean): FileURI {
+            return FileURI(src, isFolder)
+        }
     }
 
     fun resolve(other: String, isFolder: Boolean): FileURI {
         if (!_isFolder)
             throw Error("must be folder!")
-        val encoded = URLEncoder.encode(other, "UTF-8")
+        val encoded = encodeURL(other)
         return FileURI(_uri.resolve(encoded), isFolder)
     }
 
@@ -39,7 +63,7 @@ class FileURI {
         val start = if (path.startsWith('/')) 1 else 0
         val end = if (path.endsWith('/')) path.length - 1 else path.length
         val substring = path.substring(start, end)
-        substring.split('/').map { convertURI(it) }
+        substring.split('/').map { decodeURL(it) }
     }
 
     val scheme: String get() = _scheme
@@ -67,9 +91,27 @@ class FileURI {
         return this.name.endsWith(name)
     }
 
+    fun toFile(): File? {
+        if (scheme != "file") {
+            return null
+        }
+        val path = raw.path
+        return File(decodeURL(path))
+    }
+
+    fun relativize(other: FileURI): FileURI? {
+        val relative = FileURI(raw.relativize(other.raw), other._isFolder)
+        return if (relative == other) null else relative
+    }
+
+    fun contains(other: FileURI): Boolean {
+        val r = relativize(other)
+        return !(r == null || r == other)
+    }
+
     override fun toString(): String {
         val s = _uri.toString()
-        return convertURI(s)
+        return decodeURL(s)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -82,10 +124,4 @@ class FileURI {
     override fun hashCode(): Int {
         return _uriString.hashCode()
     }
-}
-
-fun main(args: Array<String>) {
-    val u = FileURI("a:/b", true)
-    val resolve = u.resolve("c", false)
-    println(resolve.name)
 }

@@ -1,9 +1,9 @@
 package com.tang.vscode.api.impl
 
-import com.tang.vscode.FileURI
-import com.tang.vscode.api.IFolder
-import com.tang.vscode.api.ILuaFile
-import com.tang.vscode.api.IVirtualFile
+import com.tang.lsp.FileURI
+import com.tang.lsp.IFolder
+import com.tang.lsp.ILuaFile
+import com.tang.lsp.IVirtualFile
 
 open class Folder(fileURI: FileURI, private val myName: String? = null)
     : VirtualFileBase(fileURI), IFolder {

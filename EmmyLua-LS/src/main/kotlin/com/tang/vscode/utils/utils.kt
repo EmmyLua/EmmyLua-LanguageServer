@@ -1,40 +1,23 @@
 package com.tang.vscode.utils
 
 import com.intellij.openapi.progress.ProgressManager
-import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiNameIdentifierOwner
 import com.intellij.psi.PsiNamedElement
-import com.intellij.psi.PsiReference
 import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyFunction
-import com.tang.vscode.api.ILuaFile
+import com.tang.lsp.ILuaFile
+import com.tang.lsp.nameRange
+import com.tang.lsp.toRange
 import com.tang.vscode.api.impl.LuaFile
-import org.eclipse.lsp4j.*
+import org.eclipse.lsp4j.DocumentSymbol
+import org.eclipse.lsp4j.Location
+import org.eclipse.lsp4j.SymbolInformation
+import org.eclipse.lsp4j.SymbolKind
 import org.eclipse.lsp4j.jsonrpc.CancelChecker
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures
 import java.util.concurrent.CompletableFuture
-
-fun range(sLine: Int, sChar: Int, eLine: Int, eChar: Int): Range {
-    return Range(Position(sLine, sChar), Position(eLine, eChar))
-}
-
-fun PsiReference.getRangeInFile(file: ILuaFile): Range {
-    var textRange = rangeInElement
-    val parentRange = element.textRange
-    textRange = textRange.shiftRight(parentRange.startOffset)
-    return textRange.toRange(file)
-}
-
-val PsiElement.nameRange: TextRange? get() {
-    if (this is PsiNameIdentifierOwner) {
-        val id = this.nameIdentifier
-        return id?.textRange
-    }
-    return this.textRange
-}
 
 fun PsiNamedElement.getSymbol(): SymbolInformation {
     val file = containingFile.virtualFile as LuaFile
@@ -150,12 +133,6 @@ private fun PsiNamedElement.getDocumentSymbol(file: ILuaFile): DocumentSymbol? {
         symbol.children = getDocumentSymbols(this, file)
     }
     return symbol
-}
-
-fun TextRange.toRange(file: ILuaFile): Range {
-    val lineStart = file.getLine(this.startOffset)
-    val lineEnd = file.getLine(this.endOffset)
-    return range(lineStart.first, lineStart.second, lineEnd.first, lineEnd.second)
 }
 
 fun <R> computeAsync(code :(CancelChecker) -> R) : CompletableFuture<R> {

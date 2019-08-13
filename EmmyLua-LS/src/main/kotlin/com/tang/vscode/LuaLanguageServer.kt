@@ -49,7 +49,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
 
     private fun initIntellijEnv() {
         LanguageParserDefinitions.INSTANCE.register(LuaLanguage.INSTANCE, LuaParserDefinition())
-        documentService.initIntellijEnv()
+        workspaceService.initIntellijEnv()
         ReferenceProvidersRegistry.register(LuaReferenceContributor())
         ILuaFileResolver.EP_NAME.add(LuaFileResolver())
         LuaShortNamesManager.EP_NAME.add(LuaShortNamesManagerImpl())
@@ -61,7 +61,6 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
 
         initIntellijEnv()
 
-
         val json = params.initializationOptions as? JsonObject
         if (json != null) {
             val stdFolder = json["stdFolder"] as? JsonPrimitive
@@ -71,7 +70,13 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
             workspaceFolders?.forEach { workspaceService.addRoot(it.asString) }
             val clientType = json["client"] as? JsonPrimitive
             if (clientType != null)
-                Configuration.clientType = clientType.asString
+                VSCodeSettings.clientType = clientType.asString
+            // lua config files
+            val configFileArray = json["configFiles"] as? JsonArray
+            if (configFileArray != null) {
+                val configFiles = EmmyConfigurationSource.parse(configFileArray)
+                workspaceService.initConfigFiles(configFiles)
+            }
         }
 
         val res = InitializeResult()

@@ -1,7 +1,7 @@
 package com.tang.vscode
 
 import com.google.gson.*
-import com.tang.intellij.lua.IConfiguration
+import com.tang.intellij.lua.IVSCodeSettings
 import com.yevdo.jwildcard.JWildcard
 
 private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
@@ -14,19 +14,19 @@ private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
     return true
 }
 
-class ConfigurationUpdateResult(
+class SettingsUpdateResult(
     val associationChanged: Boolean
 )
 
 private const val DEFAULT_ASSOCIATION = "*.lua"
 
-object Configuration : IConfiguration {
+object VSCodeSettings : IVSCodeSettings {
 
     private var settings: JsonObject? = null
 
     private var mySourceRoots = mutableListOf<String>()
 
-    val sourceRoots get() = mySourceRoots
+    override val sourceRoots get() = mySourceRoots
 
     private var myCompletionCaseSensitive = false
 
@@ -36,20 +36,50 @@ object Configuration : IConfiguration {
 
     private val associations = mutableListOf(DEFAULT_ASSOCIATION)
 
-    val showCodeLens get() = myShowCodeLens
+    override val showCodeLens get() = myShowCodeLens
 
     var clientType = "unknown"
 
-    val isVSCode get() = clientType == "vsc"
+    override val isVSCode get() = clientType == "vsc"
 
-    fun matchFile(name: String): Boolean {
+    override fun matchFile(name: String): Boolean {
         return associations.any { JWildcard.matches(it, name) }
     }
 
-    fun update(settings: JsonObject): ConfigurationUpdateResult {
+    fun update(settings: JsonObject): SettingsUpdateResult {
         this.settings = settings
 
         //files.associations
+        val associationChanged = updateAssociations()
+
+        //case sensitive
+        val caseSensitive = path("emmylua.completion.caseSensitive")
+        if (caseSensitive != null) {
+            myCompletionCaseSensitive = caseSensitive.asBoolean
+        }
+
+        // source roots
+        updateSourceRoots()
+
+        // show codeLens
+        myShowCodeLens = path("emmylua.codeLens")?.asBoolean == true
+
+        return SettingsUpdateResult(associationChanged)
+    }
+
+    private fun updateSourceRoots() {
+        mySourceRoots.clear()
+        val sourceRoots = path("emmylua.source.roots")
+        if (sourceRoots is JsonArray) {
+            sourceRoots.forEach {
+                if (it is JsonPrimitive)
+                    mySourceRoots.add(it.asString)
+            }
+        }
+        mySourceRoots.sort()
+    }
+
+    private fun updateAssociations(): Boolean {
         val ass = path("files.associations")
         val oriAssociations = ArrayList(associations)
         associations.clear()
@@ -64,29 +94,7 @@ object Configuration : IConfiguration {
             }
         }
         associations.sort()
-        val associationChanged = !listEquals(oriAssociations, associations)
-
-        //case sensitive
-        val caseSensitive = path("emmylua.completion.caseSensitive")
-        if (caseSensitive != null) {
-            myCompletionCaseSensitive = caseSensitive.asBoolean
-        }
-
-        // source roots
-        mySourceRoots.clear()
-        val sourceRoots = path("emmylua.source.roots")
-        if (sourceRoots is JsonArray) {
-            sourceRoots.forEach {
-                if (it is JsonPrimitive)
-                    mySourceRoots.add(it.asString)
-            }
-        }
-        mySourceRoots.sort()
-
-        // show codeLens
-        myShowCodeLens = path("emmylua.codeLens")?.asBoolean == true
-
-        return ConfigurationUpdateResult(associationChanged)
+        return !listEquals(oriAssociations, associations)
     }
 
     private fun path(path: String): JsonElement? {
