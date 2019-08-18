@@ -1,5 +1,5 @@
 package com.tang.vscode
 
-data class DidChangeWatchedFilesRegistrationOptions(val list: List<FileSystemWatcher>)
+data class DidChangeWatchedFilesRegistrationOptions(val watchers: List<FileSystemWatcher>)
 
-data class FileSystemWatcher(val patter: String)
+data class FileSystemWatcher(val globPattern: String)
