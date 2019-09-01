@@ -15,6 +15,7 @@ interface IVSCodeSettings {
     val showCodeLens: Boolean
     val completionCaseSensitive: Boolean
     val sourceRoots: List<String>
+    val fileExtensions: List<String>
 
     fun matchFile(name: String): Boolean
 }

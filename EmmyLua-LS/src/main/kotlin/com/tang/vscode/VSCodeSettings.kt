@@ -36,6 +36,11 @@ object VSCodeSettings : IVSCodeSettings {
 
     private val associations = mutableListOf(DEFAULT_ASSOCIATION)
 
+    private val myFileExtensions = mutableListOf<String>()
+
+    override val fileExtensions: List<String>
+        get() = myFileExtensions
+
     override val showCodeLens get() = myShowCodeLens
 
     var clientType = "unknown"
@@ -84,12 +89,18 @@ object VSCodeSettings : IVSCodeSettings {
         val oriAssociations = ArrayList(associations)
         associations.clear()
         associations.add(DEFAULT_ASSOCIATION)
+        myFileExtensions.clear()
+        myFileExtensions.add(".lua")
         if (ass is JsonObject) {
             for (entry in ass.entrySet()) {
                 val lan = entry.value.asString
                 if (lan.toLowerCase() == "lua") {
                     val wildcard = entry.key
                     associations.add(wildcard)
+
+                    if (wildcard.startsWith("*.")) {
+                        myFileExtensions.add(wildcard.substring(1))
+                    }
                 }
             }
         }
