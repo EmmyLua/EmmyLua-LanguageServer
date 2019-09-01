@@ -24,7 +24,7 @@ enum class UpdateType {
     Deleted
 }
 
-class EmmyConfigurationSource(val uri: String, val workspace: String) {
+data class EmmyConfigurationSource(val uri: String, val workspace: String) {
     companion object {
         fun parse(arr: JsonArray): Array<EmmyConfigurationSource> {
             val list = mutableListOf<EmmyConfigurationSource>()
