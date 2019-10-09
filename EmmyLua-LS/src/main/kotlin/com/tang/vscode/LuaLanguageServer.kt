@@ -102,7 +102,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.workspace.workspaceFolders.supported = true
         capabilities.workspace.workspaceFolders.changeNotifications = Either.forLeft(WORKSPACE_FOLDERS_CAPABILITY_ID)
 
-        capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Incremental)
+        capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Full)
 
         res.capabilities = capabilities
         return CompletableFuture.completedFuture(res)

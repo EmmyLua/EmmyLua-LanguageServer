@@ -40,7 +40,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         var offset = 0
         params.contentChanges.forEach {
             when {
-                // for sublime lsp
+                // for TextDocumentSyncKind.Full
                 it.range == null -> sb = it.text
                 // incremental updating
                 it.range.start.line >= _lines.size -> {
