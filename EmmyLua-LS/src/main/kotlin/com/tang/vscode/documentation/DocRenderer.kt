@@ -89,36 +89,44 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
     if (comment != null) {
         sb.append("\n\n")
         var child: PsiElement? = comment.firstChild
+        var seenString = false
         while (child != null) {
-            when (child) {
-                is LuaDocTagParam -> {
-                    renderDocParam(sb, child)
+            val elementType = child.node.elementType
+            if (elementType == LuaDocTypes.STRING) {
+                seenString = true
+                sb.append(child.text)
+            }
+            else if (elementType == LuaDocTypes.DASHES) {
+                if (seenString) {
                     sb.append("\n")
                 }
-                is LuaDocTagReturn -> {
-                    val typeList = child.typeList
-                    if (typeList != null) {
-                        sb.appendLine("@_return_ : (")
-                        val list = typeList.tyList
-                        list.forEachIndexed { index, luaDocTy ->
-                            renderTypeUnion(if (index != 0) ", " else null, null, sb, luaDocTy)
-                            sb.append(" ")
-                        }
-                        sb.append(")")
-                        renderCommentString(null, null, sb, child.commentString)
+            }
+            else if (child is LuaDocPsiElement){
+                seenString = false
+                when (child) {
+                    is LuaDocTagParam -> {
+                        renderDocParam(sb, child)
                         sb.append("\n")
                     }
-                }
-                is LuaDocTagClass -> renderClassDef(sb, child)
-                is LuaDocTagField -> renderFieldDef(sb, child)
-                is LuaDocTagOverload -> renderOverload(sb, child)
-                is LuaDocTagType -> renderTypeDef(sb, child)
-                is LuaDocTagSee -> renderSee(sb, child)
-                else -> {
-                    val elementType = child.node.elementType
-                    if (elementType === LuaDocTypes.STRING) {
-                        sb.append(child.text)
+                    is LuaDocTagReturn -> {
+                        val typeList = child.typeList
+                        if (typeList != null) {
+                            sb.appendLine("@_return_ : (")
+                            val list = typeList.tyList
+                            list.forEachIndexed { index, luaDocTy ->
+                                renderTypeUnion(if (index != 0) ", " else null, null, sb, luaDocTy)
+                                sb.append(" ")
+                            }
+                            sb.append(")")
+                            renderCommentString(null, null, sb, child.commentString)
+                            sb.append("\n")
+                        }
                     }
+                    is LuaDocTagClass -> renderClassDef(sb, child)
+                    is LuaDocTagField -> renderFieldDef(sb, child)
+                    is LuaDocTagOverload -> renderOverload(sb, child)
+                    is LuaDocTagType -> renderTypeDef(sb, child)
+                    is LuaDocTagSee -> renderSee(sb, child)
                 }
             }
             child = child.nextSibling
