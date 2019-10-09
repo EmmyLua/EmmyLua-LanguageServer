@@ -62,7 +62,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                 complete(isColon, project, contextTy, prefixType, completionResultSet, completionResultSet.prefixMatcher, null)
             }
             //smart
-            /*val nameExpr = indexExpr.prefixExpr
+            val nameExpr = indexExpr.prefixExpr
             if (nameExpr is LuaNameExpr) {
                 val colon = if (isColon) ":" else "."
                 val prefixName = nameExpr.text
@@ -88,7 +88,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                     }
                     true
                 }
-            }*/
+            }
         }
     }
 

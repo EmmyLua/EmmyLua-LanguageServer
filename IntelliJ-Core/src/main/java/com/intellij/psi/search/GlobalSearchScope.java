@@ -24,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 
 public class GlobalSearchScope extends SearchScope {
 
-    @Nullable
     public static final GlobalSearchScope EMPTY_SCOPE = new GlobalSearchScope();
 
     public static GlobalSearchScope allScope(Project project) {

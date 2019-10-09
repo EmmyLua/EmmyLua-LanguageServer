@@ -44,7 +44,6 @@ import com.tang.intellij.lua.ty.*
  * this table should be `MyClass`
  *
  * 2.
- *
  * ---@param callback fun(sender: any, type: string):void
  * local function addListener(type, callback)
  *      ...
@@ -53,6 +52,16 @@ import com.tang.intellij.lua.ty.*
  * addListener(function() end)
  *
  * this closure should be `fun(sender: any, type: string):void`
+ *
+ * 3.
+ * ---@class MyClass
+ * ---@field foo Bar
+ * local a = {}
+ *
+ * ---@type MyClass
+ * local tbl = {
+ *     foo = ?? -- foo should be type of `Bar`
+ * }
  */
 private fun LuaExpr.shouldBeInternal(context: SearchContext): ITy {
     val p1 = parent
@@ -67,7 +76,7 @@ private fun LuaExpr.shouldBeInternal(context: SearchContext): ITy {
             if (receiver != null)
                 return infer(receiver, context)
         }
-    } else if (p1 is LuaListArgs) {
+    } else if (p1 is LuaArgs) {
         val p2 = p1.parent
         if (p2 is LuaCallExpr) {
             val idx = p1.getIndexFor(this)
@@ -83,6 +92,18 @@ private fun LuaExpr.shouldBeInternal(context: SearchContext): ITy {
                 }
             }
             return ret
+        }
+    } else if (p1 is LuaTableField) {
+        val fieldName = p1.name
+        val tbl = p1.parent
+        if (fieldName != null && tbl is LuaTableExpr) {
+            var fieldType: ITy = Ty.UNKNOWN
+            val tyTbl = tbl.shouldBe(context)
+            tyTbl.eachTopClass(Processor { cls ->
+                cls.findMemberType(fieldName, context)?.let { fieldType = fieldType.union(it) }
+                true
+            })
+            return fieldType
         }
     }
     return Ty.UNKNOWN
@@ -153,7 +174,9 @@ fun LuaAssignStat.getExprAt(index:Int) : LuaExpr? {
     return list.getOrNull(index)
 }
 
-fun LuaListArgs.getIndexFor(psi: LuaExpr): Int {
+fun LuaArgs.getIndexFor(psi: LuaExpr): Int {
+    if (this is LuaSingleArg)
+        return 0
     var idx = 0
     LuaPsiTreeUtilEx.processChildren(this, Processor {
         if (it is LuaExpr) {

@@ -33,8 +33,19 @@ interface LuaDeclarationTree {
                 ret = null
             }
             if (ret == null) {
-                val manager = if (file is LuaPsiFile && file.fileElement == null) LuaDeclarationTreeStub(file) else LuaDeclarationTreePsi(file)
-                manager.buildTree(file)
+                var manager: LuaDeclarationTree? = null
+                if (file is LuaPsiFile && !file.isContentsLoaded) {
+                    manager = LuaDeclarationTreeStub(file)
+                    try {
+                        manager.buildTree(file)
+                    } catch (e: Exception) {
+                        manager = null
+                    }
+                }
+                if (manager == null) {
+                    manager = LuaDeclarationTreePsi(file)
+                    manager.buildTree(file)
+                }
                 file.putUserData(key, manager)
                 ret = manager
             }
@@ -356,6 +367,7 @@ private class LuaDeclarationTreePsi(file: PsiFile) : LuaDeclarationTreeBase(file
     }
 
     override fun getPosition(psi: PsiElement): Int {
+        if (psi is PsiFile) return 0
         return psi.node.startOffset
     }
 }
@@ -365,7 +377,7 @@ private class LuaDeclarationTreeStub(file: PsiFile) : LuaDeclarationTreeBase(fil
     var count = 0
 
     override fun shouldRebuild(): Boolean {
-        return super.shouldRebuild() || (file as? LuaPsiFile)?.fileElement != null
+        return super.shouldRebuild() || (file as? LuaPsiFile)?.isContentsLoaded == true
     }
 
     override fun visitElementExt(element: PsiElement) {

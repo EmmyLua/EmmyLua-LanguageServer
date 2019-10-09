@@ -54,6 +54,8 @@ class LuaPsiFile(private val myNode: ASTNode) : ASTDelegatePsiElement(), PsiFile
         return 0
     }
 
+    val isContentsLoaded: Boolean get() = true
+
     companion object {
         private var idCount = 0
     }

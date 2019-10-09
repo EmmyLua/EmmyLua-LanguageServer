@@ -229,14 +229,14 @@ abstract class Ty(override val kind: TyKind) : ITy {
 
         fun getBuiltin(name: String): ITy? {
             return when (name) {
-                Constants.WORD_NIL -> Ty.NIL
-                Constants.WORD_VOID -> Ty.VOID
-                Constants.WORD_ANY -> Ty.UNKNOWN
-                Constants.WORD_BOOLEAN -> Ty.BOOLEAN
-                Constants.WORD_STRING -> Ty.STRING
-                Constants.WORD_NUMBER -> Ty.NUMBER
-                Constants.WORD_TABLE -> Ty.TABLE
-                Constants.WORD_FUNCTION -> Ty.FUNCTION
+                Constants.WORD_NIL -> NIL
+                Constants.WORD_VOID -> VOID
+                Constants.WORD_ANY -> UNKNOWN
+                Constants.WORD_BOOLEAN -> BOOLEAN
+                Constants.WORD_STRING -> STRING
+                Constants.WORD_NUMBER -> NUMBER
+                Constants.WORD_TABLE -> TABLE
+                Constants.WORD_FUNCTION -> FUNCTION
                 else -> null
             }
         }
@@ -367,7 +367,7 @@ class TyArray(override val base: ITy) : Ty(TyKind.Array), ITyArray {
     }
 
     override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
-        return super.subTypeOf(other, context, strict) || (other is TyArray && base.subTypeOf(other.base, context, strict)) || other == Ty.TABLE
+        return super.subTypeOf(other, context, strict) || (other is TyArray && base.subTypeOf(other.base, context, strict)) || other == TABLE
     }
 
     override fun substitute(substitutor: ITySubstitutor): ITy {
@@ -409,7 +409,7 @@ class TyUnion : Ty(TyKind.Union) {
 
     override fun substitute(substitutor: ITySubstitutor): ITy {
         val u = TyUnion()
-        childSet.forEach { u.childSet.add(it.substitute(substitutor)) }
+        childSet.forEach { u.addChild(it.substitute(substitutor)) }
         return u
     }
 
@@ -419,6 +419,16 @@ class TyUnion : Ty(TyKind.Union) {
 
     override fun acceptChildren(visitor: ITyVisitor) {
         childSet.forEach { it.accept(visitor) }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is TyUnion && other.hashCode() == hashCode()
+    }
+
+    override fun hashCode(): Int {
+        var code = 0
+        childSet.forEach { code = code * 31 + it.hashCode() }
+        return code
     }
 
     companion object {
@@ -454,6 +464,8 @@ class TyUnion : Ty(TyKind.Union) {
             }
         }
 
+        // used by ver.2017
+        @Suppress("unused")
         fun eachPerfect(ty: ITy, process: (ITy) -> Boolean) {
             if (ty is TyUnion) {
                 val list = ty.childSet.sorted()

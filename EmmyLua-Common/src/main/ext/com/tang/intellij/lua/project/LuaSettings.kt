@@ -16,6 +16,7 @@
 
 package com.tang.intellij.lua.project
 
+import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.lang.LuaLanguageLevel
 
 /**
@@ -58,6 +59,10 @@ class LuaSettings {
 
         fun isConstructorName(name: String): Boolean {
             return instance.constructorNames.contains(name.toLowerCase())
+        }
+
+        fun isImporterName(name: String): Boolean {
+            return name == Constants.WORD_REQUIRE
         }
     }
 }

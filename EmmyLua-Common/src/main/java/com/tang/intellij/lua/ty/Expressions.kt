@@ -166,7 +166,7 @@ private fun LuaCallExpr.infer(context: SearchContext): ITy {
     // xxx()
     val expr = luaCallExpr.expr
     // 从 require 'xxx' 中获取返回类型
-    if (expr is LuaNameExpr && expr.name == Constants.WORD_REQUIRE) {
+    if (expr is LuaNameExpr && LuaSettings.isImporterName(expr.name)) {
         var filePath: String? = null
         val string = luaCallExpr.firstStringArg
         if (string is LuaLiteralExpr) {
@@ -268,7 +268,7 @@ private fun getType(context: SearchContext, def: PsiElement): ITy {
 
             var type: ITy = def.docTy ?: Ty.UNKNOWN
             //guess from value expr
-            if (Ty.isInvalid(type) && !context.forStub) {
+            if (Ty.isInvalid(type) /*&& !context.forStub*/) {
                 val stat = def.assignStat
                 if (stat != null) {
                     val exprList = stat.valueExprList
