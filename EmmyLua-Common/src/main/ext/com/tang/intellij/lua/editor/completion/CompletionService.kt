@@ -1,14 +1,17 @@
 package com.tang.intellij.lua.editor.completion
 
+import com.intellij.codeInsight.completion.CompletionInitializationContext
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
 import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.completion.impl.CamelHumpMatcher
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.lang.PsiBuilderFactory
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.util.Consumer
 import com.tang.intellij.lua.configuration.IConfigurationManager
+import com.tang.intellij.lua.editor.CaretImpl
 import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
@@ -35,30 +38,46 @@ object CompletionService {
             LuaDocCompletionContributor()
     )
 
-    fun collectCompletion(psi: PsiFile, pos: Int, consumer: Consumer<LookupElement>) {
-        val config = IConfigurationManager.get(psi.project)
-        val text = psi.text.replaceRange(pos, pos, "emmy")
-
-        val parser = LuaParser()
-        val builder = PsiBuilderFactory.getInstance().createBuilder(LuaParserDefinition(), LuaLexer(), text)
-        val node = parser.parse(LuaParserDefinition.FILE, builder)
-        val tempPsi = node.psi as LuaPsiFile
-        tempPsi.virtualFile = psi.virtualFile
-        val position = tempPsi.findElementAt(pos)
-
+    fun collectCompletion(file: PsiFile, caret: Int, consumer: Consumer<LookupElement>) {
+        val config = IConfigurationManager.get(file.project)
         val parameters = CompletionParameters()
         parameters.completionType = CompletionType.BASIC
-        parameters.position = position!!
-        parameters.originalFile = psi
-        parameters.offset = pos
+        parameters.originalFile = file
+        parameters.offset = caret
+        val context = CompletionInitializationContext()
+        context.file = file
+        context.caret = CaretImpl(caret)
+        context.startOffset = caret
+        context.dummyIdentifier = CompletionInitializationContext.DUMMY_IDENTIFIER
+        contributors.forEach { it.beforeCompletion(context) }
+        if (context.dummyIdentifier.isEmpty()) {
+            parameters.position = file.findElementAt(caret)!!
+        } else {
+            parameters.position = insertDummyIdentifier(context)
+        }
 
+        val text = file.text
         val result = CompletionResultSetImpl(consumer)
-        val prefix = findPrefix(text, pos)
+        val prefix = findPrefix(text, caret)
         result.prefixMatcher = CamelHumpMatcher(prefix, config.completionCaseSensitive)
 
         parameters.originalFile.putUserData(CompletionSession.KEY, CompletionSession(parameters, result))
 
         contributors.forEach { it.fillCompletionVariants(parameters, result) }
+    }
+
+    private fun insertDummyIdentifier(context: CompletionInitializationContext): PsiElement {
+        val oriFile = context.file
+        val pos = context.startOffset
+        val text = oriFile.text.replaceRange(pos, pos, context.dummyIdentifier)
+        val parser = LuaParser()
+        val builder = PsiBuilderFactory.getInstance().createBuilder(LuaParserDefinition(), LuaLexer(), text)
+        val node = parser.parse(LuaParserDefinition.FILE, builder)
+        val copy = node.psi as LuaPsiFile
+        copy.virtualFile = oriFile.virtualFile
+        val position = copy.findElementAt(pos)
+        context.file = copy
+        return position!!
     }
 
     private fun findPrefix(text: String, pos: Int): String {

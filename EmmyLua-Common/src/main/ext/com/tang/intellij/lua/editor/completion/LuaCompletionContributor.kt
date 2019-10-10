@@ -83,7 +83,7 @@ class LuaCompletionContributor : CompletionContributor() {
     }*/
 
     override fun beforeCompletion(context: CompletionInitializationContext) {
-        /*suggestWords = true
+        suggestWords = true
         val file = context.file
         if (file is LuaPsiFile) {
             val element = file.findElementAt(context.caret.offset - 1)
@@ -101,7 +101,7 @@ class LuaCompletionContributor : CompletionContributor() {
                     }
                 }
             }
-        }*/
+        }
     }
 
     companion object {

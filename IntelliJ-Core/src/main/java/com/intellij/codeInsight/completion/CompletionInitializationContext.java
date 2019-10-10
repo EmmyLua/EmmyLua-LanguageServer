@@ -15,15 +15,53 @@
  */
 package com.intellij.codeInsight.completion;
 
+import com.intellij.openapi.editor.Caret;
 import com.intellij.psi.PsiFile;
 
 /**
  * @author peter
  */
 public class CompletionInitializationContext {
+    public static String DUMMY_IDENTIFIER = "emmy ";
     public static String DUMMY_IDENTIFIER_TRIMMED = "emmy";
 
-    public String dummyIdentifier;
+    private String dummyIdentifier;
 
-    public PsiFile file;
+    private PsiFile file;
+
+    private int startOffset;
+
+    private Caret caret;
+
+    public int getStartOffset() {
+        return startOffset;
+    }
+
+    public void setStartOffset(int startOffset) {
+        this.startOffset = startOffset;
+    }
+
+    public Caret getCaret() {
+        return caret;
+    }
+
+    public void setCaret(Caret caret) {
+        this.caret = caret;
+    }
+
+    public PsiFile getFile() {
+        return file;
+    }
+
+    public void setFile(PsiFile file) {
+        this.file = file;
+    }
+
+    public String getDummyIdentifier() {
+        return dummyIdentifier;
+    }
+
+    public void setDummyIdentifier(String dummyIdentifier) {
+        this.dummyIdentifier = dummyIdentifier;
+    }
 }
