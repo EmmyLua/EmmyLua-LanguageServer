@@ -67,10 +67,10 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             when (change.type) {
                 FileChangeType.Created -> addFile(change.uri)
                 FileChangeType.Deleted -> removeFile(change.uri)
-                FileChangeType.Changed -> {
+                /*FileChangeType.Changed -> {
                     removeFile(change.uri)
                     addFile(change.uri)
-                }
+                }*/
                 else -> { }
             }
         }
@@ -272,11 +272,19 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         return folder?.findFile(fileURI.name)
     }
 
+    private fun addDirectory(file: File) {
+        if (file.isDirectory) {
+            file.listFiles()?.forEach {
+                addFile(it)
+            }
+        }
+    }
+
     override fun addFile(file: File, text: String?): ILuaFile? {
-        if (file.isDirectory)
+        if (file.isDirectory) {
+            addDirectory(file)
             return null
-        if (!fileManager.isInclude(file))
-            return null
+        }
         val fileURI = FileURI(file.toURI(), false)
         return addFile(fileURI, text)
     }
