@@ -263,6 +263,10 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         return findFile(fileURI)
     }
 
+    override fun findLuaFile(uri: String): ILuaFile? {
+        return findFile(uri) as? ILuaFile
+    }
+
     private fun findFile(fileURI: FileURI): IVirtualFile? {
         val parent = fileURI.parent
         val folder: IFolder? = if (parent == null)

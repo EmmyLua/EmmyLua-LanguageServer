@@ -18,7 +18,6 @@ import com.tang.intellij.lua.editor.completion.asCompletionItem
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
-import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.ty.ITyFunction
 import com.tang.intellij.lua.ty.findPerfectSignature
 import com.tang.intellij.lua.ty.process
@@ -151,16 +150,18 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             if (data is JsonPrimitive) {
                 val arr = data.asString.split("|")
                 if (arr.size >= 2) {
-                    val cls = arr[0]
-                    val name = arr[1]
-                    LuaClassMemberIndex.process(cls, name, SearchContext.get(workspace.project), Processor { member ->
-                        val doc = documentProvider.generateDoc(member, member)
-                        val content = MarkupContent()
-                        content.kind = "markdown"
-                        content.value = doc
-                        item.documentation = Either.forRight(content)
-                        false
-                    })
+                    workspace.findLuaFile(arr[0])?.let { file->
+                        val position = arr[1].toInt()
+                        file.psi?.findElementAt(position)?.let { psi ->
+                            PsiTreeUtil.getParentOfType(psi, LuaClassMember::class.java)?.let { member ->
+                                val doc = documentProvider.generateDoc(member, member)
+                                val content = MarkupContent()
+                                content.kind = "markdown"
+                                content.value = doc
+                                item.documentation = Either.forRight(content)
+                            }
+                        }
+                    }
                 }
             }
             item

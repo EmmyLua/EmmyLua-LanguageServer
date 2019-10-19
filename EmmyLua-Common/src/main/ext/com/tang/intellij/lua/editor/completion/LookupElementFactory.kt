@@ -10,6 +10,7 @@ import com.tang.intellij.lua.psi.LuaPsiElement
 import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
 import com.tang.intellij.lua.ty.ITyFunction
+import com.tang.lsp.ILuaFile
 import org.eclipse.lsp4j.CompletionItemKind
 import javax.swing.Icon
 
@@ -40,10 +41,11 @@ object LookupElementFactory {
                                   isColonStyle: Boolean,
                                   fnTy: ITyFunction,
                                   icon: Icon?): LuaLookupElement {
+        val file = classMember.containingFile.virtualFile as ILuaFile
         val item = buildSignatureCompletionItem(lookupString, signature)
         item.kind = CompletionItemKind.Method
         item.itemText = "[$clazzName]"
-        item.data = "$clazzName|${classMember.name}"
+        item.data = "${file.uri}|${classMember.textOffset}"
         return item
     }
 
@@ -52,8 +54,9 @@ object LookupElementFactory {
                                  field: LuaClassField,
                                  ty: ITy?,
                                  bold: Boolean): LuaLookupElement {
+        val file = field.containingFile.virtualFile as ILuaFile
         val element = LuaLookupElement(name)
-        element.data = "$clazzName|$name"
+        element.data = "${file.uri}|${field.textOffset}"
         element.kind = CompletionItemKind.Field
         return element
     }
