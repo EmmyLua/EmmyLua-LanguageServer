@@ -68,7 +68,7 @@ internal fun renderTy(sb: StringBuilder, ty: ITy) {
             sb.appendClassLink(ty.displayName)
         }
         else -> {
-            sb.append(ty.createTypeString())
+            sb.append(ty.displayName)
         }
     }
 }
