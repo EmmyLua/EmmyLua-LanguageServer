@@ -6,6 +6,7 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.psi.tree.IElementType
 import com.tang.intellij.lua.psi.LuaClassField
 import com.tang.intellij.lua.psi.LuaClassMember
+import com.tang.intellij.lua.psi.LuaParamInfo
 import com.tang.intellij.lua.psi.LuaPsiElement
 import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
@@ -28,7 +29,7 @@ object LookupElementFactory {
                                     bold: Boolean,
                                     ty: ITyFunction,
                                     icon: Icon?): LookupElement {
-        val item = buildSignatureCompletionItem(name, signature)
+        val item = buildSignatureCompletionItem(name, signature, false)
         item.kind = CompletionItemKind.Function
         return item
     }
@@ -42,7 +43,7 @@ object LookupElementFactory {
                                   fnTy: ITyFunction,
                                   icon: Icon?): LuaLookupElement {
         val file = classMember.containingFile.virtualFile as ILuaFile
-        val item = buildSignatureCompletionItem(lookupString, signature)
+        val item = buildSignatureCompletionItem(lookupString, signature, isColonStyle)
         item.kind = CompletionItemKind.Method
         item.itemText = "[$clazzName]"
         item.data = "${file.uri}|${classMember.textOffset}"
@@ -61,9 +62,34 @@ object LookupElementFactory {
         return element
     }
 
-    private fun buildSignatureCompletionItem(name: String, signature: IFunSignature): LuaLookupElement {
-        val item = LuaLookupElement("$name${signature.paramSignature}")
-        if (signature.params.isEmpty()) {
+    private fun buildSignatureCompletionItem(name: String, signature: IFunSignature, isColonStyle: Boolean): LuaLookupElement {
+        var pIndex = 0
+        val params = mutableListOf<LuaParamInfo>()
+        if (isColonStyle) { //a:b()
+            if (!signature.colonCall) { // function a.b() end
+                pIndex++
+            }
+        } else { //a.b()
+            if (signature.colonCall) { // function a:b() end
+                params.add(LuaParamInfo.createSelf())
+            }
+        }
+        params.addAll(signature.params)
+
+        val lookupString = buildString {
+            append(name)
+            append("(")
+            val strings = mutableListOf<String>()
+            for (i in pIndex until params.size) {
+                val p = params[i]
+                strings.add(p.name)
+            }
+            append(strings.joinToString(","))
+            append(")")
+        }
+
+        val item = LuaLookupElement(lookupString)
+        if (pIndex >= params.size) {
             item.insertText = "$name()"
         } else {
             item.insertText = name
