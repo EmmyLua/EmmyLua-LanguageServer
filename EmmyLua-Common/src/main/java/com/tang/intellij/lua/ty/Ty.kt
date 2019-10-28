@@ -20,12 +20,9 @@ import com.intellij.psi.stubs.StubInputStream
 import com.intellij.psi.stubs.StubOutputStream
 import com.intellij.util.Processor
 import com.intellij.util.containers.ContainerUtil
-import com.intellij.util.io.StringRef
 import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.project.LuaSettings
 import com.tang.intellij.lua.search.SearchContext
-import com.tang.intellij.lua.stubs.readSignatures
-import com.tang.intellij.lua.stubs.writeSignatures
 
 enum class TyKind {
     Unknown,
@@ -204,6 +201,17 @@ abstract class Ty(override val kind: TyKind) : ITy {
         val FUNCTION = TyPrimitive(TyPrimitiveKind.Function, "function")
         val NIL = TyNil()
 
+        private val serializerMap = mapOf<TyKind, ITySerializer>(
+                TyKind.Array to TyArraySerializer,
+                TyKind.Class to TyClassSerializer,
+                TyKind.Function to TyFunctionSerializer,
+                TyKind.Generic to TyGenericSerializer,
+                TyKind.GenericParam to TyGenericParamSerializer,
+                TyKind.StringLiteral to TyStringLiteralSerializer,
+                TyKind.Tuple to TyTupleSerializer,
+                TyKind.Union to TyUnionSerializer
+        )
+
         private fun getPrimitive(mark: Byte): Ty {
             return when (mark.toInt()) {
                 TyPrimitiveKind.Boolean.ordinal -> BOOLEAN
@@ -241,44 +249,19 @@ abstract class Ty(override val kind: TyKind) : ITy {
             return ty == null || ty is TyUnknown || ty is TyNil || ty is TyVoid
         }
 
+        private fun getSerializer(kind: TyKind): ITySerializer? {
+            return serializerMap[kind]
+        }
+
         fun serialize(ty: ITy, stream: StubOutputStream) {
             stream.writeByte(ty.kind.ordinal)
             stream.writeInt(ty.flags)
             when(ty) {
-                is ITyArray -> {
-                    serialize(ty.base, stream)
+                is ITyPrimitive -> stream.writeByte(ty.primitiveKind.ordinal)
+                else -> {
+                    val serializer = getSerializer(ty.kind)
+                    serializer?.serialize(ty, stream)
                 }
-                is ITyFunction -> {
-                    FunSignature.serialize(ty.mainSignature, stream)
-                    stream.writeSignatures(ty.signatures)
-                }
-                is TyParameter -> {
-                    stream.writeName(ty.name)
-                    stream.writeName(ty.superClassName)
-                }
-                is ITyPrimitive -> {
-                    stream.writeByte(ty.primitiveKind.ordinal)
-                }
-                is ITyClass -> {
-                    stream.writeName(ty.className)
-                    stream.writeName(ty.varName)
-                    stream.writeName(ty.superClassName)
-                    stream.writeName(ty.aliasName)
-                }
-                is TyUnion -> {
-                    stream.writeInt(ty.size)
-                    TyUnion.each(ty) { serialize(it, stream) }
-                }
-                is ITyGeneric -> {
-                    serialize(ty.base, stream)
-                    stream.writeByte(ty.params.size)
-                    ty.params.forEach { serialize(it, stream) }
-                }
-                is TyTuple -> {
-                    stream.writeByte(ty.list.size)
-                    ty.list.forEach { serialize(it, stream) }
-                }
-                is TyStringLiteral -> stream.writeUTF(ty.content)
             }
         }
 
@@ -286,219 +269,14 @@ abstract class Ty(override val kind: TyKind) : ITy {
             val kind = getKind(stream.readByte().toInt())
             val flags = stream.readInt()
             return when (kind) {
-                TyKind.Array -> {
-                    val base = deserialize(stream)
-                    TyArray(base)
-                }
-                TyKind.Function -> {
-                    val mainSig = FunSignature.deserialize(stream)
-                    val arr = stream.readSignatures()
-                    TySerializedFunction(mainSig, arr, flags)
-                }
-                TyKind.Class -> {
-                    val className = stream.readName()
-                    val varName = stream.readName()
-                    val superName = stream.readName()
-                    val aliasName = stream.readName()
-                    createSerializedClass(StringRef.toString(className),
-                            StringRef.toString(varName),
-                            StringRef.toString(superName),
-                            StringRef.toString(aliasName),
-                            flags)
-                }
                 TyKind.Primitive -> getPrimitive(stream.readByte())
-                TyKind.Union -> {
-                    var union:ITy = TyUnion()
-                    val size = stream.readInt()
-                    for (i in 0 until size) {
-                        union = TyUnion.union(union, deserialize(stream))
-                    }
-                    union
-                }
-                TyKind.Generic -> {
-                    val base = deserialize(stream)
-                    val size = stream.readByte()
-                    val params = mutableListOf<ITy>()
-                    for (i in 0 until size) {
-                        params.add(deserialize(stream))
-                    }
-                    TySerializedGeneric(params.toTypedArray(), base)
-                }
                 TyKind.Nil -> NIL
                 TyKind.Void -> VOID
-                TyKind.Tuple -> {
-                    val size = stream.readByte().toInt()
-                    val list = mutableListOf<ITy>()
-                    for (i in 0 until size) list.add(deserialize(stream))
-                    TyTuple(list)
-                }
-                TyKind.GenericParam -> {
-                    val name = StringRef.toString(stream.readName())
-                    val base = StringRef.toString(stream.readName())
-                    TyParameter(name, base)
-                }
-                TyKind.StringLiteral -> TyStringLiteral(stream.readUTF())
-                else -> TyUnknown()
-            }
-        }
-    }
-}
-
-interface ITyArray : ITy {
-    val base: ITy
-}
-
-class TyArray(override val base: ITy) : Ty(TyKind.Array), ITyArray {
-
-    override fun equals(other: Any?): Boolean {
-        return other is ITyArray && base == other.base
-    }
-
-    override fun hashCode(): Int {
-        return displayName.hashCode()
-    }
-
-    override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
-        return super.subTypeOf(other, context, strict) || (other is TyArray && base.subTypeOf(other.base, context, strict)) || other == TABLE
-    }
-
-    override fun substitute(substitutor: ITySubstitutor): ITy {
-        return TyArray(base.substitute(substitutor))
-    }
-
-    override fun accept(visitor: ITyVisitor) {
-        visitor.visitArray(this)
-    }
-
-    override fun acceptChildren(visitor: ITyVisitor) {
-        base.accept(visitor)
-    }
-}
-
-class TyUnion : Ty(TyKind.Union) {
-    private val childSet = mutableSetOf<ITy>()
-
-    fun getChildTypes() = childSet
-
-    val size:Int
-        get() = childSet.size
-
-    private fun union2(ty: ITy): TyUnion {
-        if (ty is TyUnion) {
-            ty.childSet.forEach { addChild(it) }
-        }
-        else addChild(ty)
-        return this
-    }
-
-    private fun addChild(ty: ITy): Boolean {
-        return childSet.add(ty)
-    }
-
-    override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
-        return super.subTypeOf(other, context, strict) || childSet.any { type -> type.subTypeOf(other, context, strict) }
-    }
-
-    override fun substitute(substitutor: ITySubstitutor): ITy {
-        val u = TyUnion()
-        childSet.forEach { u.union2(it.substitute(substitutor)) }
-        return u
-    }
-
-    override fun accept(visitor: ITyVisitor) {
-        visitor.visitUnion(this)
-    }
-
-    override fun acceptChildren(visitor: ITyVisitor) {
-        childSet.forEach { it.accept(visitor) }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        return other is TyUnion && other.hashCode() == hashCode()
-    }
-
-    override fun hashCode(): Int {
-        var code = 0
-        childSet.forEach { code = code * 31 + it.hashCode() }
-        return code
-    }
-
-    companion object {
-        fun <T : ITy> find(ty: ITy, clazz: Class<T>): T? {
-            if (clazz.isInstance(ty))
-                return clazz.cast(ty)
-            var ret: T? = null
-            process(ty) {
-                if (clazz.isInstance(it)) {
-                    ret = clazz.cast(it)
-                    return@process false
-                }
-                true
-            }
-            return ret
-        }
-
-        fun process(ty: ITy, process: (ITy) -> Boolean) {
-            if (ty is TyUnion) {
-                // why nullable ???
-                val arr: Array<ITy?> = ty.childSet.toTypedArray()
-                for (child in arr) {
-                    if (child != null && !process(child))
-                        break
-                }
-            } else process(ty)
-        }
-
-        fun each(ty: ITy, fn: (ITy) -> Unit) {
-            process(ty) {
-                fn(it)
-                true
-            }
-        }
-
-        // used by ver.2017
-        @Suppress("unused")
-        fun eachPerfect(ty: ITy, process: (ITy) -> Boolean) {
-            if (ty is TyUnion) {
-                val list = ty.childSet.sorted()
-                for (iTy in list) {
-                    if (!process(iTy))
-                        break
-                }
-            } else process(ty)
-        }
-
-        fun union(t1: ITy, t2: ITy): ITy {
-            return when {
-                isInvalid(t1) -> t2
-                isInvalid(t2) -> t1
-                t1 is TyUnion -> t1.union2(t2)
-                t2 is TyUnion -> t2.union2(t1)
                 else -> {
-                    val u = TyUnion()
-                    u.addChild(t1)
-                    u.addChild(t2)
-                    //if t1 == t2
-                    if (u.childSet.size == 1) t1 else u
+                    val serializer = getSerializer(kind)
+                    serializer?.deserialize(flags, stream) ?: UNKNOWN
                 }
             }
-        }
-
-        fun getPerfectClass(ty: ITy): ITyClass? {
-            var clazz: ITyClass? = null
-            var anonymous: ITyClass? = null
-            var global: ITyClass? = null
-            process(ty) {
-                if (it is ITyClass) {
-                    when {
-                        it.isAnonymous -> anonymous = it
-                        it.isGlobal -> global = it
-                        else -> clazz = it
-                    }
-                }
-                clazz == null
-            }
-            return clazz ?: global ?: anonymous
         }
     }
 }
@@ -530,57 +308,5 @@ class TyVoid : Ty(TyKind.Void) {
 
     override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
         return false
-    }
-}
-
-class TyTuple(val list: List<ITy>) : Ty(TyKind.Tuple) {
-
-    val size: Int get() {
-        return list.size
-    }
-
-    override fun substitute(substitutor: ITySubstitutor): ITy {
-        val list = list.map { it.substitute(substitutor) }
-        return TyTuple(list)
-    }
-
-    override fun accept(visitor: ITyVisitor) {
-        visitor.visitTuple(this)
-    }
-
-    override fun acceptChildren(visitor: ITyVisitor) {
-        list.forEach { it.accept(visitor) }
-    }
-
-    override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
-        if (other is TyTuple && other.size == size) {
-            for (i in 0 until size) {
-                if (!list[i].subTypeOf(other.list[i], context, strict)) {
-                    return false
-                }
-            }
-            return true
-        }
-        return false
-    }
-
-    override fun hashCode(): Int {
-        var hash = 0
-        for (ty in list) {
-            hash = hash * 31 + ty.hashCode()
-        }
-        return hash
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (other is TyTuple && other.size == size) {
-            for (i in 0 until size) {
-                if (list[i] != other.list[i]) {
-                    return false
-                }
-            }
-            return true
-        }
-        return super.equals(other)
     }
 }

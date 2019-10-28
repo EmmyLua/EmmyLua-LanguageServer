@@ -61,7 +61,7 @@ class LuaSettings {
             return instance.constructorNames.contains(name.toLowerCase())
         }
 
-        fun isImporterName(name: String): Boolean {
+        fun isRequireLikeFunctionName(name: String): Boolean {
             return name == Constants.WORD_REQUIRE
         }
     }

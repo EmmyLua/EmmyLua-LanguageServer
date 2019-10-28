@@ -151,12 +151,9 @@ fun LuaCallExpr.createSubstitutor(sig: IFunSignature, context: SearchContext): I
 }
 
 private fun LuaCallExpr.getReturnTy(sig: IFunSignature, context: SearchContext): ITy? {
-    var resultSig = sig
     val substitutor = createSubstitutor(sig, context)
-    if (substitutor != null) {
-        resultSig = sig.substitute(substitutor)
-    }
-    val returnTy = resultSig.returnTy
+    var returnTy = if (substitutor != null) sig.returnTy.substitute(substitutor) else sig.returnTy
+    returnTy = returnTy.substitute(TySelfSubstitutor(project, this))
     return if (returnTy is TyTuple) {
         if (context.guessTuple())
             returnTy
@@ -173,7 +170,7 @@ private fun LuaCallExpr.infer(context: SearchContext): ITy {
     // xxx()
     val expr = luaCallExpr.expr
     // 从 require 'xxx' 中获取返回类型
-    if (expr is LuaNameExpr && LuaSettings.isImporterName(expr.name)) {
+    if (expr is LuaNameExpr && LuaSettings.isRequireLikeFunctionName(expr.name)) {
         var filePath: String? = null
         val string = luaCallExpr.firstStringArg
         if (string is LuaLiteralExpr) {
@@ -362,11 +359,12 @@ private fun LuaIndexExpr.infer(context: SearchContext): ITy {
         val propName = indexExpr.name
         if (propName != null) {
             val prefixType = parentTy ?: indexExpr.guessParentType(context)
-
-            prefixType.eachTopClass(Processor {
-                result = result.union(guessFieldType(propName, it, context))
-                true
-            })
+            prefixType.each { ty ->
+                if (ty is ITyClass)
+                    result = result.union(guessFieldType(propName, ty, context))
+                else if (ty is ITyGeneric && ty.getParamTy(0) == Ty.STRING)
+                    result = result.union(ty.getParamTy(1))
+            }
         }
         result
     })
