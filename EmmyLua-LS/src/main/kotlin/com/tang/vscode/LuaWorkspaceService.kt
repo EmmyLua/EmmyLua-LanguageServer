@@ -204,7 +204,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             true
         }
         removeList.forEach {
-            println("[-] ${it.uri}")
             it.parent.removeFile(it)
         }
     }
@@ -310,7 +309,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             findOrCreate(parent, true).first) ?: return null
 
         return try {
-            println("[+] $fileURI")
             val content = text ?: LoadTextUtil.getTextByBinaryPresentation(file.readBytes())
             folder.addFile(file.name, content)
         } catch (e: Exception) {
@@ -327,7 +325,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     override fun removeFile(uri: String) {
         val file = findFile(uri)
         file?.let {
-            println("[-] $uri")
             it.parent.removeFile(it)
         }
     }
