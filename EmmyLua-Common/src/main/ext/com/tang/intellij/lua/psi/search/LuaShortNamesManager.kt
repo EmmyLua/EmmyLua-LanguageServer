@@ -19,7 +19,7 @@ package com.tang.intellij.lua.psi.search
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.util.Processor
-import com.tang.intellij.lua.ext.ExtensionPointName
+import com.tang.intellij.lua.plugin.ExtensionPointName
 import com.tang.intellij.lua.psi.LuaClass
 import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaTypeAlias

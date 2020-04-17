@@ -1,0 +1,14 @@
+<plugin>
+
+    <extensionPoints>
+        <extensionPoint qualifiedName="com.tang.intellij.lua.luaFileResolver" interface="com.tang.intellij.lua.ext.ILuaFileResolver"/>
+        <extensionPoint qualifiedName="com.tang.intellij.lua.luaTypeInfer" interface="com.tang.intellij.lua.ext.ILuaTypeInfer"/>
+        <extensionPoint qualifiedName="com.tang.intellij.lua.luaShortNamesManager" interface="com.tang.intellij.lua.psi.search.LuaShortNamesManager"/>
+    </extensionPoints>
+
+    <extensions defaultExtensionNs="com.tang.intellij.lua">
+        <luaTypeInfer implementation="com.tang.intellij.lua.ty.LuaTypeInfer" id="base"/>
+        <luaShortNamesManager implementation="com.tang.intellij.lua.psi.search.LuaShortNamesManagerImpl" id="base"/>
+        <luaFileResolver implementation="com.tang.vscode.LuaFileResolver" id="base"/>
+    </extensions>
+</plugin>

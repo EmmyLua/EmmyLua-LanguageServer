@@ -18,10 +18,11 @@ package com.tang.intellij.lua.ext
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.tang.intellij.lua.plugin.ExtensionPointName
 
 interface ILuaFileResolver {
     companion object {
-        val EP_NAME = ExtensionPointName.create<ILuaFileResolver>("com.tang.intellij.lua.luaFileResolver")
+        private val EP_NAME = ExtensionPointName.create<ILuaFileResolver>("com.tang.intellij.lua.luaFileResolver")
 
         fun findLuaFile(project: Project, shortUrl: String, extNames: Array<String>): VirtualFile? {
             for (resolver in EP_NAME.extensions) {

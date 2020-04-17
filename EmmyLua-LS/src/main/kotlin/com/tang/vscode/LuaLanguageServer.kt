@@ -5,11 +5,9 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import com.intellij.core.LanguageParserDefinitions
 import com.intellij.psi.impl.source.resolve.reference.ReferenceProvidersRegistry
-import com.tang.intellij.lua.ext.ILuaFileResolver
+import com.tang.intellij.lua.plugin.PluginManager
 import com.tang.intellij.lua.lang.LuaLanguage
 import com.tang.intellij.lua.lang.LuaParserDefinition
-import com.tang.intellij.lua.psi.search.LuaShortNamesManager
-import com.tang.intellij.lua.psi.search.LuaShortNamesManagerImpl
 import com.tang.intellij.lua.reference.LuaReferenceContributor
 import com.tang.vscode.utils.computeAsync
 import org.eclipse.lsp4j.*
@@ -48,11 +46,10 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     }
 
     private fun initIntellijEnv() {
+        PluginManager.init()
         LanguageParserDefinitions.INSTANCE.register(LuaLanguage.INSTANCE, LuaParserDefinition())
         workspaceService.initIntellijEnv()
         ReferenceProvidersRegistry.register(LuaReferenceContributor())
-        ILuaFileResolver.EP_NAME.add(LuaFileResolver())
-        LuaShortNamesManager.EP_NAME.add(LuaShortNamesManagerImpl())
     }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
