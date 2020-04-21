@@ -9,10 +9,11 @@ import java.io.File
 import java.net.URI
 
 interface IWorkspace {
-    fun addFile(file: File, text: String? = null): ILuaFile?
+    fun addFile(file: File, text: String? = null, force: Boolean = false): ILuaFile?
     fun findFile(uri: String): IVirtualFile?
     fun findLuaFile(uri: String): ILuaFile?
     fun removeFile(uri: String)
+    fun removeFileIfNeeded(uri: String)
     fun eachRoot(processor: (f: IFolder) -> Boolean)
     companion object {
         val KEY = Key.create<IWorkspace>("emmy.workspace")

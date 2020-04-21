@@ -371,7 +371,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         var file = workspace.findFile(uri)
         if (file == null) {
             val u = URI(uri)
-            file = workspace.addFile(File(u.path), params.textDocument.text)
+            file = workspace.addFile(File(u.path), params.textDocument.text, true)
         }
         if (file is LuaFile) {
             val diagnosticsParams = PublishDiagnosticsParams(params.textDocument.uri, file.diagnostics)
@@ -430,7 +430,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun didClose(params: DidCloseTextDocumentParams) {
-
+        workspace.removeFileIfNeeded(params.textDocument.uri)
     }
 
     override fun formatting(params: DocumentFormattingParams?): CompletableFuture<MutableList<out TextEdit>> {

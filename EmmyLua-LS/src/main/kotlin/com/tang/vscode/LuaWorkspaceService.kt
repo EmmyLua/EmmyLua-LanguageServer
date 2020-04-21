@@ -52,7 +52,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
     }
 
-    val project: Project = WProject()
+    private val project: Project = WProject()
 
     private val fileManager = FileManager(project)
     private val fileScopeProvider = WorkspaceRootFileScopeProvider()
@@ -283,23 +283,23 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
     }
 
-    override fun addFile(file: File, text: String?): ILuaFile? {
+    override fun addFile(file: File, text: String?, force: Boolean): ILuaFile? {
         if (file.isDirectory) {
             addDirectory(file)
             return null
         }
         val fileURI = FileURI(file.toURI(), false)
-        return addFile(fileURI, text)
+        return addFile(fileURI, text, force)
     }
 
-    private fun addFile(fileURI: FileURI, text: String?): ILuaFile? {
+    private fun addFile(fileURI: FileURI, text: String?, force: Boolean = false): ILuaFile? {
         val file = fileURI.toFile()
-        if (!fileManager.isInclude(fileURI) || file == null) {
+        if (file == null || (!force && !fileManager.isInclude(fileURI))) {
             return null
         }
-        val exsit = findFile(fileURI)
-        if (exsit is ILuaFile) {
-            return exsit
+        val existFile = findFile(fileURI)
+        if (existFile is ILuaFile) {
+            return existFile
         }
 
         val parent = fileURI.parent
@@ -326,6 +326,15 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val file = findFile(uri)
         file?.let {
             it.parent.removeFile(it)
+        }
+    }
+
+    override fun removeFileIfNeeded(uri: String) {
+        val file = findFile(uri)
+        file?.let {
+            if (!fileManager.isInclude(file.uri)) {
+                it.parent.removeFile(it)
+            }
         }
     }
 
