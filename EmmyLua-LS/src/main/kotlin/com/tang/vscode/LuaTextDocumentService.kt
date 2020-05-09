@@ -402,26 +402,28 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     }
                 }
 
-                callExpr?.guessParentType(SearchContext.get(psiFile.project))?.let { ty ->
-                    if (ty is ITyFunction) {
-                        val active = ty.findPerfectSignature(nCommas + 1)
-                        var idx = 0
-                        ty.process(Processor { sig ->
-                            val information = SignatureInformation()
-                            information.parameters = mutableListOf()
-                            sig.params.forEach { pi ->
-                                val paramInfo = ParameterInformation("${pi.name}:${pi.ty.displayName}", pi.ty.displayName)
-                                information.parameters.add(paramInfo)
-                            }
-                            information.label = sig.displayName
-                            list.add(information)
+                callExpr?.guessParentType(SearchContext.get(psiFile.project))?.let { parentType ->
+                    parentType.each { ty->
+                        if (ty is ITyFunction) {
+                            val active = ty.findPerfectSignature(nCommas + 1)
+                            var idx = 0
+                            ty.process(Processor { sig ->
+                                val information = SignatureInformation()
+                                information.parameters = mutableListOf()
+                                sig.params.forEach { pi ->
+                                    val paramInfo = ParameterInformation("${pi.name}:${pi.ty.displayName}", pi.ty.displayName)
+                                    information.parameters.add(paramInfo)
+                                }
+                                information.label = sig.displayName
+                                list.add(information)
 
-                            if (sig == active) {
-                                activeSig = idx
-                            }
-                            idx++
-                            true
-                        })
+                                if (sig == active) {
+                                    activeSig = idx
+                                }
+                                idx++
+                                true
+                            })
+                        }
                     }
                 }
             }
