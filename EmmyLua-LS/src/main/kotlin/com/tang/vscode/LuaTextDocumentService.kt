@@ -224,9 +224,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 val target = TargetElementUtil.findTarget(psiFile, i)
                 val resolve = target?.reference?.resolve()
                 if (resolve != null) {
-                    val sourceFile = resolve.containingFile.virtualFile as LuaFile
+                    val sourceFile = resolve.containingFile?.virtualFile as? LuaFile
                     val range = resolve.nameRange
-                    if (range != null)
+                    if (range != null && sourceFile != null)
                         list.add(Location(sourceFile.uri.toString(), range.toRange(sourceFile)))
                 }
             }

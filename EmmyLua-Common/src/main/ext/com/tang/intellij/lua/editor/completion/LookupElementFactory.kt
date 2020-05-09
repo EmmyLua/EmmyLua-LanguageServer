@@ -42,11 +42,13 @@ object LookupElementFactory {
                                   isColonStyle: Boolean,
                                   fnTy: ITyFunction,
                                   icon: Icon?): LuaLookupElement {
-        val file = classMember.containingFile.virtualFile as ILuaFile
         val item = buildSignatureCompletionItem(lookupString, signature, isColonStyle)
         item.kind = CompletionItemKind.Method
         item.itemText = "[$clazzName]"
-        item.data = "${file.uri}|${classMember.textOffset}"
+        val file = classMember.containingFile?.virtualFile as? ILuaFile
+        if (file != null) {
+            item.data = "${file.uri}|${classMember.textOffset}"
+        }
         return item
     }
 
@@ -55,10 +57,12 @@ object LookupElementFactory {
                                  field: LuaClassField,
                                  ty: ITy?,
                                  bold: Boolean): LuaLookupElement {
-        val file = field.containingFile.virtualFile as ILuaFile
         val element = LuaLookupElement(name)
-        element.data = "${file.uri}|${field.textOffset}"
         element.kind = CompletionItemKind.Field
+        val file = field.containingFile?.virtualFile as? ILuaFile
+        if (file != null) {
+            element.data = "${file.uri}|${field.textOffset}"
+        }
         return element
     }
 
