@@ -36,7 +36,7 @@ abstract class LuaShortNamesManager {
         fun getInstance(project: Project): LuaShortNamesManager {
             var manager = project.getUserData(KEY)
             if (manager == null) {
-                manager = LuaShortNamesManagerImpl()
+                manager = CompositeLuaShortNamesManager()
                 project.putUserData(KEY, manager)
             }
             return manager
