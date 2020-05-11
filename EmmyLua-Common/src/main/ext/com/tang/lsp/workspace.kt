@@ -44,6 +44,8 @@ interface IVirtualFile {
     fun matchUri(uri: URI): Boolean
 }
 
+data class Word(val hashCode: Int, val start: Int, val end: Int)
+
 interface ILuaFile : IVirtualFile {
     fun getText(): CharSequence
     val diagnostics: List<Diagnostic>
@@ -52,4 +54,5 @@ interface ILuaFile : IVirtualFile {
     fun getLine(offset: Int): Pair<Int, Int>
     fun didChange(params: DidChangeTextDocumentParams)
     fun getPosition(line:Int, char: Int): Int
+    fun processWords(processor: (w: Word) -> Boolean)
 }

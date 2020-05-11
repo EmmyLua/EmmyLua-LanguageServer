@@ -1,14 +1,18 @@
 package com.tang.vscode.api.impl
 
 import com.intellij.lang.PsiBuilderFactory
+import com.intellij.lang.cacheBuilder.DefaultWordsScanner
 import com.intellij.lexer.FlexAdapter
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.tree.TokenSet
 import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.comment.psi.LuaDocPsiElement
 import com.tang.intellij.lua.lang.LuaLanguageLevel
 import com.tang.intellij.lua.lang.LuaParserDefinition
+import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.lexer._LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
 import com.tang.intellij.lua.psi.LuaCallExpr
@@ -17,6 +21,7 @@ import com.tang.intellij.lua.psi.LuaPsiFile
 import com.tang.intellij.lua.stubs.IndexSink
 import com.tang.lsp.FileURI
 import com.tang.lsp.ILuaFile
+import com.tang.lsp.Word
 import com.tang.lsp.toRange
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
@@ -28,6 +33,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _text: CharSequence = ""
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
+    private var _words: List<Word>? = null
 
     override val diagnostics = mutableListOf<Diagnostic>()
 
@@ -109,6 +115,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     }
 
     private fun doParser() {
+        _words = null
         diagnostics.clear()
         unindex()
         val parser = LuaParser()
@@ -171,5 +178,28 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
     private fun index() {
         _myPsi?.let { com.tang.intellij.lua.stubs.index(it) }
+    }
+
+    override fun processWords(processor: (w: Word) -> Boolean) {
+        if (_words == null) {
+            val scanner = DefaultWordsScanner(
+                    LuaLexer(),
+                    TokenSet.EMPTY,
+                    TokenSet.EMPTY,
+                    TokenSet.EMPTY
+            )
+            val list = mutableListOf<Word>()
+            scanner.processWords(this._text) {
+                val hash = StringUtil.hashCode(it.baseText.subSequence(it.start, it.end))
+                list.add(Word(hash, it.start, it.end))
+                true
+            }
+            _words = list
+        }
+        _words?.let { words ->
+            for (word in words) {
+                if (!processor(word)) break
+            }
+        }
     }
 }
