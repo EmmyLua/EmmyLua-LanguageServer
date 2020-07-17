@@ -50,11 +50,7 @@ object CompletionService {
         context.startOffset = caret
         context.dummyIdentifier = CompletionInitializationContext.DUMMY_IDENTIFIER
         contributors.forEach { it.beforeCompletion(context) }
-        if (context.dummyIdentifier.isEmpty()) {
-            parameters.position = file.findElementAt(caret)!!
-        } else {
-            parameters.position = insertDummyIdentifier(context)
-        }
+        parameters.position = if (context.dummyIdentifier.isEmpty()) file.findElementAt(caret) ?: return else insertDummyIdentifier(context)
 
         val text = file.text
         val result = CompletionResultSetImpl(consumer)
