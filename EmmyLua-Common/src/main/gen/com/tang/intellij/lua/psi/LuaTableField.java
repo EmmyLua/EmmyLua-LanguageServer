@@ -43,6 +43,10 @@ public interface LuaTableField extends LuaClassField, PsiNameIdentifierOwner, Lu
   @NotNull
   Visibility getVisibility();
 
+  //WARNING: getWorth(...) is skipped
+  //matching getWorth(LuaTableField, ...)
+  //methods are not found in LuaPsiImplUtilKt
+
   boolean isDeprecated();
 
   @Nullable

@@ -8,16 +8,17 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.util.PsiTreeUtil;
 import static com.tang.intellij.lua.psi.LuaTypes.*;
+import com.intellij.extapi.psi.ASTWrapperPsiElement;
 import com.tang.intellij.lua.psi.*;
 
-public class LuaLabelStatImpl extends LuaStatementImpl implements LuaLabelStat {
+public class LuaAttributeImpl extends ASTWrapperPsiElement implements LuaAttribute {
 
-  public LuaLabelStatImpl(@NotNull ASTNode node) {
+  public LuaAttributeImpl(@NotNull ASTNode node) {
     super(node);
   }
 
   public void accept(@NotNull LuaVisitor visitor) {
-    visitor.visitLabelStat(this);
+    visitor.visitAttribute(this);
   }
 
   public void accept(@NotNull PsiElementVisitor visitor) {
@@ -29,29 +30,6 @@ public class LuaLabelStatImpl extends LuaStatementImpl implements LuaLabelStat {
   @Nullable
   public PsiElement getId() {
     return findChildByType(ID);
-  }
-
-  @Override
-  @Nullable
-  public PsiElement getNameIdentifier() {
-    return LuaPsiImplUtilKt.getNameIdentifier(this);
-  }
-
-  @Override
-  public int getTextOffset() {
-    return LuaPsiImplUtilKt.getTextOffset(this);
-  }
-
-  @Override
-  @NotNull
-  public PsiElement setName(@NotNull String name) {
-    return LuaPsiImplUtilKt.setName(this, name);
-  }
-
-  @Override
-  @Nullable
-  public String getName() {
-    return LuaPsiImplUtilKt.getName(this);
   }
 
 }

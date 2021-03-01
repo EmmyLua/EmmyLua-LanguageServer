@@ -40,21 +40,24 @@ public class LuaClosureExprImpl extends LuaClosureExprMixin implements LuaClosur
   }
 
   @Override
-  @NotNull
+  @Nullable
   public LuaFuncBody getFuncBody() {
-    return notNullChild(PsiTreeUtil.getStubChildOfType(this, LuaFuncBody.class));
+    return PsiTreeUtil.getStubChildOfType(this, LuaFuncBody.class);
   }
 
+  @Override
   @NotNull
   public List<LuaParamNameDef> getParamNameDefList() {
     return LuaPsiImplUtilKt.getParamNameDefList(this);
   }
 
+  @Override
   @NotNull
   public ITy guessReturnType(@NotNull SearchContext searchContext) {
     return LuaPsiImplUtilKt.guessReturnType(this, searchContext);
   }
 
+  @Override
   @NotNull
   public LuaParamInfo[] getParams() {
     return LuaPsiImplUtilKt.getParams(this);
