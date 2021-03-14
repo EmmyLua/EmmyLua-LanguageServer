@@ -37,7 +37,6 @@ import org.eclipse.lsp4j.services.TextDocumentService
 import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
-import kotlin.coroutines.experimental.coroutineContext
 
 /**
  * tangzx
@@ -69,6 +68,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val docTypeNames = mutableListOf<TextRange>()
         val upValues = mutableListOf<TextRange>()
         val paramHints = mutableListOf<RenderRange>()
+        val localHints = mutableListOf<RenderRange>()
 
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
@@ -105,6 +105,20 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                 if (isUpValue(o, context))
                     upValues.add(o.textRange)
+            }
+
+            override fun visitLocalDef(o: LuaLocalDef) {
+                if (o.parent is LuaExprStat) // non-complete stat
+                    return
+
+                val nameList = o.nameList
+                nameList?.nameDefList?.forEach {
+                    it.nameRange?.let { nameRange ->
+                        localHints.add(RenderRange(nameRange.toRange(file), it.guessType(SearchContext.get(o.project)).displayName))
+                    }
+                }
+
+                o.children.forEach { visitElement(it) }
             }
 
             override fun visitElement(element: PsiElement) {
@@ -171,9 +185,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                         }
                                         var skipSelf = false
                                         sig.params.forEach { pi ->
-                                            if (index == 0 && !skipSelf && !sig.colonCall && callExpr.isMethodColonCall ) {
+                                            if (index == 0 && !skipSelf && !sig.colonCall && callExpr.isMethodColonCall) {
                                                 skipSelf = true
-                                            }else {
+                                            } else {
                                                 literalMap[index]?.let {
                                                     paramHints[it].hint = pi.name
                                                 }
@@ -187,8 +201,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             }
                         }
                     }
-
-
+                    element.children.forEach { visitElement(it) }
                 } else
                     super.visitElement(element)
             }
@@ -204,7 +217,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         if (upValues.isNotEmpty())
             all.add(Annotator(uri, upValues.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Upvalue))
         if (paramHints.isNotEmpty()) {
-            all.add(Annotator(uri, paramHints, AnnotatorType.Hint))
+            all.add(Annotator(uri, paramHints, AnnotatorType.ParamHint))
+        }
+        if (localHints.isNotEmpty()) {
+            all.add(Annotator(uri, localHints, AnnotatorType.LocalHint))
         }
         return all
     }

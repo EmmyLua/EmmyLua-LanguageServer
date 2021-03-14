@@ -10,7 +10,8 @@ enum class AnnotatorType {
     Global,
     DocName,
     Upvalue,
-    Hint
+    ParamHint,
+    LocalHint
 }
 
 data class AnnotatorParams(val uri: String)
