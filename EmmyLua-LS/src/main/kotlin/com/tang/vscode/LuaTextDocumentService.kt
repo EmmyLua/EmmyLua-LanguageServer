@@ -37,6 +37,7 @@ import org.eclipse.lsp4j.services.TextDocumentService
 import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
+import kotlin.coroutines.experimental.coroutineContext
 
 /**
  * tangzx
@@ -135,20 +136,18 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val callExpr = element
                     var activeParameter = 0
                     var nCommas = 0
-                    val literalMap = mutableMapOf<Int,Int>()
+                    val literalMap = mutableMapOf<Int, Int>()
                     callExpr.args.firstChild?.let { firstChild ->
                         var child: PsiElement? = firstChild
                         while (child != null) {
                             if (child.node.elementType == LuaTypes.COMMA) {
                                 activeParameter++
                                 nCommas++
-                            }
-
-                            else if(child.node.elementType == LuaTypes.LITERAL_EXPR
+                            } else if (child.node.elementType == LuaTypes.LITERAL_EXPR
                                     || child.node.elementType == LuaTypes.TABLE_EXPR
                                     || child.node.elementType == LuaTypes.CLOSURE_EXPR
-                            ){
-                                paramHints.add(RenderRange(child.textRange.toRange(file),""))
+                            ) {
+                                paramHints.add(RenderRange(child.textRange.toRange(file), null))
                                 literalMap[activeParameter] = paramHints.size - 1;
                             }
 
@@ -164,14 +163,22 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     if (sig == active) {
                                         var index = 0;
 
-                                        sig.params.forEach { pi ->
-                                            val paramHintIndex = literalMap.getOrDefault(index,-1)
-                                            if(paramHintIndex != -1)
-                                            {
-
-                                                paramHints[paramHintIndex].hint = pi.name
+                                        if (sig.colonCall && callExpr.isMethodDotCall) {
+                                            literalMap[index]?.let {
+                                                paramHints[it].hint = "self"
                                             }
-                                            index++;
+                                            index++
+                                        }
+                                        var skipSelf = false
+                                        sig.params.forEach { pi ->
+                                            if (index == 0 && !skipSelf && !sig.colonCall && callExpr.isMethodColonCall ) {
+                                                skipSelf = true
+                                            }else {
+                                                literalMap[index]?.let {
+                                                    paramHints[it].hint = pi.name
+                                                }
+                                                index++
+                                            }
                                         }
                                     }
 
@@ -189,15 +196,15 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val all = mutableListOf<Annotator>()
         val uri = file.uri.toString()
         if (params.isNotEmpty())
-            all.add(Annotator(uri, params.map { RenderRange(it.toRange(file),null) } ,AnnotatorType.Param))
+            all.add(Annotator(uri, params.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Param))
         if (globals.isNotEmpty())
-            all.add(Annotator(uri, globals.map { RenderRange(it.toRange(file),null) }, AnnotatorType.Global))
+            all.add(Annotator(uri, globals.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Global))
         if (docTypeNames.isNotEmpty())
-            all.add(Annotator(uri, docTypeNames.map { RenderRange(it.toRange(file),null) } , AnnotatorType.DocName))
+            all.add(Annotator(uri, docTypeNames.map { RenderRange(it.toRange(file), null) }, AnnotatorType.DocName))
         if (upValues.isNotEmpty())
-            all.add(Annotator(uri, upValues.map { RenderRange(it.toRange(file),null) } ,AnnotatorType.Upvalue))
+            all.add(Annotator(uri, upValues.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Upvalue))
         if (paramHints.isNotEmpty()) {
-            all.add(Annotator(uri, paramHints ,AnnotatorType.Hint))
+            all.add(Annotator(uri, paramHints, AnnotatorType.Hint))
         }
         return all
     }
