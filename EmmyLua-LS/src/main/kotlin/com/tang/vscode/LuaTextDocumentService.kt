@@ -112,18 +112,28 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     return
 
                 val nameList = o.nameList
-                val exprList = o.exprList
-                exprList?.let {
-                    nameList?.nameDefList?.forEach { nameExpr ->
-                        nameExpr.nameRange?.let { nameRange ->
-                            val type = nameExpr.guessType(SearchContext.get(o.project))
+                o.exprList?.exprList.let { _ ->
+                    nameList?.nameDefList?.forEach {
+                        it.nameRange?.let { nameRange ->
+                            // 这个类型联合的名字太长对大多数情况都不是必要的，将进行必要的裁剪
+                            val displayName = it.guessType(SearchContext.get(o.project)).displayName
+                            val unexpectedNameIndex = displayName.indexOf('[')
 
-                            localHints.add(RenderRange(nameRange.toRange(file), type.displayName))
+                            when (unexpectedNameIndex) {
+                                -1 -> {
+                                    localHints.add(RenderRange(nameRange.toRange(file), displayName))
+                                }
+                                0 -> {
+                                    localHints.add(RenderRange(nameRange.toRange(file), null))
+                                }
+                                else -> {
+                                    localHints.add(RenderRange(nameRange.toRange(file), displayName.substring(0, unexpectedNameIndex - 1)))
+                                }
+                            }
                         }
                     }
                 }
-
-                o.children.forEach { visitElement(it) }
+                o.acceptChildren(this)
             }
 
             override fun visitElement(element: PsiElement) {
@@ -206,7 +216,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             }
                         }
                     }
-                    element.children.forEach { visitElement(it) }
+                    element.acceptChildren(this)
                 } else
                     super.visitElement(element)
             }
