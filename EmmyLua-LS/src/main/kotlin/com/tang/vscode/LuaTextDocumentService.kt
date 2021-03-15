@@ -112,9 +112,14 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     return
 
                 val nameList = o.nameList
-                nameList?.nameDefList?.forEach {
-                    it.nameRange?.let { nameRange ->
-                        localHints.add(RenderRange(nameRange.toRange(file), it.guessType(SearchContext.get(o.project)).displayName))
+                val exprList = o.exprList
+                exprList?.let {
+                    nameList?.nameDefList?.forEach { nameExpr ->
+                        nameExpr.nameRange?.let { nameRange ->
+                            val type = nameExpr.guessType(SearchContext.get(o.project))
+
+                            localHints.add(RenderRange(nameRange.toRange(file), type.displayName))
+                        }
                     }
                 }
 
