@@ -19,6 +19,7 @@ import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyFunction
+import com.tang.intellij.lua.ty.TyKind
 import com.tang.intellij.lua.ty.findPerfectSignature
 import com.tang.intellij.lua.ty.process
 import com.tang.lsp.ILuaFile
@@ -37,6 +38,7 @@ import org.eclipse.lsp4j.services.TextDocumentService
 import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
+import javax.xml.soap.Text
 
 /**
  * tangzx
@@ -67,12 +69,17 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val globals = mutableListOf<TextRange>()
         val docTypeNames = mutableListOf<TextRange>()
         val upValues = mutableListOf<TextRange>()
+        val notUse = mutableListOf<TextRange>()
         val paramHints = mutableListOf<RenderRange>()
         val localHints = mutableListOf<RenderRange>()
 
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
-                params.add(o.textRange)
+                if ( ReferencesSearch.search(o).findFirst() != null) {
+                    params.add(o.textRange)
+                } else {
+                    notUse.add(o.textRange)
+                }
             }
 
             override fun visitFuncDef(o: LuaFuncDef) {
@@ -116,20 +123,28 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     nameList?.nameDefList?.forEach {
                         it.nameRange?.let { nameRange ->
                             // 这个类型联合的名字太长对大多数情况都不是必要的，将进行必要的裁剪
-                            val displayName = it.guessType(SearchContext.get(o.project)).displayName
-                            val unexpectedNameIndex = displayName.indexOf('[')
-
-                            when (unexpectedNameIndex) {
-                                -1 -> {
-                                    localHints.add(RenderRange(nameRange.toRange(file), displayName))
+                            val gussType = it.guessType(SearchContext.get(o.project))
+                            val displayName = gussType.displayName
+                            when {
+                                displayName.startsWith("fun") -> {
+                                    localHints.add(RenderRange(nameRange.toRange(file), "function"))
                                 }
-                                0 -> {
-                                    localHints.add(RenderRange(nameRange.toRange(file), null))
+                                displayName.startsWith('[') -> {
+                                    // ignore
                                 }
                                 else -> {
-                                    localHints.add(RenderRange(nameRange.toRange(file), displayName.substring(0, unexpectedNameIndex - 1)))
+                                    val unexpectedNameIndex = displayName.indexOf("|[")
+                                    when (unexpectedNameIndex) {
+                                        -1 -> {
+                                            localHints.add(RenderRange(nameRange.toRange(file), displayName))
+                                        }
+                                        else -> {
+                                            localHints.add(RenderRange(nameRange.toRange(file), displayName.substring(0, unexpectedNameIndex)))
+                                        }
+                                    }
                                 }
                             }
+
                         }
                     }
                 }
@@ -231,6 +246,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             all.add(Annotator(uri, docTypeNames.map { RenderRange(it.toRange(file), null) }, AnnotatorType.DocName))
         if (upValues.isNotEmpty())
             all.add(Annotator(uri, upValues.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Upvalue))
+        if (notUse.isNotEmpty()) {
+            all.add(Annotator(uri, notUse.map { RenderRange(it.toRange(file), null) }, AnnotatorType.NotUse))
+        }
         if (paramHints.isNotEmpty()) {
             all.add(Annotator(uri, paramHints, AnnotatorType.ParamHint))
         }
