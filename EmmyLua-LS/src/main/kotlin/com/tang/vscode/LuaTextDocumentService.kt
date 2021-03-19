@@ -144,7 +144,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     }
                                 }
                             }
-
+                            if ( ReferencesSearch.search(it).findFirst() == null) {
+                                notUse.add(nameRange)
+                            }
                         }
                     }
                 }
