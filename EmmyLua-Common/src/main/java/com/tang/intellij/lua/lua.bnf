@@ -263,6 +263,7 @@ funcDef ::= 'function' ID funcBody {
         guessReturnType
         guessParentType
         getVisibility
+        getWorth
         isDeprecated
         getParams
         getReferences
@@ -293,6 +294,7 @@ classMethodDef ::= 'function' classMethodName funcBody {
         getComment
         guessParentType
         getVisibility
+        getWorth
         isDeprecated
         getParamNameDefList
         getNameIdentifier
@@ -328,7 +330,10 @@ localFuncDef ::= 'local' 'function' ID funcBody {
     ]
     stubClass = 'com.tang.intellij.lua.stubs.LuaLocalFuncDefStub'
 }
-nameList ::= nameDef (',' nameDef)* {
+attribute ::= '<' ID '>' {
+    pin = 1
+}
+nameList ::= nameDef attribute? (',' nameDef attribute?)* {
     stubClass = "com.tang.intellij.lua.stubs.LuaPlaceholderStub"
 }
 localDef ::= 'local' nameList ('=' exprList)? {
@@ -449,7 +454,7 @@ private prefixExpr ::= parenExpr | nameExpr | tableExpr | literalExpr
 private primaryExpr ::= prefixExpr (suffixExpr*)
 
 closureExpr ::= 'function' funcBody {
-    pin = 2
+    pin = 1
     implements = [
         "com.tang.intellij.lua.psi.LuaFuncBodyOwner"
         "com.tang.intellij.lua.stubs.LuaExprStubElement<com.tang.intellij.lua.stubs.LuaClosureExprStub>"
@@ -504,6 +509,7 @@ tableField ::= tableField1 | tableField2 | expr {
         getPresentation
         guessParentType
         getVisibility
+        getWorth
         isDeprecated
         getComment
         getIdExpr

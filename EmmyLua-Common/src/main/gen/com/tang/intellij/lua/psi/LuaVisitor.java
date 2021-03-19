@@ -8,10 +8,10 @@ import com.tang.intellij.lua.stubs.LuaExprStubElement;
 import com.tang.intellij.lua.stubs.LuaNameExprStub;
 import com.tang.intellij.lua.stubs.LuaTableExprStub;
 import com.tang.intellij.lua.stubs.LuaUnaryExprStub;
-import com.tang.intellij.lua.stubs.LuaBinaryExprStub;
 import com.tang.intellij.lua.stubs.LuaLiteralExprStub;
-import com.tang.intellij.lua.stubs.LuaIndexExprStub;
 import com.tang.intellij.lua.stubs.LuaClosureExprStub;
+import com.tang.intellij.lua.stubs.LuaBinaryExprStub;
+import com.tang.intellij.lua.stubs.LuaIndexExprStub;
 
 public class LuaVisitor extends PsiElementVisitor {
 
@@ -22,6 +22,10 @@ public class LuaVisitor extends PsiElementVisitor {
   public void visitAssignStat(@NotNull LuaAssignStat o) {
     visitStatement(o);
     // visitDeclaration(o);
+  }
+
+  public void visitAttribute(@NotNull LuaAttribute o) {
+    visitPsiElement(o);
   }
 
   public void visitBinaryExpr(@NotNull LuaBinaryExpr o) {

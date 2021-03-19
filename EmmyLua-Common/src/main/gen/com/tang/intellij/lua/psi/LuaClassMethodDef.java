@@ -28,6 +28,10 @@ public interface LuaClassMethodDef extends LuaClassMethod, LuaDeclaration, LuaSt
   @NotNull
   Visibility getVisibility();
 
+  //WARNING: getWorth(...) is skipped
+  //matching getWorth(LuaClassMethodDef, ...)
+  //methods are not found in LuaPsiImplUtilKt
+
   boolean isDeprecated();
 
   @NotNull
