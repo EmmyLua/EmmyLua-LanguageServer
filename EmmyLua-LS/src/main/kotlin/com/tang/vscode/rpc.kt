@@ -10,6 +10,7 @@ enum class AnnotatorType {
     Global,
     DocName,
     Upvalue,
+    NotUse,
     ParamHint,
     LocalHint
 }
