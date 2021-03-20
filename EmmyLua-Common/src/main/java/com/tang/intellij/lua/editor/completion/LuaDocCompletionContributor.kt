@@ -86,8 +86,17 @@ class LuaDocCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, SHOW_CLASS, object : CompletionProvider<CompletionParameters>() {
             override fun addCompletions(completionParameters: CompletionParameters, processingContext: ProcessingContext, completionResultSet: CompletionResultSet) {
                 val project = completionParameters.position.project
-                LuaShortNamesManager.getInstance(project).processAllClassNames(project, Processor{
-                    completionResultSet.addElement(LookupElementBuilder.create(it).withIcon(LuaIcons.CLASS))
+                // 为什么 text会带emmy?
+                val prefix = completionParameters.position.text.substringBefore("emmy")
+                val dotIndex = completionParameters.position.text.indexOf('.')
+                LuaShortNamesManager.getInstance(project).processAllClassNames(project, Processor {
+                    if (dotIndex != -1 && prefix.isNotEmpty()) {
+                        if (it.startsWith(prefix)) {
+                            completionResultSet.addElement(LookupElementBuilder.create(it.substringAfter(prefix)).withIcon(LuaIcons.CLASS))
+                        }
+                    } else {
+                        completionResultSet.addElement(LookupElementBuilder.create(it).withIcon(LuaIcons.CLASS))
+                    }
                     true
                 })
 
