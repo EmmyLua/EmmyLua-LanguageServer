@@ -2,16 +2,14 @@ package com.tang.vscode
 
 import com.google.gson.JsonPrimitive
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
 import com.intellij.util.Processor
 import com.tang.intellij.lua.Constants
-import com.tang.intellij.lua.comment.psi.LuaDocClassNameRef
-import com.tang.intellij.lua.comment.psi.LuaDocTagAlias
-import com.tang.intellij.lua.comment.psi.LuaDocTagClass
-import com.tang.intellij.lua.comment.psi.LuaDocVisitor
+import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.editor.completion.asCompletionItem
@@ -19,7 +17,6 @@ import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyFunction
-import com.tang.intellij.lua.ty.TyKind
 import com.tang.intellij.lua.ty.findPerfectSignature
 import com.tang.intellij.lua.ty.process
 import com.tang.lsp.ILuaFile
@@ -38,7 +35,6 @@ import org.eclipse.lsp4j.services.TextDocumentService
 import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
-import javax.xml.soap.Text
 
 /**
  * tangzx
@@ -578,6 +574,32 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             }
         }
         return CompletableFuture.completedFuture(list)
+    }
+
+    override fun foldingRange(params: FoldingRangeRequestParams?): CompletableFuture<MutableList<FoldingRange>> {
+        return computeAsync {
+            val file = params?.textDocument?.let { it -> workspace.findFile(it.uri) }
+            val foldingRanges = mutableListOf<FoldingRange>()
+            var startLine = -1
+            if (file is ILuaFile) {
+                file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
+                    override fun visitComment(comment: PsiComment?) {
+                        comment?.let {
+                            if (it.tokenType.toString() == "REGION") {
+                                startLine = file.getLine(it.textRange.startOffset).first
+                            } else if (it.tokenType.toString() == "ENDREGION") {
+                                if (startLine != -1) {
+                                    val endLine = file.getLine(it.textRange.startOffset).first
+                                    foldingRanges.add(FoldingRange(startLine, endLine))
+                                    startLine = -1
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+            foldingRanges
+        }
     }
 
     private fun withPsiFile(position: TextDocumentPositionParams, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
