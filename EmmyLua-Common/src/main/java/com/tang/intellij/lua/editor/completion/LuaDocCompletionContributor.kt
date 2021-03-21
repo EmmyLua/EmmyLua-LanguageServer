@@ -33,6 +33,7 @@ import com.tang.intellij.lua.psi.LuaFuncBodyOwner
 import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyClass
+import org.eclipse.lsp4j.CompletionItemKind
 
 /**
  * doc 相关代码完成
@@ -92,10 +93,14 @@ class LuaDocCompletionContributor : CompletionContributor() {
                 LuaShortNamesManager.getInstance(project).processAllClassNames(project, Processor {
                     if (dotIndex != -1 && prefix.isNotEmpty()) {
                         if (it.startsWith(prefix)) {
-                            completionResultSet.addElement(LookupElementBuilder.create(it.substringAfter(prefix)).withIcon(LuaIcons.CLASS))
+                            val luaLookElement = LuaLookupElement(it.substringAfter(prefix))
+                            luaLookElement.kind = CompletionItemKind.Class
+                            completionResultSet.addElement(luaLookElement)
                         }
                     } else {
-                        completionResultSet.addElement(LookupElementBuilder.create(it).withIcon(LuaIcons.CLASS))
+                        val luaLookElement = LuaLookupElement(it)
+                        luaLookElement.kind = CompletionItemKind.Class
+                        completionResultSet.addElement(luaLookElement)
                     }
                     true
                 })

@@ -68,7 +68,7 @@ class LuaDocumentationProvider : DocumentationProvider {
             is LuaDocTagClass -> renderClassDef(sb, element)
             is LuaClassMember -> renderClassMember(sb, element)
             is LuaNameDef -> { //local xx
-                sb.wrapTag("pre") {
+                sb.wrapLanguage("typescript"){
                     sb.append("local ${element.name}:")
                     val ty = element.guessType(SearchContext.get(element.project))
                     renderTy(sb, ty)
@@ -79,7 +79,7 @@ class LuaDocumentationProvider : DocumentationProvider {
                 owner?.let { renderComment(sb, owner.comment) }
             }
             is LuaLocalFuncDef -> {
-                sb.wrapTag("pre") {
+                sb.wrapLanguage("typescript") {
                     sb.append("local function ${element.name}")
                     val type = element.guessType(SearchContext.get(element.project)) as ITyFunction
                     renderSignature(sb, type.mainSignature)
@@ -96,40 +96,46 @@ class LuaDocumentationProvider : DocumentationProvider {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
         val ty = classMember.guessType(context)
-
-        //base info
-        if (parentType != null) {
-            renderTy(sb, parentType)
-            with(sb) {
-                when (ty) {
-                    is TyFunction -> {
-                        append(if (ty.isColonCall) ":" else ".")
-                        append(classMember.name)
-                        renderSignature(sb, ty.mainSignature)
-                    }
-                    else -> {
-                        append(".${classMember.name}:")
-                        renderTy(sb, ty)
-                    }
-                }
+        // 加点高亮
+        sb.wrapLanguage("typescript") {
+            if(ty is TyFunction){
+                sb.append("function ")
             }
-        } else {
-            //NameExpr
-            if (classMember is LuaNameExpr) {
-                val nameExpr: LuaNameExpr = classMember
+
+            //base info
+            if (parentType != null) {
+                renderTy(sb, parentType)
                 with(sb) {
-                    append(nameExpr.name)
                     when (ty) {
-                        is TyFunction -> renderSignature(sb, ty.mainSignature)
+                        is TyFunction -> {
+                            append(if (ty.isColonCall) ":" else ".")
+                            append(classMember.name)
+                            renderSignature(sb, ty.mainSignature)
+                        }
                         else -> {
-                            append(":")
+                            append(".${classMember.name}:")
                             renderTy(sb, ty)
                         }
                     }
                 }
+            } else {
+                //NameExpr
+                if (classMember is LuaNameExpr) {
+                    val nameExpr: LuaNameExpr = classMember
+                    with(sb) {
+                        append(nameExpr.name)
+                        when (ty) {
+                            is TyFunction -> renderSignature(sb, ty.mainSignature)
+                            else -> {
+                                append(":")
+                                renderTy(sb, ty)
+                            }
+                        }
+                    }
 
-                val stat = nameExpr.parent.parent // VAR_LIST ASSIGN_STAT
-                if (stat is LuaAssignStat) renderComment(sb, stat.comment)
+                    val stat = nameExpr.parent.parent // VAR_LIST ASSIGN_STAT
+                    if (stat is LuaAssignStat) renderComment(sb, stat.comment)
+                }
             }
         }
 

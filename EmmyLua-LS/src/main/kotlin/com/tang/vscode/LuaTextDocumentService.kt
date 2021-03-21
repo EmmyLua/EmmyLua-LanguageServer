@@ -75,7 +75,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
-                if ( ReferencesSearch.search(o).findFirst() != null) {
+                if (ReferencesSearch.search(o).findFirst() != null) {
                     params.add(o.textRange)
                 } else {
                     notUse.add(o.textRange)
@@ -144,7 +144,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     }
                                 }
                             }
-                            if ( ReferencesSearch.search(it).findFirst() == null) {
+                            if (ReferencesSearch.search(it).findFirst() == null) {
                                 notUse.add(nameRange)
                             }
                         }

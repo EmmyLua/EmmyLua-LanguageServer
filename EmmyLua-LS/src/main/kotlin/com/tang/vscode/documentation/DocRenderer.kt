@@ -36,6 +36,10 @@ inline fun StringBuilder.wrapTag(tag: String, crossinline body: () -> Unit) {
     //wrap("<$tag>", "</$tag>", body)
 }
 
+inline fun StringBuilder.wrapLanguage(language: String, crossinline body: () -> Unit) {
+    wrap("```${language}\n","\n```\n***\n",body)
+}
+
 internal fun StringBuilder.appendClassLink(clazz: String) {
     append(clazz)
 }
@@ -78,7 +82,7 @@ internal fun renderSignature(sb: StringBuilder, sig: IFunSignature) {
         var idx = 0
         sig.params.forEach {
             if (idx++ != 0) sb.append(", ")
-            sb.append("`${it.name}`: ")
+            sb.append("${it.name}: ")
             renderTy(sb, it.ty)
         }
     }
@@ -95,13 +99,11 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
             if (elementType == LuaDocTypes.STRING) {
                 seenString = true
                 sb.append(child.text)
-            }
-            else if (elementType == LuaDocTypes.DASHES) {
+            } else if (elementType == LuaDocTypes.DASHES) {
                 if (seenString) {
                     sb.append("\n")
                 }
-            }
-            else if (child is LuaDocPsiElement){
+            } else if (child is LuaDocPsiElement) {
                 seenString = false
                 when (child) {
                     is LuaDocTagParam -> {
