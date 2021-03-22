@@ -580,23 +580,71 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         return computeAsync {
             val file = params?.textDocument?.let { it -> workspace.findFile(it.uri) }
             val foldingRanges = mutableListOf<FoldingRange>()
-            var startLine = -1
+            // 用于region
+            var regionStartLine = -1
+            // 用于require
+            var requireStartLine = -1
+            var requireLastLine = -1
+
             if (file is ILuaFile) {
                 file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
                     override fun visitComment(comment: PsiComment?) {
                         comment?.let {
+                            // 在require 语句中不支持--region
                             if (it.tokenType.toString() == "REGION") {
-                                startLine = file.getLine(it.textRange.startOffset).first
+                                regionStartLine = file.getLine(it.textRange.startOffset).first
                             } else if (it.tokenType.toString() == "ENDREGION") {
-                                if (startLine != -1) {
+                                if (regionStartLine != -1) {
                                     val endLine = file.getLine(it.textRange.startOffset).first
-                                    foldingRanges.add(FoldingRange(startLine, endLine))
-                                    startLine = -1
+                                    val foldRange = FoldingRange(regionStartLine, endLine)
+                                    foldRange.kind = "region"
+                                    foldingRanges.add(foldRange)
+                                    regionStartLine = -1
                                 }
                             }
                         }
                     }
+
+                    override fun visitElement(element: PsiElement) {
+                        var callExpr = element
+                        if(element is LuaStatement){
+                            element.acceptChildren(object : LuaRecursiveVisitor(){
+                                override fun visitCallExpr(o: LuaCallExpr) {
+                                    callExpr = o
+                                }
+                            })
+                        }
+
+
+                        if (callExpr is LuaCallExpr) {
+                            if (callExpr.firstChild.text == "require") {
+                                val lines = file.getLine(callExpr.textOffset)
+                                if (requireStartLine == -1) {
+                                    requireStartLine = lines.first
+                                }
+                                requireLastLine = lines.first
+                                return
+                            }
+                        }
+
+                        if (requireStartLine != -1) {
+                            val sameLines = file.getLine(callExpr.textOffset)
+                            if (sameLines.first > requireLastLine) {
+                                val foldRange = FoldingRange(requireStartLine, requireLastLine)
+                                foldRange.kind = "imports"
+                                foldingRanges.add(foldRange)
+                                requireStartLine = -1
+                                requireLastLine = -1
+                            }
+                        }
+                    }
                 })
+
+                if (requireStartLine != -1) {
+                    val foldRange = FoldingRange(requireStartLine, requireLastLine)
+                    foldRange.kind = "imports"
+                    foldingRanges.add(foldRange)
+                }
             }
             foldingRanges
         }
