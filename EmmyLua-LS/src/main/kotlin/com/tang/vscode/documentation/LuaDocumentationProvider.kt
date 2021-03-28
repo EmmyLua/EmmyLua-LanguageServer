@@ -86,6 +86,11 @@ class LuaDocumentationProvider : DocumentationProvider {
                 }
                 renderComment(sb, element.comment)
             }
+            is LuaPsiFile ->{
+                sb.wrapLanguage("typescript") {
+                    sb.append("module \"${element.virtualFile.path.substringAfter("file:/")}\"")
+                }
+            }
         }
         if (sb.isNotEmpty()) return sb.toString()
 

@@ -31,7 +31,7 @@ class RequirePathCompletionProvider : LuaCompletionProvider() {
                         val paths = requirePath.split(Regex("[/\\\\]"))
                         val insert = paths.joinToString(".")
                         val element = LuaLookupElement(insert)
-                        element.kind = CompletionItemKind.File
+                        element.kind = CompletionItemKind.Module
                         element.textEdit = TextEdit(toRange, insert)
                         session.resultSet.addElement(element)
                     }
