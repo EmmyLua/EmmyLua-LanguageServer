@@ -244,21 +244,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         if (params.isNotEmpty())
             all.add(Annotator(uri, params.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Param))
         if (globals.isNotEmpty())
-            all.add(
-                Annotator(
-                    uri,
-                    // 未完成的定义会让全局代码变成global染色,导致闪屏
-                    globals.filter {
-                        // startOffset 不为 0 时 startLines的 firs和second依然可以为0
-                        val startLines = file.getLine(it.startOffset)
-                        if (it.startOffset != 0 && startLines.first == 0 && startLines.second == 0) {
-                            return@filter false
-                        }
-                        true
-                    }.map { RenderRange(it.toRange(file), null) },
-                    AnnotatorType.Global
-                )
-            )
+            all.add(Annotator(uri, globals.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Global))
         if (docTypeNames.isNotEmpty())
             all.add(Annotator(uri, docTypeNames.map { RenderRange(it.toRange(file), null) }, AnnotatorType.DocName))
         if (upValues.isNotEmpty())
