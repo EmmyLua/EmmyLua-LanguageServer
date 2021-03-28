@@ -135,7 +135,12 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                             localHints.add(RenderRange(nameRange.toRange(file), displayName))
                                         }
                                         else -> {
-                                            localHints.add(RenderRange(nameRange.toRange(file), displayName.substring(0, unexpectedNameIndex)))
+                                            localHints.add(
+                                                RenderRange(
+                                                    nameRange.toRange(file),
+                                                    displayName.substring(0, unexpectedNameIndex)
+                                                )
+                                            )
                                         }
                                     }
                                 }
@@ -186,8 +191,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                 activeParameter++
                                 nCommas++
                             } else if (child.node.elementType == LuaTypes.LITERAL_EXPR
-                                    || child.node.elementType == LuaTypes.TABLE_EXPR
-                                    || child.node.elementType == LuaTypes.CLOSURE_EXPR
+                                || child.node.elementType == LuaTypes.TABLE_EXPR
+                                || child.node.elementType == LuaTypes.CLOSURE_EXPR
                             ) {
                                 paramHints.add(RenderRange(child.textRange.toRange(file), null))
                                 literalMap[activeParameter] = paramHints.size - 1;
@@ -239,7 +244,21 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         if (params.isNotEmpty())
             all.add(Annotator(uri, params.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Param))
         if (globals.isNotEmpty())
-            all.add(Annotator(uri, globals.map { RenderRange(it.toRange(file), null) }, AnnotatorType.Global))
+            all.add(
+                Annotator(
+                    uri,
+                    // 未完成的定义会让全局代码变成global染色,导致闪屏
+                    globals.filter {
+                        // startOffset 不为 0 时 startLines的 firs和second依然可以为0
+                        val startLines = file.getLine(it.startOffset)
+                        if (it.startOffset != 0 && startLines.first == 0 && startLines.second == 0) {
+                            return@filter false
+                        }
+                        true
+                    }.map { RenderRange(it.toRange(file), null) },
+                    AnnotatorType.Global
+                )
+            )
         if (docTypeNames.isNotEmpty())
             all.add(Annotator(uri, docTypeNames.map { RenderRange(it.toRange(file), null) }, AnnotatorType.DocName))
         if (upValues.isNotEmpty())
@@ -523,7 +542,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                 val information = SignatureInformation()
                                 information.parameters = mutableListOf()
                                 sig.params.forEach { pi ->
-                                    val paramInfo = ParameterInformation("${pi.name}:${pi.ty.displayName}", pi.ty.displayName)
+                                    val paramInfo =
+                                        ParameterInformation("${pi.name}:${pi.ty.displayName}", pi.ty.displayName)
                                     information.parameters.add(paramInfo)
                                 }
                                 information.label = sig.displayName
@@ -607,8 +627,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                     override fun visitElement(element: PsiElement) {
                         var callExpr = element
-                        if(element is LuaStatement){
-                            element.acceptChildren(object : LuaRecursiveVisitor(){
+                        if (element is LuaStatement) {
+                            element.acceptChildren(object : LuaRecursiveVisitor() {
                                 override fun visitCallExpr(o: LuaCallExpr) {
                                     callExpr = o
                                 }
@@ -654,7 +674,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         withPsiFile(position.textDocument, position.position, code)
     }
 
-    private fun withPsiFile(textDocument: TextDocumentIdentifier, position: Position, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
+    private fun withPsiFile(
+        textDocument: TextDocumentIdentifier,
+        position: Position,
+        code: (ILuaFile, LuaPsiFile, Int) -> Unit
+    ) {
         val file = workspace.findFile(textDocument.uri)
         if (file is ILuaFile) {
             val psi = file.psi
