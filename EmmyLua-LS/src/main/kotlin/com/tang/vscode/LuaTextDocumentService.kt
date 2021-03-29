@@ -612,6 +612,26 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     }
 
                     override fun visitElement(element: PsiElement) {
+                        if(element is LuaFuncDef
+                                || element is LuaClassMethodDef
+                                || element is LuaLocalFuncDef
+                                || element is LuaClosureExpr
+                                || element is LuaWhileStat
+                                || element is LuaRepeatStat
+                                || element is LuaIfStat
+                                || element is LuaDoStat
+                                || element is LuaForAStat
+                                || element is LuaForBStat
+                                || element is LuaTableExpr
+
+                        ) {
+                            val foldRange = FoldingRange(file.getLine(element.textRange.startOffset).first, file.getLine(element.textRange.endOffset).first)
+                            foldRange.kind = "region"
+                            foldingRanges.add(foldRange)
+                            element.acceptChildren(this)
+                            return
+                        }
+
                         var callExpr = element
                         if (element is LuaStatement) {
                             element.acceptChildren(object : LuaRecursiveVisitor() {
@@ -643,6 +663,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                 requireLastLine = -1
                             }
                         }
+
+                        element.acceptChildren(this)
+
                     }
                 })
 
