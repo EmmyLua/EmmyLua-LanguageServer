@@ -648,13 +648,34 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                 || element is LuaForBStat
                                 || element is LuaTableExpr
                         ) {
-                            val startLine = file.getLine(element.textRange.startOffset).first
+                            var startLine = -1
+                            // 过滤注释行
+                            if (element.firstChild is LuaComment) {
+                                var child: PsiElement? = element.firstChild
+                                while (child != null) {
+                                    if (child.node.elementType == LuaTypes.FUNCTION
+                                            || child.node.elementType == LuaTypes.REPEAT
+                                            || child.node.elementType == LuaTypes.DO
+                                            || child.node.elementType == LuaTypes.TABLE_FIELD
+                                            || child.node.elementType == LuaTypes.FOR
+                                    ) {
+                                        startLine = file.getLine(child.textRange.startOffset).first
+                                        break
+                                    }
+                                    child = child.nextSibling;
+                                }
+
+                            } else {
+                                startLine = file.getLine(element.textRange.startOffset).first
+                            }
+
                             // 去掉end行
                             val endLine = file.getLine(element.textRange.endOffset).first - 1
-                            if (endLine > startLine) {
+                            if (endLine > startLine && startLine != -1) {
                                 val foldRange = FoldingRange(startLine, endLine)
                                 foldingRanges.add(foldRange)
                                 element.acceptChildren(this)
+                                return
                             }
                         }
 
