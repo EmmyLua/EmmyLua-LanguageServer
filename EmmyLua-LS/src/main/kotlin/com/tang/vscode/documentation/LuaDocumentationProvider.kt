@@ -25,10 +25,7 @@ import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
-import com.tang.intellij.lua.ty.ITyFunction
-import com.tang.intellij.lua.ty.TyFunction
-import com.tang.intellij.lua.ty.infer
-import com.tang.intellij.lua.ty.isColonCall
+import com.tang.intellij.lua.ty.*
 
 /**
  * Documentation support
@@ -68,7 +65,7 @@ class LuaDocumentationProvider : DocumentationProvider {
             is LuaDocTagClass -> renderClassDef(sb, element)
             is LuaClassMember -> renderClassMember(sb, element)
             is LuaNameDef -> { //local xx
-                sb.wrapLanguage("typescript"){
+                sb.wrapLanguage("typescript") {
                     sb.append("local ${element.name}:")
                     val ty = element.guessType(SearchContext.get(element.project))
                     renderTy(sb, ty)
@@ -86,11 +83,12 @@ class LuaDocumentationProvider : DocumentationProvider {
                 }
                 renderComment(sb, element.comment)
             }
-            is LuaPsiFile ->{
+            is LuaPsiFile -> {
                 sb.wrapLanguage("typescript") {
                     sb.append("module \"${element.virtualFile.path.substringAfter("file:/")}\"")
                 }
             }
+
         }
         if (sb.isNotEmpty()) return sb.toString()
 
@@ -101,14 +99,24 @@ class LuaDocumentationProvider : DocumentationProvider {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
         val ty = classMember.guessType(context)
-        // 加点高亮
-        sb.wrapLanguage("typescript") {
-            if(ty is TyFunction){
-                sb.append("function ")
-            }
 
-            //base info
-            if (parentType != null) {
+        //base info
+        if (parentType != null) {
+            sb.wrapLanguage("typescript") {
+                when (ty) {
+                    is TyFunction -> {
+                        sb.append("function ")
+                    }
+                    is TyClass -> {
+                        sb.append("class ")
+                    }
+                    is TyUnion ->{
+                        sb.append("union ")
+                    }
+                    else ->{
+                        sb.append("property ")
+                    }
+                }
                 renderTy(sb, parentType)
                 with(sb) {
                     when (ty) {
@@ -123,10 +131,13 @@ class LuaDocumentationProvider : DocumentationProvider {
                         }
                     }
                 }
-            } else {
-                //NameExpr
-                if (classMember is LuaNameExpr) {
-                    val nameExpr: LuaNameExpr = classMember
+            }
+        } else {
+            //NameExpr
+            if (classMember is LuaNameExpr) {
+                val nameExpr: LuaNameExpr = classMember
+                sb.wrapLanguage("typescript") {
+                    sb.append("global ")
                     with(sb) {
                         append(nameExpr.name)
                         when (ty) {
@@ -137,12 +148,12 @@ class LuaDocumentationProvider : DocumentationProvider {
                             }
                         }
                     }
-
-                    val stat = nameExpr.parent.parent // VAR_LIST ASSIGN_STAT
-                    if (stat is LuaAssignStat) renderComment(sb, stat.comment)
                 }
+                val stat = nameExpr.parent.parent // VAR_LIST ASSIGN_STAT
+                if (stat is LuaAssignStat) renderComment(sb, stat.comment)
             }
         }
+
 
         //comment content
         if (classMember is LuaCommentOwner)
