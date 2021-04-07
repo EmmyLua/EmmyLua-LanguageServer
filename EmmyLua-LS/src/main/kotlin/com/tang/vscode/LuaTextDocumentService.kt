@@ -564,7 +564,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 file.psi?.let { psi ->
                     val printer = FormattingPrinter(file, psi)
                     val keywords = setOf("function", "local", "end", "do", "then", "while", "repeat", "if",
-                            "until", "for", "in", "elseif", "else")
+                            "until", "for", "in", "elseif", "else", "return")
 
                     val operators = setOf("(", ")", "{", "}", "[", "]", ",", ";", "+", "-", "*", "/", "<<", ">>", "and",
                             "not", "or", ":", ".", "=", "~", "^", "#", "%", "==", "~=", "<=", ">=", "<", ">", "..")
@@ -584,6 +584,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                         override fun visitExpr(o: LuaExpr) {
                             printer.add(o, FormattingType.Expr)
+                            o.acceptChildren(this)
+                        }
+
+                        override fun visitParenExpr(o: LuaParenExpr) {
+                            printer.add(o, FormattingType.ParentExpr)
                             o.acceptChildren(this)
                         }
 
@@ -660,6 +665,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                         override fun visitIfStat(o: LuaIfStat) {
                             printer.add(o, FormattingType.IfStatement)
+                            o.acceptChildren(this)
+                        }
+
+                        override fun visitReturnStat(o: LuaReturnStat) {
+                            printer.add(o, FormattingType.ReturnStatement)
                             o.acceptChildren(this)
                         }
 

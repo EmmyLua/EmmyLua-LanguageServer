@@ -21,6 +21,7 @@ enum class FormattingType {
     ExprStatement,
     BreakStatement,
     EmptyStatement,
+    ReturnStatement,
 
     CallExpr,
     IndexExpr,
@@ -33,6 +34,7 @@ enum class FormattingType {
     TableFieldSep,
 
     Closure,
+    ParentExpr,
     Expr,
     ExprList,
 

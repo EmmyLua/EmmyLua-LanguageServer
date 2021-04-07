@@ -115,6 +115,9 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
             FormattingType.AssignStatement -> {
                 printAssignStatement(sb, element, level)
             }
+            FormattingType.ReturnStatement -> {
+                printReturnStatement(sb, element, level)
+            }
             FormattingType.TableExpr -> {
                 printTableExpr(sb, element, level)
             }
@@ -129,6 +132,9 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
             }
             FormattingType.Expr -> {
                 printExpr(sb, element, level)
+            }
+            FormattingType.ParentExpr -> {
+                printParentExpr(sb, element, level)
             }
             FormattingType.ExprList -> {
                 printExprList(sb, element, level)
@@ -569,6 +575,23 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         sb.append(lineSeparator)
     }
 
+    private fun printReturnStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
+        val indent = FormattingOptions.getIndentString(level)
+        sb.append(indent)
+        element.children.forEach {
+            when (it.type) {
+                FormattingType.KeyWorld -> {
+                    sb.append(it.text).append(emptyWhite)
+                }
+                else -> {
+                    printElement(sb, it, level)
+                }
+            }
+
+        }
+        sb.append(lineSeparator)
+    }
+
     private fun printFunctionBody(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
         element.children.forEach {
@@ -749,6 +772,12 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         sb.append(element.text)
     }
 
+    private fun printParentExpr(sb: StringBuilder, element: FormattingElement, level: Int) {
+        element.children.forEach {
+            printElement(sb, it, level)
+        }
+    }
+
     private fun printLiteralExpr(sb: StringBuilder, element: FormattingElement, level: Int) {
         sb.append(element.text)
     }
@@ -825,9 +854,16 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printUnaryOperator(sb: StringBuilder, element: FormattingElement, level: Int) {
         element.children.forEach {
-            printElement(sb, it, level)
+            when (it.text) {
+                "not" -> {
+                    printElement(sb, it, level)
+                    sb.append(emptyWhite)
+                }
+                else -> {
+                    printElement(sb, it, level)
+                }
+            }
         }
-        sb.append(emptyWhite)
     }
 
     private fun printOperator(sb: StringBuilder, element: FormattingElement, level: Int) {
