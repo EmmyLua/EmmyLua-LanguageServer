@@ -567,7 +567,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             "until", "for", "in", "elseif", "else")
 
                     val operators = setOf("(", ")", "{", "}", "[", "]", ",", ";", "+", "-", "*", "/", "<<", ">>", "and",
-                            "not", "or", ":", ".", "=", "~", "^", "#", "%", "==", "~=")
+                            "not", "or", ":", ".", "=", "~", "^", "#", "%", "==", "~=", "<=", ">=", "<", ">", "..")
 
                     psi.acceptChildren(object : LuaVisitor() {
                         override fun visitComment(comment: PsiComment?) {
@@ -673,7 +673,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         }
 
                         override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
-                            printer.add(o, FormattingType.Function)
+                            printer.add(o, FormattingType.LocalFunction)
                             o.acceptChildren(this)
                         }
 
@@ -764,6 +764,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     }
                                     in operators -> {
                                         printer.add(element, FormattingType.Operator)
+                                    }
+                                    "..." -> {
+                                        printer.add(element, FormattingType.Id)
                                     }
                                     "ID" -> {
                                         printer.add(element, FormattingType.Id)

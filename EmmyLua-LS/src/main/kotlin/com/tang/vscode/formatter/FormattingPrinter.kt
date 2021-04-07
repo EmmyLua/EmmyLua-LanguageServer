@@ -209,7 +209,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                             sb.append(indent).append(it.text).append(emptyWhite)
                         }
                         "function" -> {
-                            sb.append(it.text)
+                            sb.append(it.text).append(emptyWhite)
                         }
                         "end" -> {
                             sb.append(indent).append(it.text).append(lineSeparator)
@@ -273,8 +273,10 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                 FormattingType.KeyWorld -> {
                     if (it.text == "if") {
                         sb.append(indent).append(it.text).append(emptyWhite)
-                    } else if (it.text == "else" || it.text == "elseif" || it.text == "end") {
+                    } else if (it.text == "else" || it.text == "end") {
                         sb.append(indent).append(it.text).append(lineSeparator)
+                    } else if (it.text == "elseif") {
+                        sb.append(indent).append(it.text).append(emptyWhite)
                     } else if (it.text == "then") {
                         sb.append(emptyWhite).append(it.text).append(lineSeparator)
                     }
@@ -479,6 +481,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printLocalStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
+        val endLine = file.getLine(element.textRange.endOffset).first
         element.children.forEach {
             when (it.type) {
                 FormattingType.KeyWorld -> {
@@ -499,6 +502,14 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                     printElement(sb, it, level)
                     sb.append(emptyWhite)
                 }
+                FormattingType.Comment -> {
+                    val commentLine = file.getLine(it.textRange.endOffset).first
+                    if (commentLine >= endLine) {
+                        sb.append(emptyWhite).append(it.text)
+                    } else {
+                        printElement(sb, it, level)
+                    }
+                }
                 else -> {
                     printElement(sb, it, level)
                 }
@@ -514,9 +525,37 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printAssignStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
+        val endLine = file.getLine(element.textRange.endOffset).first
+        var leftExpr = true
         sb.append(indent)
         element.children.forEach {
-            printElement(sb, it, level)
+            when (it.type) {
+                FormattingType.Operator -> {
+                    when (it.text) {
+                        "=" -> {
+                            sb.append(it.text).append(emptyWhite)
+                        }
+                    }
+                }
+                FormattingType.ExprList -> {
+                    printElement(sb, it, level)
+                    if (leftExpr) {
+                        sb.append(emptyWhite)
+                        leftExpr = false
+                    }
+                }
+                FormattingType.Comment -> {
+                    val commentLine = file.getLine(it.textRange.endOffset).first
+                    if (commentLine >= endLine) {
+                        sb.append(emptyWhite).append(it.text)
+                    } else {
+                        printElement(sb, it, level)
+                    }
+                }
+                else -> {
+                    printElement(sb, it, level)
+                }
+            }
         }
         sb.append(lineSeparator)
     }
