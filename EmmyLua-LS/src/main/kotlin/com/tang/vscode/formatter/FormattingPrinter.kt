@@ -175,9 +175,14 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         }
     }
 
+    // 注释的缩进必须由该函数自己打印
     private fun printComment(sb: StringBuilder, element: FormattingElement, level: Int) {
-        printWithIndent(sb, element.text, level)
-        sb.append(lineSeparator)
+        // 注释内可能有多行
+        val comments = element.text.split(lineSeparator)
+        comments.map { it -> it.trimStart() }.forEach {
+            printWithIndent(sb, it, level)
+            sb.append(lineSeparator)
+        }
     }
 
     private fun printFunction(sb: StringBuilder, element: FormattingElement, level: Int) {
@@ -277,14 +282,22 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         element.children.forEach {
             when (it.type) {
                 FormattingType.KeyWorld -> {
-                    if (it.text == "if") {
-                        sb.append(indent).append(it.text).append(emptyWhite)
-                    } else if (it.text == "else" || it.text == "end") {
-                        sb.append(indent).append(it.text).append(lineSeparator)
-                    } else if (it.text == "elseif") {
-                        sb.append(indent).append(it.text).append(emptyWhite)
-                    } else if (it.text == "then") {
-                        sb.append(emptyWhite).append(it.text).append(lineSeparator)
+                    when (it.text) {
+                        "if" -> {
+                            sb.append(indent).append(it.text).append(emptyWhite)
+                        }
+                        "else" -> {
+                            sb.append(indent).append(it.text).append(lineSeparator)
+                        }
+                        "elseif" -> {
+                            sb.append(indent).append(it.text).append(emptyWhite)
+                        }
+                        "then" -> {
+                            sb.append(emptyWhite).append(it.text).append(lineSeparator)
+                        }
+                        "end" -> {
+                            sb.append(indent).append(it.text)
+                        }
                     }
                 }
                 FormattingType.Comment -> {
@@ -533,7 +546,6 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         val indent = FormattingOptions.getIndentString(level)
         val endLine = file.getLine(element.textRange.endOffset).first
         var leftExpr = true
-        sb.append(indent)
         element.children.forEach {
             when (it.type) {
                 FormattingType.Operator -> {
@@ -544,17 +556,22 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                     }
                 }
                 FormattingType.ExprList -> {
-                    printElement(sb, it, level)
                     if (leftExpr) {
+                        sb.append(indent)
+                        printElement(sb, it, level)
                         sb.append(emptyWhite)
                         leftExpr = false
+                    } else {
+                        printElement(sb, it, level)
                     }
                 }
                 FormattingType.Comment -> {
                     val commentLine = file.getLine(it.textRange.endOffset).first
                     if (commentLine >= endLine) {
+                        // 那么这是赋值表达式尾部的注释 只会有一行
                         sb.append(emptyWhite).append(it.text)
                     } else {
+                        // 赋值表达式上边的注释
                         printElement(sb, it, level)
                     }
                 }
@@ -662,7 +679,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                             sb.append(lineSeparator.repeat(lineDiff - 1))
                         }
                     } else {
-                        sb.append(lineSeparator)
+                        sb.append(lineSeparator.repeat(FormattingOptions.loopSpacing))
                     }
                 }
                 // 赋值语句会根据情况空行
@@ -715,21 +732,23 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
     private fun printTableExpr(sb: StringBuilder, element: FormattingElement, level: Int) {
         val startLine = file.getLine(element.textRange.startOffset).first
         val endLine = file.getLine(element.textRange.endOffset).first
+        var lastFieldOrSepElement: FormattingElement? = null
         if (endLine > startLine || endLine - startLine > FormattingOptions.lineWidth) {
             //执行换行对齐
-            element.children.forEach {
-                when (it.type) {
+            for (index in element.children.indices) {
+                val child = element.children[index]
+                when (child.type) {
                     FormattingType.Operator -> {
-                        when (it.text) {
+                        when (child.text) {
                             "{" -> {
-                                sb.append(it.text).append(lineSeparator)
+                                sb.append(child.text).append(lineSeparator)
                             }
                             "}" -> {
                                 sb.append(lineSeparator)
-                                printWithIndent(sb, it.text, level)
+                                printWithIndent(sb, child.text, level)
                             }
                             else -> {
-                                printElement(sb, it, level)
+                                printElement(sb, child, level)
                             }
                         }
                     }
@@ -737,16 +756,53 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                         // 手动打印一个缩进
                         sb.append(FormattingOptions.getIndentString(level + 1))
                         // TableField认为他的缩进已经被TableExpr打印了
-                        printElement(sb, it, level + 1)
+                        printElement(sb, child, level + 1)
+                        lastFieldOrSepElement = child
                     }
+                    /**
+                     * 在表的表达式上有多种注释风格 可以是field = 123, --注解内容
+                     * 也可以是
+                     *  --注解内容
+                     *  field = 123,
+                     *  怎么这些多奇怪的习惯
+                     */
                     FormattingType.Comment -> {
-                        printElement(sb, it, level + 1)
+                        if (lastFieldOrSepElement != null) {
+                            // 还有人会用多行注释？那我只好换行了
+                            val commentLine = file.getLine(child.textRange.endOffset).first
+                            val lastFieldEndLine = file.getLine(lastFieldOrSepElement.textRange.endOffset).first
+
+                            if (lastFieldEndLine != commentLine) {
+                                printElement(sb, child, level + 1)
+                            } else {
+                                sb.append(emptyWhite).append(child.text).append(lineSeparator)
+                            }
+                        } else {
+                            printElement(sb, child, level + 1)
+                        }
                     }
                     FormattingType.TableFieldSep -> {
-                        sb.append(it.text).append(lineSeparator)
+                        sb.append(child.text)
+                        var isAddLineSeparator = true
+                        // 考察一下 下一个child是不是comment
+                        if (index + 1 < element.children.size) {
+                            val nextChild = element.children[index + 1]
+                            if (nextChild.type == FormattingType.Comment) {
+                                // 考察一下该注释是否和自己在同一行
+                                val sepLine = file.getLine(child.textRange.endOffset).first
+                                val commentLine = file.getLine(nextChild.textRange.endOffset).first
+                                if (sepLine == commentLine) {
+                                    isAddLineSeparator = false
+                                }
+                            }
+                        }
+                        if (isAddLineSeparator) {
+                            sb.append(lineSeparator)
+                        }
+                        lastFieldOrSepElement = child
                     }
                     else -> {
-                        printElement(sb, it, level)
+                        printElement(sb, child, level)
                     }
                 }
             }
