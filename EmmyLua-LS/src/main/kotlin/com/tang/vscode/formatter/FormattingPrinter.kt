@@ -278,6 +278,17 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printIfStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
+        val list = mutableListOf<FormattingElement>()
+        collectComment(element, FormattingType.IfStatement, list)
+        val expr = element.children.firstOrNull { it -> it.type == FormattingType.BinaryExpr }
+        if (expr != null) {
+            collectComment(element, FormattingType.BinaryExpr, list)
+        }
+        
+        list.forEach {
+            printElement(sb, it, level)
+        }
+
         val ifStartLine = file.getLine(element.textRange.startOffset).first
         element.children.forEach {
             when (it.type) {
@@ -307,6 +318,9 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                     } else {
                         printElement(sb, it, level)
                     }
+                }
+                FormattingType.BinaryExpr -> {
+                    printElement(sb, it, level + 1)
                 }
                 FormattingType.Block -> {
                     printElement(sb, it, level + 1)
@@ -701,6 +715,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         }
     }
 
+
     private fun printBinaryExpr(sb: StringBuilder, element: FormattingElement, level: Int) {
         element.children.forEach {
             printElement(sb, it, level)
@@ -764,7 +779,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                      * 也可以是
                      *  --注解内容
                      *  field = 123,
-                     *  怎么这些多奇怪的习惯
+                     *  怎么这么多奇怪的习惯
                      */
                     FormattingType.Comment -> {
                         if (lastFieldOrSepElement != null) {
@@ -807,7 +822,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                 }
             }
         } else {
-            //执行换行对齐
+            //执行非换行对齐
             element.children.forEach {
                 when (it.type) {
                     FormattingType.TableField -> {
@@ -976,6 +991,35 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printWithIndent(sb: StringBuilder, text: String, level: Int) {
         sb.append(FormattingOptions.getIndentString(level)).append(text)
+    }
+
+    /**
+     * 递归的从某类型的元素的子节点中收集并移除注释，
+     * 毕竟奇怪的人那么多，写法千奇百怪
+     */
+    private fun collectComment(element: FormattingElement, type: FormattingType, list: MutableList<FormattingElement>, recursive: Boolean = true) {
+        if (element.type == type) {
+            var foundedComment = false
+            element.children.forEach {
+                when (it.type) {
+                    type -> {
+                        if (recursive) {
+                            collectComment(it, type, list)
+                        }
+                    }
+                    FormattingType.Comment -> {
+                        foundedComment = true
+                        list.add(it)
+                    }
+                    else -> {
+                        //ignore
+                    }
+                }
+            }
+            if (foundedComment) {
+                element.children.removeAll { it.type == FormattingType.Comment }
+            }
+        }
     }
 
 }
