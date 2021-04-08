@@ -279,12 +279,34 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
     private fun printIfStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
         val list = mutableListOf<FormattingElement>()
-        collectComment(element, FormattingType.IfStatement, list)
-        val expr = element.children.firstOrNull { it -> it.type == FormattingType.BinaryExpr }
-        if (expr != null) {
-            collectComment(element, FormattingType.BinaryExpr, list)
+
+        var expr : FormattingElement? = null
+        // 试图提升if语句块中的注释到if上
+        loop@ for (child in element.children) {
+            when (child.type) {
+                FormattingType.KeyWorld -> {
+                    when (child.text) {
+                        "then" -> {
+                            break@loop;
+                        }
+                    }
+                }
+                FormattingType.BinaryExpr->{
+                    expr = child
+                }
+                FormattingType.Comment -> {
+                    list.add(child)
+                }
+            }
         }
-        
+        list.forEach {
+            element.children.remove(it)
+        }
+
+        if (expr != null) {
+            collectComment(expr, FormattingType.BinaryExpr, list)
+        }
+
         list.forEach {
             printElement(sb, it, level)
         }
