@@ -281,7 +281,6 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         val commentList = mutableListOf<FormattingElement>()
         val binaryExprList = mutableListOf<FormattingElement>()
 
-        var expr: FormattingElement? = null
         // 试图提升if语句块中的注释到if上
         loop@ for (child in element.children) {
             when (child.type) {
@@ -292,9 +291,6 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                         }
                     }
                 }
-                FormattingType.BinaryExpr -> {
-                    expr = child
-                }
                 FormattingType.Comment -> {
                     commentList.add(child)
                 }
@@ -302,11 +298,6 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         }
         commentList.forEach {
             element.children.remove(it)
-        }
-
-        if (expr != null) {
-            collectComment(expr, FormattingType.BinaryExpr, commentList)
-            promoteBinaryExpr(expr, binaryExprList)
         }
 
         // 将注释提前打印
@@ -345,11 +336,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                     }
                 }
                 FormattingType.BinaryExpr -> {
-                    if (binaryExprList.isNotEmpty()) {
-                        printPromotionExprList(sb, binaryExprList, level + 1)
-                    } else {
-                        printElement(sb, it, level + 1)
-                    }
+                    printElement(sb, it, level + 1)
                 }
                 FormattingType.Block -> {
                     printElement(sb, it, level + 1)
@@ -746,8 +733,33 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
 
     private fun printBinaryExpr(sb: StringBuilder, element: FormattingElement, level: Int) {
-        element.children.forEach {
-            printElement(sb, it, level)
+        val indent = FormattingOptions.getIndentString(level)
+        val baseElements = mutableListOf<FormattingElement>()
+
+        promoteBinaryExpr(element, baseElements)
+        var currentLine = file.getLine(element.textRange.startOffset).first
+        var lastElement : FormattingElement? = null
+        baseElements.forEach {
+            val line = file.getLine(it.textRange.startOffset).first
+            if (line > currentLine) {
+                currentLine = line
+                if(lastElement?.type != FormattingType.Comment) {
+                    //则换行
+                    sb.append(lineSeparator)
+                }
+                sb.append(indent)
+            }
+
+            when (it.type) {
+                FormattingType.Comment -> {
+                    printElement(sb, it, 0)
+                }
+
+                else -> {
+                    printElement(sb, it, level)
+                }
+            }
+            lastElement = it
         }
     }
 
