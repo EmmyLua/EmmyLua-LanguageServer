@@ -278,9 +278,10 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printIfStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
-        val list = mutableListOf<FormattingElement>()
+        val commentList = mutableListOf<FormattingElement>()
+        val binaryExprList = mutableListOf<FormattingElement>()
 
-        var expr : FormattingElement? = null
+        var expr: FormattingElement? = null
         // 试图提升if语句块中的注释到if上
         loop@ for (child in element.children) {
             when (child.type) {
@@ -291,23 +292,25 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                         }
                     }
                 }
-                FormattingType.BinaryExpr->{
+                FormattingType.BinaryExpr -> {
                     expr = child
                 }
                 FormattingType.Comment -> {
-                    list.add(child)
+                    commentList.add(child)
                 }
             }
         }
-        list.forEach {
+        commentList.forEach {
             element.children.remove(it)
         }
 
         if (expr != null) {
-            collectComment(expr, FormattingType.BinaryExpr, list)
+            collectComment(expr, FormattingType.BinaryExpr, commentList)
+            promoteBinaryExpr(expr, binaryExprList)
         }
 
-        list.forEach {
+        // 将注释提前打印
+        commentList.forEach {
             printElement(sb, it, level)
         }
 
@@ -342,7 +345,11 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                     }
                 }
                 FormattingType.BinaryExpr -> {
-                    printElement(sb, it, level + 1)
+                    if (binaryExprList.isNotEmpty()) {
+                        printPromotionExprList(sb, binaryExprList, level + 1)
+                    } else {
+                        printElement(sb, it, level + 1)
+                    }
                 }
                 FormattingType.Block -> {
                     printElement(sb, it, level + 1)
@@ -1040,6 +1047,40 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
             }
             if (foundedComment) {
                 element.children.removeAll { it.type == FormattingType.Comment }
+            }
+        }
+    }
+
+    /**
+     * 递归的将binaryExpr全部表达式提升到一个列表里面
+     */
+    private fun promoteBinaryExpr(element: FormattingElement, list: MutableList<FormattingElement>) {
+        element.children.forEach {
+            when (it.type) {
+                FormattingType.BinaryExpr -> {
+                    promoteBinaryExpr(it, list)
+                }
+                else -> {
+                    list.add(it)
+                }
+            }
+        }
+    }
+
+    /**
+     * 该方法没有对应的type
+     */
+    private fun printPromotionExprList(sb: StringBuilder, list: MutableList<FormattingElement>, level: Int) {
+        if (list.isNotEmpty()) {
+            val startLine = file.getLine(list.first().textRange.startOffset).first
+            var currentLine = startLine
+            list.forEach {
+                val line = file.getLine(it.textRange.startOffset).first
+                if (line > currentLine) {
+                    sb.append(lineSeparator).append(FormattingOptions.getIndentString(level))
+                    currentLine = line
+                }
+                printElement(sb, it, level)
             }
         }
     }
