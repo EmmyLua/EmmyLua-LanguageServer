@@ -566,8 +566,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val keywords = setOf("function", "local", "end", "do", "then", "while", "repeat", "if",
                             "until", "for", "in", "elseif", "else", "return", "goto")
 
-                    val operators = setOf("(", ")", "{", "}", "[", "]", ",", ";", "+", "-", "*", "/", "<<", ">>", "and",
-                            "not", "or", ":", ".", "=", "~", "^", "#", "%", "==", "~=", "<=", ">=", "<", ">", "..", "//", "::")
+                    val operators = setOf(
+                            "(", ")", "{", "}", "[", "]", // 括号
+                            "+", "-", "*", "/", "//", "%", //运算
+                            "and", "not", "or", "==", "~=", "<=", ">=", "<", ">", // 逻辑运算
+                            ":", ".",  //调用运算符
+                            "~", "^", "&", "|", "<<", ">>", //位运算
+                            ",", ";", "=", "#", "::", "..") // 杂七杂八
 
                     psi.acceptChildren(object : LuaVisitor() {
                         override fun visitComment(comment: PsiComment?) {
