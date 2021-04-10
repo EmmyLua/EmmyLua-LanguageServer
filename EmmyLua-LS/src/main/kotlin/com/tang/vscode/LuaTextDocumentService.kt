@@ -564,10 +564,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 file.psi?.let { psi ->
                     val printer = FormattingPrinter(file, psi)
                     val keywords = setOf("function", "local", "end", "do", "then", "while", "repeat", "if",
-                            "until", "for", "in", "elseif", "else", "return")
+                            "until", "for", "in", "elseif", "else", "return", "goto")
 
                     val operators = setOf("(", ")", "{", "}", "[", "]", ",", ";", "+", "-", "*", "/", "<<", ">>", "and",
-                            "not", "or", ":", ".", "=", "~", "^", "#", "%", "==", "~=", "<=", ">=", "<", ">", "..")
+                            "not", "or", ":", ".", "=", "~", "^", "#", "%", "==", "~=", "<=", ">=", "<", ">", "..", "//", "::")
 
                     psi.acceptChildren(object : LuaVisitor() {
                         override fun visitComment(comment: PsiComment?) {
@@ -763,6 +763,16 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                         override fun visitUnaryOp(o: LuaUnaryOp) {
                             printer.add(o, FormattingType.UnaryOperator)
+                            o.acceptChildren(this)
+                        }
+
+                        override fun visitGotoStat(o: LuaGotoStat) {
+                            printer.add(o, FormattingType.GotoStatement)
+                            o.acceptChildren(this)
+                        }
+
+                        override fun visitLabelStat(o: LuaLabelStat) {
+                            printer.add(o, FormattingType.LabelStatement)
                             o.acceptChildren(this)
                         }
 

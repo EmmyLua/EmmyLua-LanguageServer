@@ -118,6 +118,12 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
             FormattingType.ReturnStatement -> {
                 printReturnStatement(sb, element, level)
             }
+            FormattingType.GotoStatement -> {
+                printGotoStatement(sb, element, level)
+            }
+            FormattingType.LabelStatement -> {
+                printLabelStatement(sb, element, level)
+            }
             FormattingType.TableExpr -> {
                 printTableExpr(sb, element, level)
             }
@@ -639,6 +645,32 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         sb.append(lineSeparator)
     }
 
+    private fun printGotoStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
+        val indent = FormattingOptions.getIndentString(level)
+        sb.append(indent)
+        element.children.forEach {
+            when (it.type) {
+                FormattingType.KeyWorld -> {
+                    sb.append(it.text).append(emptyWhite)
+                }
+                else -> {
+                    printElement(sb, it, level)
+                }
+            }
+
+        }
+        sb.append(lineSeparator)
+    }
+
+    private fun printLabelStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
+        val indent = FormattingOptions.getIndentString(level)
+        sb.append(indent)
+        element.children.forEach {
+            printElement(sb, it, level)
+        }
+        sb.append(lineSeparator)
+    }
+
     private fun printFunctionBody(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
         element.children.forEach {
@@ -738,12 +770,12 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
         promoteBinaryExpr(element, baseElements)
         var currentLine = file.getLine(element.textRange.startOffset).first
-        var lastElement : FormattingElement? = null
+        var lastElement: FormattingElement? = null
         baseElements.forEach {
             val line = file.getLine(it.textRange.startOffset).first
             if (line > currentLine) {
                 currentLine = line
-                if(lastElement?.type != FormattingType.Comment) {
+                if (lastElement?.type != FormattingType.Comment) {
                     //则换行
                     sb.append(lineSeparator)
                 }
@@ -789,7 +821,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         val startLine = file.getLine(element.textRange.startOffset).first
         val endLine = file.getLine(element.textRange.endOffset).first
         var lastFieldOrSepElement: FormattingElement? = null
-        if (endLine > startLine || endLine - startLine > FormattingOptions.lineWidth) {
+        if (endLine > startLine || endLine - startLine > FormattingOptions.tableLineWidth) {
             //执行换行对齐
             for (index in element.children.indices) {
                 val child = element.children[index]

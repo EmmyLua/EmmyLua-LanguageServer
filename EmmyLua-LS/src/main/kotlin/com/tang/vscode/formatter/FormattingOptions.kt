@@ -10,8 +10,9 @@ object FormattingOptions {
     var functionSpacing = 1
     // 循环语句与上文间距设定
     var loopSpacing = 1
-    // 行宽，该设定并非针对全部的语句，也不是严格按照这个标准
-    var lineWidth = 80
+    // 表的行宽，超过该值,表会全部换行
+    var tableLineWidth = 80
+
 
     fun getIndentString(level: Int): String {
         return " ".repeat(indent * level)
