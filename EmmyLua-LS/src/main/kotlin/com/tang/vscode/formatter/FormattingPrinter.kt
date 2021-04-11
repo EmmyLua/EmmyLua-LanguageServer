@@ -768,7 +768,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         val indent = FormattingOptions.getIndentString(level)
         val baseElements = mutableListOf<FormattingElement>()
 
-        promoteBinaryExpr(element, baseElements)
+        promoteExpr(element, baseElements, FormattingType.BinaryExpr)
         var currentLine = file.getLine(element.textRange.startOffset).first
         var lastElement: FormattingElement? = null
         baseElements.forEach {
@@ -808,8 +808,36 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
     }
 
     private fun printIndexExpr(sb: StringBuilder, element: FormattingElement, level: Int) {
-        element.children.forEach {
-            printElement(sb, it, level)
+        // 索引表达式加一个缩进
+        val indent = FormattingOptions.getIndentString(level + 1)
+        val baseElements = mutableListOf<FormattingElement>()
+
+        promoteExpr(element, baseElements, FormattingType.IndexExpr)
+
+        var currentLine = file.getLine(element.textRange.startOffset).first
+        var lastElement: FormattingElement? = null
+
+        baseElements.forEach {
+            val line = file.getLine(it.textRange.startOffset).first
+            if (line > currentLine) {
+                currentLine = line
+                if (lastElement?.type != FormattingType.Comment) {
+                    //则换行
+                    sb.append(lineSeparator)
+                }
+                sb.append(indent)
+            }
+
+            when (it.type) {
+                FormattingType.Comment -> {
+                    printElement(sb, it, 0)
+                }
+
+                else -> {
+                    printElement(sb, it, level)
+                }
+            }
+            lastElement = it
         }
     }
 
@@ -1096,13 +1124,13 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
     }
 
     /**
-     * 递归的将binaryExpr全部表达式提升到一个列表里面
+     * 递归的将某类型表达式Expr的全部其他元素提升到一个列表里面
      */
-    private fun promoteBinaryExpr(element: FormattingElement, list: MutableList<FormattingElement>) {
+    private fun promoteExpr(element: FormattingElement, list: MutableList<FormattingElement>, type: FormattingType) {
         element.children.forEach {
             when (it.type) {
-                FormattingType.BinaryExpr -> {
-                    promoteBinaryExpr(it, list)
+                type -> {
+                    promoteExpr(it, list, type)
                 }
                 else -> {
                     list.add(it)
@@ -1111,22 +1139,5 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
         }
     }
 
-    /**
-     * 该方法没有对应的type
-     */
-    private fun printPromotionExprList(sb: StringBuilder, list: MutableList<FormattingElement>, level: Int) {
-        if (list.isNotEmpty()) {
-            val startLine = file.getLine(list.first().textRange.startOffset).first
-            var currentLine = startLine
-            list.forEach {
-                val line = file.getLine(it.textRange.startOffset).first
-                if (line > currentLine) {
-                    sb.append(lineSeparator).append(FormattingOptions.getIndentString(level))
-                    currentLine = line
-                }
-                printElement(sb, it, level)
-            }
-        }
-    }
 
 }
