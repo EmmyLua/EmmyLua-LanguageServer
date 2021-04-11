@@ -37,7 +37,7 @@ inline fun StringBuilder.wrapTag(tag: String, crossinline body: () -> Unit) {
 }
 
 inline fun StringBuilder.wrapLanguage(language: String, crossinline body: () -> Unit) {
-    wrap("```${language}\n","\n```\n***\n",body)
+    wrap("```${language}\n", "\n```\n***\n", body)
 }
 
 internal fun StringBuilder.appendClassLink(clazz: String) {
@@ -61,12 +61,18 @@ internal fun renderTy(sb: StringBuilder, ty: ITy) {
             sb.append("any")
         }
         is TyUnion -> {
-            var idx = 0
-            TyUnion.eachPerfect(ty) {
-                if (idx++ != 0) sb.append("|")
-                renderTy(sb, it)
-                true
-            }
+            // 可是这也太难看了
+            // 一个普通的定义 fff = {}
+            // hover 出来是 fff: table|[global fff]|[global fff]
+            // var idx = 0
+            // TyUnion.eachPerfect(ty) {
+            //    if (idx++ != 0) sb.append("|")
+            //       renderTy(sb, it)
+            //       true
+            //     }
+
+            // Union 的hover并不是大而全就好,得清晰
+            sb.append(ty.displayName)
         }
         is TyPrimitive -> {
             sb.appendClassLink(ty.displayName)

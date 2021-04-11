@@ -196,6 +196,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             } else if (child.node.elementType == LuaTypes.LITERAL_EXPR
                                     || child.node.elementType == LuaTypes.TABLE_EXPR
                                     || child.node.elementType == LuaTypes.CLOSURE_EXPR
+                                    || child.node.elementType == LuaTypes.BINARY_EXPR
                             ) {
                                 paramHints.add(RenderRange(child.textRange.toRange(file), null))
                                 literalMap[activeParameter] = paramHints.size - 1;
@@ -560,6 +561,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         return computeAsync {
             val list = mutableListOf<TextEdit>()
             val file = params?.textDocument?.let { it -> workspace.findFile(it.uri) }
+
             if (file is ILuaFile) {
                 file.psi?.let { psi ->
                     val printer = FormattingPrinter(file, psi)
