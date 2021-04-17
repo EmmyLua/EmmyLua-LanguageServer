@@ -624,9 +624,16 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printExprStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
-        sb.append(indent)
         element.children.forEach {
-            printElement(sb, it, level)
+            when (it.type) {
+                FormattingType.Comment -> {
+                    sb.append(indent).append(it.text).append(lineSeparator)
+                }
+                else -> {
+                    sb.append(indent)
+                    printElement(sb, it, level)
+                }
+            }
         }
         sb.append(lineSeparator)
     }
