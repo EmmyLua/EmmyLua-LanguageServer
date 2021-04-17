@@ -73,6 +73,8 @@ class LuaCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, IN_NAME_EXPR, LocalAndGlobalCompletionProvider(LocalAndGlobalCompletionProvider.ALL))
         // 表的[]索引方式提示
         extend(CompletionType.BASIC, IN_TABLE_STRING_INDEX, TableStringIndexCompletionProvider())
+        // lua5.4
+        extend(CompletionType.BASIC, ATTRIBUTE, AttributeCompletionProvider())
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
@@ -156,6 +158,8 @@ class LuaCompletionContributor : CompletionContributor() {
                                 )
                         )
         )
+
+        private val ATTRIBUTE = psiElement(LuaTypes.ID).withParent(LuaAttribute::class.java)
 
         private fun suggestWordsInFile(parameters: CompletionParameters) {
             /*val session = CompletionSession[parameters]!!

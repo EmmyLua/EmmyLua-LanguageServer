@@ -49,6 +49,7 @@ enum class FormattingType {
     Operator,
     NameDef,
     NameDefList,
+    Attribute,
     Id,
     Error
 }

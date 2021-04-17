@@ -175,6 +175,9 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
             FormattingType.SingleArg -> {
                 printSingleArg(sb, element, level)
             }
+            FormattingType.Attribute -> {
+                printAttribute(sb, element, level)
+            }
             else -> {
                 sb.append(element.text)
             }
@@ -992,6 +995,12 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                     printElement(sb, it, level)
                 }
             }
+        }
+    }
+
+    private fun printAttribute(sb: StringBuilder, element: FormattingElement, level: Int) {
+        element.children.forEach {
+            printElement(sb, it, level)
         }
     }
 

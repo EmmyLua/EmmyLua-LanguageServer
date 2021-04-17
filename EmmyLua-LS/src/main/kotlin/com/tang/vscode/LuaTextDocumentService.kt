@@ -739,6 +739,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             o.acceptChildren(this)
                         }
 
+                        override fun visitAttribute(o: LuaAttribute) {
+                            printer.add(o,FormattingType.Attribute)
+                            o.acceptChildren(this)
+                        }
+
                         override fun visitNameList(o: LuaNameList) {
                             printer.add(o, FormattingType.NameDefList)
                             o.acceptChildren(this)
