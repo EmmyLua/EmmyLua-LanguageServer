@@ -71,6 +71,8 @@ class LuaCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, SHOW_CLASS_FIELD, ClassMemberCompletionProvider())
         //提示全局函数,local变量,local函数
         extend(CompletionType.BASIC, IN_NAME_EXPR, LocalAndGlobalCompletionProvider(LocalAndGlobalCompletionProvider.ALL))
+        // 表的[]索引方式提示
+        extend(CompletionType.BASIC, IN_TABLE_STRING_INDEX, TableStringIndexCompletionProvider())
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
@@ -141,6 +143,18 @@ class LuaCompletionContributor : CompletionContributor() {
                         psiElement(LuaTypes.NAME_EXPR).withParent(LuaTableField::class.java)
                 ),
                 psiElement(LuaTypes.ID).withParent(LuaTableField::class.java)
+        )
+
+        private val IN_TABLE_STRING_INDEX = psiElement().andOr(
+//                psiElement(LuaTypes.LITERAL_EXPR).withParent(
+//                        psiElement(LuaIndexExpr::class.java)
+//                ),
+                psiElement(LuaTypes.STRING)
+                        .withParent(
+                                psiElement(LuaTypes.LITERAL_EXPR).withParent(
+                                        psiElement(LuaIndexExpr::class.java)
+                                )
+                        )
         )
 
         private fun suggestWordsInFile(parameters: CompletionParameters) {
