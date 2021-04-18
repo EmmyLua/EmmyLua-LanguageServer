@@ -580,6 +580,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         override fun visitComment(comment: PsiComment?) {
                             comment?.let {
                                 printer.add(it, FormattingType.Comment)
+                                if (it.tokenType.toString() == "BLOCK_COMMENT") {
+                                    printer.add(it, FormattingType.BlockComment)
+                                }
                             }
                         }
 
