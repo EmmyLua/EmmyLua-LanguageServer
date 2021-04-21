@@ -175,6 +175,9 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
             FormattingType.SingleArg -> {
                 printSingleArg(sb, element, level)
             }
+            FormattingType.Attribute -> {
+                printAttribute(sb, element, level)
+            }
             else -> {
                 sb.append(element.text)
             }
@@ -183,6 +186,16 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     // 注释的缩进必须由该函数自己打印
     private fun printComment(sb: StringBuilder, element: FormattingElement, level: Int) {
+        if (element.children.isNotEmpty()) {
+            val blockComment = element.children.first()
+            // 区块注释仅仅对齐首行,其余都认为是注释内容
+            if (blockComment.type == FormattingType.BlockComment) {
+
+                printWithIndent(sb, blockComment.text.trimStart(), level)
+                sb.append(lineSeparator)
+                return
+            }
+        }
         // 注释内可能有多行
         val comments = element.text.split(lineSeparator)
         comments.map { it -> it.trimStart() }.forEach {
@@ -726,6 +739,7 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
             // 用于检查原始布局
             val lineDiff = startLine - lastLine
 
+            // 行布局
             if (index != 0) {
                 val type = childElement.type
                 // 函数和前文定义之间插入空行
@@ -999,6 +1013,12 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
                     printElement(sb, it, level)
                 }
             }
+        }
+    }
+
+    private fun printAttribute(sb: StringBuilder, element: FormattingElement, level: Int) {
+        element.children.forEach {
+            printElement(sb, it, level)
         }
     }
 

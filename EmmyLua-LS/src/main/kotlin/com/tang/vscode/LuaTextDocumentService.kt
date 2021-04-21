@@ -74,11 +74,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
-                if (ReferencesSearch.search(o).findFirst() != null) {
-                    params.add(o.textRange)
-                } else {
-                    notUse.add(o.textRange)
-                }
+//                if (ReferencesSearch.search(o).findFirst() != null) {
+                params.add(o.textRange)
+//                } else {
+//                    notUse.add(o.textRange)
+//                }
             }
 
             override fun visitFuncDef(o: LuaFuncDef) {
@@ -148,9 +148,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     }
                                 }
                             }
-                            if (ReferencesSearch.search(it).findFirst() == null) {
-                                notUse.add(nameRange)
-                            }
+//                            if (ReferencesSearch.search(it).findFirst() == null) {
+//                                notUse.add(nameRange)
+//                            }
                         }
                     }
                 }
@@ -580,6 +580,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         override fun visitComment(comment: PsiComment?) {
                             comment?.let {
                                 printer.add(it, FormattingType.Comment)
+                                if (it.tokenType.toString() == "BLOCK_COMMENT") {
+                                    printer.add(it, FormattingType.BlockComment)
+                                }
                             }
                         }
 
@@ -736,6 +739,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                         override fun visitAssignStat(o: LuaAssignStat) {
                             printer.add(o, FormattingType.AssignStatement)
+                            o.acceptChildren(this)
+                        }
+
+                        override fun visitAttribute(o: LuaAttribute) {
+                            printer.add(o, FormattingType.Attribute)
                             o.acceptChildren(this)
                         }
 

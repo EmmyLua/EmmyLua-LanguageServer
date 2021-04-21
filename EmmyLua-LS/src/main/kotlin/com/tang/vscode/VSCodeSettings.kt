@@ -2,6 +2,7 @@ package com.tang.vscode
 
 import com.google.gson.*
 import com.tang.intellij.lua.IVSCodeSettings
+import com.tang.vscode.formatter.FormattingOptions
 import com.yevdo.jwildcard.JWildcard
 
 private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
@@ -15,7 +16,7 @@ private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
 }
 
 class SettingsUpdateResult(
-    val associationChanged: Boolean
+        val associationChanged: Boolean
 )
 
 private const val DEFAULT_ASSOCIATION = "*.lua"
@@ -68,6 +69,24 @@ object VSCodeSettings : IVSCodeSettings {
 
         // show codeLens
         myShowCodeLens = path("emmylua.codeLens")?.asBoolean == true
+
+        path("emmylua.format.indentCount")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.indent = it
+            }
+        }
+
+        path("emmylua.format.functionSpacing")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.functionSpacing = it
+            }
+        }
+
+        path("emmylua.format.loopSpacing")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.loopSpacing = it
+            }
+        }
 
         return SettingsUpdateResult(associationChanged)
     }

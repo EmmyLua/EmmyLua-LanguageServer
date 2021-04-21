@@ -92,7 +92,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
         }
     }
 
-    private fun complete(isColon: Boolean,
+    protected fun complete(isColon: Boolean,
                          project: Project,
                          contextTy: ITy,
                          prefixType: ITy,

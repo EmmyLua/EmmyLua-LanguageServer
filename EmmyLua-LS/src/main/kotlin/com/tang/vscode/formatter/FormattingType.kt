@@ -3,6 +3,7 @@ package com.tang.vscode.formatter
 enum class FormattingType {
     General,
     Comment,
+    BlockComment,
     Function,
     LocalFunction,
 
@@ -49,6 +50,7 @@ enum class FormattingType {
     Operator,
     NameDef,
     NameDefList,
+    Attribute,
     Id,
     Error
 }
