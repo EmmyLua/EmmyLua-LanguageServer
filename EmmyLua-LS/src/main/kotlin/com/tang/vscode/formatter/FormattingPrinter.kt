@@ -650,11 +650,11 @@ class FormattingPrinter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printReturnStatement(sb: StringBuilder, element: FormattingElement, level: Int) {
         val indent = FormattingOptions.getIndentString(level)
-        sb.append(indent)
+
         element.children.forEach {
             when (it.type) {
                 FormattingType.KeyWorld -> {
-                    sb.append(it.text).append(emptyWhite)
+                    sb.append(indent).append(it.text).append(emptyWhite)
                 }
                 else -> {
                     printElement(sb, it, level)
