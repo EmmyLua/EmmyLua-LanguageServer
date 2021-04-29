@@ -26,7 +26,7 @@ import com.tang.lsp.nameRange
 import com.tang.lsp.toRange
 import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.documentation.LuaDocumentationProvider
-import com.tang.vscode.formatter.FormattingPrinter
+import com.tang.vscode.formatter.FormattingFormatter
 import com.tang.vscode.formatter.FormattingType
 import com.tang.vscode.utils.TargetElementUtil
 import com.tang.vscode.utils.computeAsync
@@ -564,7 +564,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
             if (file is ILuaFile) {
                 file.psi?.let { psi ->
-                    val printer = FormattingPrinter(file, psi)
+                    val formatter = FormattingFormatter(file, psi)
                     val keywords = setOf("function", "local", "end", "do", "then", "while", "repeat", "if",
                             "until", "for", "in", "elseif", "else", "return", "goto")
 
@@ -579,215 +579,212 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     psi.acceptChildren(object : LuaVisitor() {
                         override fun visitComment(comment: PsiComment?) {
                             comment?.let {
-                                printer.add(it, FormattingType.Comment)
-                                if (it.tokenType.toString() == "BLOCK_COMMENT") {
-                                    printer.add(it, FormattingType.BlockComment)
-                                }
+                                formatter.add(it, FormattingType.Comment)
                             }
                         }
 
                         override fun visitErrorElement(element: PsiErrorElement?) {
                             element?.let {
-                                printer.add(it, FormattingType.Error)
+                                formatter.add(it, FormattingType.Error)
                             }
                         }
 
                         override fun visitExpr(o: LuaExpr) {
-                            printer.add(o, FormattingType.Expr)
+                            formatter.add(o, FormattingType.Expr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitParenExpr(o: LuaParenExpr) {
-                            printer.add(o, FormattingType.ParentExpr)
+                            formatter.add(o, FormattingType.ParentExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitCallExpr(o: LuaCallExpr) {
-                            printer.add(o, FormattingType.CallExpr)
+                            formatter.add(o, FormattingType.CallExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitIndexExpr(o: LuaIndexExpr) {
-                            printer.add(o, FormattingType.IndexExpr)
+                            formatter.add(o, FormattingType.IndexExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitLiteralExpr(o: LuaLiteralExpr) {
-                            printer.add(o, FormattingType.LiteralExpr)
+                            formatter.add(o, FormattingType.LiteralExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitNameExpr(o: LuaNameExpr) {
-                            printer.add(o, FormattingType.NamedExpr)
+                            formatter.add(o, FormattingType.NamedExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitBinaryExpr(o: LuaBinaryExpr) {
-                            printer.add(o, FormattingType.BinaryExpr)
+                            formatter.add(o, FormattingType.BinaryExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitUnaryExpr(o: LuaUnaryExpr) {
-                            printer.add(o, FormattingType.UnaryExpr)
+                            formatter.add(o, FormattingType.UnaryExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitTableExpr(o: LuaTableExpr) {
-                            printer.add(o, FormattingType.TableExpr)
+                            formatter.add(o, FormattingType.TableExpr)
                             o.acceptChildren(this)
                         }
 
                         override fun visitTableFieldSep(o: LuaTableFieldSep) {
-                            printer.add(o, FormattingType.TableFieldSep)
+                            formatter.add(o, FormattingType.TableFieldSep)
                         }
 
                         override fun visitTableField(o: LuaTableField) {
-                            printer.add(o, FormattingType.TableField)
+                            formatter.add(o, FormattingType.TableField)
                             o.acceptChildren(this)
                         }
 
                         override fun visitEmptyStat(o: LuaEmptyStat) {
-                            printer.add(o, FormattingType.EmptyStatement)
+                            formatter.add(o, FormattingType.EmptyStatement)
                         }
 
                         override fun visitExprStat(o: LuaExprStat) {
-                            printer.add(o, FormattingType.ExprStatement)
+                            formatter.add(o, FormattingType.ExprStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitClassMethodName(o: LuaClassMethodName) {
-                            printer.add(o, FormattingType.Id)
+                            formatter.add(o, FormattingType.Id)
                         }
 
                         override fun visitBlock(o: LuaBlock) {
-                            printer.add(o, FormattingType.Block)
+                            formatter.add(o, FormattingType.Block)
                             o.acceptChildren(this)
                         }
 
                         override fun visitFuncBody(o: LuaFuncBody) {
-                            printer.add(o, FormattingType.FunctionBody)
+                            formatter.add(o, FormattingType.FunctionBody)
                             o.acceptChildren(this)
                         }
 
                         override fun visitBreakStat(o: LuaBreakStat) {
-                            printer.add(o, FormattingType.BreakStatement)
+                            formatter.add(o, FormattingType.BreakStatement)
                         }
 
                         override fun visitIfStat(o: LuaIfStat) {
-                            printer.add(o, FormattingType.IfStatement)
+                            formatter.add(o, FormattingType.IfStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitReturnStat(o: LuaReturnStat) {
-                            printer.add(o, FormattingType.ReturnStatement)
+                            formatter.add(o, FormattingType.ReturnStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitFuncDef(o: LuaFuncDef) {
-                            printer.add(o, FormattingType.Function)
+                            formatter.add(o, FormattingType.Function)
                             o.acceptChildren(this)
                         }
 
                         override fun visitParamNameDef(o: LuaParamNameDef) {
-                            printer.add(o, FormattingType.Arg)
+                            formatter.add(o, FormattingType.Arg)
                         }
 
                         override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
-                            printer.add(o, FormattingType.LocalFunction)
+                            formatter.add(o, FormattingType.LocalFunction)
                             o.acceptChildren(this)
                         }
 
                         override fun visitClassMethodDef(o: LuaClassMethodDef) {
-                            printer.add(o, FormattingType.Function)
+                            formatter.add(o, FormattingType.Function)
                             o.acceptChildren(this)
                         }
 
                         override fun visitClosureExpr(o: LuaClosureExpr) {
-                            printer.add(o, FormattingType.Closure)
+                            formatter.add(o, FormattingType.Closure)
                             o.acceptChildren(this)
                         }
 
                         override fun visitWhileStat(o: LuaWhileStat) {
-                            printer.add(o, FormattingType.WhileStatement)
+                            formatter.add(o, FormattingType.WhileStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitDoStat(o: LuaDoStat) {
-                            printer.add(o, FormattingType.DoBlock)
+                            formatter.add(o, FormattingType.DoBlock)
                             o.acceptChildren(this)
                         }
 
                         override fun visitRepeatStat(o: LuaRepeatStat) {
-                            printer.add(o, FormattingType.RepeatStatement)
+                            formatter.add(o, FormattingType.RepeatStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitForAStat(o: LuaForAStat) {
-                            printer.add(o, FormattingType.ForAStatement)
+                            formatter.add(o, FormattingType.ForAStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitForBStat(o: LuaForBStat) {
-                            printer.add(o, FormattingType.ForBStatement)
+                            formatter.add(o, FormattingType.ForBStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitLocalDef(o: LuaLocalDef) {
-                            printer.add(o, FormattingType.LocalStatement)
+                            formatter.add(o, FormattingType.LocalStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitAssignStat(o: LuaAssignStat) {
-                            printer.add(o, FormattingType.AssignStatement)
+                            formatter.add(o, FormattingType.AssignStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitAttribute(o: LuaAttribute) {
-                            printer.add(o, FormattingType.Attribute)
+                            formatter.add(o, FormattingType.Attribute)
                             o.acceptChildren(this)
                         }
 
                         override fun visitNameList(o: LuaNameList) {
-                            printer.add(o, FormattingType.NameDefList)
+                            formatter.add(o, FormattingType.NameDefList)
                             o.acceptChildren(this)
                         }
 
                         override fun visitNameDef(o: LuaNameDef) {
-                            printer.add(o, FormattingType.NameDef)
+                            formatter.add(o, FormattingType.NameDef)
                         }
 
                         override fun visitArgs(o: LuaArgs) {
-                            printer.add(o, FormattingType.CallArgs)
+                            formatter.add(o, FormattingType.CallArgs)
                             o.acceptChildren(this)
                         }
 
                         override fun visitSingleArg(o: LuaSingleArg) {
-                            printer.add(o, FormattingType.SingleArg)
+                            formatter.add(o, FormattingType.SingleArg)
                             o.acceptChildren(this)
                         }
 
                         override fun visitExprList(o: LuaExprList) {
-                            printer.add(o, FormattingType.ExprList)
+                            formatter.add(o, FormattingType.ExprList)
                             o.acceptChildren(this)
                         }
 
                         override fun visitBinaryOp(o: LuaBinaryOp) {
-                            printer.add(o, FormattingType.BinaryOperator)
+                            formatter.add(o, FormattingType.BinaryOperator)
                             o.acceptChildren(this)
                         }
 
                         override fun visitUnaryOp(o: LuaUnaryOp) {
-                            printer.add(o, FormattingType.UnaryOperator)
+                            formatter.add(o, FormattingType.UnaryOperator)
                             o.acceptChildren(this)
                         }
 
                         override fun visitGotoStat(o: LuaGotoStat) {
-                            printer.add(o, FormattingType.GotoStatement)
+                            formatter.add(o, FormattingType.GotoStatement)
                             o.acceptChildren(this)
                         }
 
                         override fun visitLabelStat(o: LuaLabelStat) {
-                            printer.add(o, FormattingType.LabelStatement)
+                            formatter.add(o, FormattingType.LabelStatement)
                             o.acceptChildren(this)
                         }
 
@@ -795,16 +792,16 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             element?.let {
                                 when (element.node?.elementType.toString()) {
                                     in keywords -> {
-                                        printer.add(element, FormattingType.KeyWorld)
+                                        formatter.add(element, FormattingType.KeyWorld)
                                     }
                                     in operators -> {
-                                        printer.add(element, FormattingType.Operator)
+                                        formatter.add(element, FormattingType.Operator)
                                     }
                                     "..." -> {
-                                        printer.add(element, FormattingType.Id)
+                                        formatter.add(element, FormattingType.Id)
                                     }
                                     "ID" -> {
-                                        printer.add(element, FormattingType.Id)
+                                        formatter.add(element, FormattingType.Id)
                                     }
                                 }
                             }
@@ -813,7 +810,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
 
                     val lines = file.getLine(psi.textRange.endOffset)
-                    list.add(TextEdit(Range(Position(0, 0), Position(lines.first, lines.second)), printer.toString()))
+                    list.add(TextEdit(Range(Position(0, 0), Position(lines.first, lines.second)), formatter.getFormattingResult()))
                 }
             }
 

@@ -25,6 +25,7 @@ enum class FormattingType {
     ReturnStatement,
     GotoStatement,
     LabelStatement,
+    CommentStatement,
 
     CallExpr,
     IndexExpr,
