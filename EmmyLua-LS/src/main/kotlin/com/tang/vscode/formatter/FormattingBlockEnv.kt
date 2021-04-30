@@ -1,7 +1,5 @@
 package com.tang.vscode.formatter
 
-import java.lang.StringBuilder
-
 class FormattingBlockEnv(val ctx: FormattingContext, val indent: Int) {
     // 当前行已经使用的字符数
     var currentCharacter = 0

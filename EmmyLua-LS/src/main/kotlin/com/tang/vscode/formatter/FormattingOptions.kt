@@ -16,7 +16,5 @@ object FormattingOptions {
     var loopSpacing = 1
     // 表的行宽，超过该值,表会全部换行
     var tableLineWidth = 80
-    // 短函数没超过这个限制可以不必换行
-    var shortFunctionLimit = 36
-
+    
 }

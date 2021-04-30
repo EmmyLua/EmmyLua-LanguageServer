@@ -721,28 +721,30 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     }
 
     private fun printCallExpr(element: FormattingElement) {
-        val callStartLine = file.getLine(element.textRange.startOffset).first
+
         element.children.forEach {
             when (it.type) {
                 FormattingType.CallArgs -> {
-                    val argsEndLine = file.getLine(it.textRange.endOffset).first
-                    if (argsEndLine > callStartLine) {
+                    val firstLeftBracketLine = file.getLine(it.textRange.startOffset).first
+                    val lastEndLine = file.getLine(it.textRange.endOffset).first
+
+                    if (lastEndLine > firstLeftBracketLine) {
                         val firstArgs = it.children.firstOrNull { it -> it.type != FormattingType.Operator }
                         if (firstArgs != null) {
+
                             val firstArgsLine = file.getLine(firstArgs.textRange.startOffset).first
                             // 第一个调用的参数已经换行则只做一个缩进
-                            if (firstArgsLine > callStartLine) {
+                            if (firstArgsLine > firstLeftBracketLine) {
                                 printCallArgsAlignment(it, false)
                             } else {
                                 //第一个参数还在原行上，则与第一个参数对齐
                                 printCallArgsAlignment(it, true)
                             }
-                        } else {
-                            printElement(it)
+                            return@forEach
                         }
-                    } else {
-                        printElement(it)
                     }
+
+                    printElement(it)
                 }
                 else -> {
                     printElement(it)
@@ -752,29 +754,40 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     }
 
     private fun printIndexExpr(element: FormattingElement) {
-        var currentLine = file.getLine(element.textRange.startOffset).first
-        var lastElement: FormattingElement? = null
-
-        element.children.forEach {
-            val line = file.getLine(it.textRange.startOffset).first
-            if (line > currentLine) {
-                currentLine = line
-                if (lastElement?.type != FormattingType.Comment) {
-                    //则换行
-                    ctx.print(lineSeparator)
+        var lineBreak = false
+        //索引表达式的换行行为跟索引运算符有关
+        for (index in element.children.indices) {
+            val child = element.children[index]
+            when (child.type) {
+                FormattingType.Operator -> {
+                    val text = child.psi.text
+                    if (text == "." || text == ":" || text == "[") {
+                        if (index > 0) {
+                            val childLineInfo = file.getLine(child.textRange.startOffset)
+                            val lastChild = element.children[index - 1]
+                            val lastChildLineInfo = file.getLine(lastChild.textRange.endOffset)
+                            if (childLineInfo.first > lastChildLineInfo.first) {
+                                // 才重新换行
+                                ctx.print(lineSeparator)
+                                //换行之后如何对齐，那就跟以前一样对齐就好了
+                                ctx.enterBlockEnv(if (childLineInfo.second < lastChildLineInfo.second)
+                                    childLineInfo.second
+                                else
+                                    lastChildLineInfo.second
+                                )
+                                lineBreak = true
+                            }
+                        }
+                    }
+                    printElement(child)
                 }
-            }
-
-            when (it.type) {
-                FormattingType.Comment -> {
-                    printElement(it)
-                }
-
                 else -> {
-                    printElement(it)
+                    printElement(child)
                 }
             }
-            lastElement = it
+        }
+        if (lineBreak) {
+            ctx.exitBlockEnv()
         }
     }
 
