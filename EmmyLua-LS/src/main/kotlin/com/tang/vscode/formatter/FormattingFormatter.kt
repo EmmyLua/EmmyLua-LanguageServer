@@ -634,6 +634,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
         ctx.enterBlockEnv()
         var lastLine = -1
         var lastElement: FormattingElement? = null
+
         for (index in element.children.indices) {
             val childElement = element.children[index]
             val startLine = file.getLine(childElement.textRange.startOffset).first
@@ -641,10 +642,11 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
 
             // 用于检查原始布局
             val lineDiff = startLine - lastLine
+            val type = childElement.type
 
             // 行布局
             if (index != 0) {
-                val type = childElement.type
+
                 // 函数和前文定义之间插入空行
                 if (type == FormattingType.Function || type == FormattingType.LocalFunction) {
                     if (lastElement?.type == FormattingType.Comment) {
@@ -681,6 +683,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     }
                 }
             }
+
             printElement(childElement)
             lastLine = endLine
             lastElement = childElement
@@ -730,6 +733,16 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
 
                     if (lastEndLine > firstLeftBracketLine) {
                         val firstArgs = it.children.firstOrNull { it -> it.type != FormattingType.Operator }
+                        val lastArgs = it.children.lastOrNull{ it -> it.type != FormattingType.Operator}
+                        if(lastArgs != null){
+                            val lastLineInfo = file.getLine(lastArgs.textRange.startOffset)
+                            if(lastLineInfo.first == firstLeftBracketLine){
+                                // 认为最后一个参数和左括号在同一行,这个时候不做参数对齐
+                                printElement(it)
+                                return@forEach
+                            }
+                        }
+
                         if (firstArgs != null) {
 
                             val firstArgsLine = file.getLine(firstArgs.textRange.startOffset).first
