@@ -42,4 +42,29 @@ class FormattingContext {
         return if (currentLineWidth <= indent) 0 else currentLineWidth - indent
     }
 
+    public fun getCurrentIndent(): Int{
+        return blockEnvQueue.last().indent
+    }
+
+    var equipOperatorAlignment: Boolean
+    get() {
+        return blockEnvQueue.isNotEmpty() && blockEnvQueue.last().equipOperatorAlignment
+    }
+    set(value) {
+        if(blockEnvQueue.isNotEmpty()){
+            blockEnvQueue.last().equipOperatorAlignment = value
+        }
+    }
+
+    // 这是一个相对缩进
+    var equipOperatorAlignmentIndent : Int
+    get() {
+        return if(blockEnvQueue.isNotEmpty()) blockEnvQueue.last().equipOperatorAlignmentIndent else 0
+    }
+    set(value) {
+        if(blockEnvQueue.isNotEmpty()){
+            blockEnvQueue.last().equipOperatorAlignmentIndent = value
+        }
+    }
+
 }

@@ -2,7 +2,8 @@ package com.tang.vscode.formatter
 
 class FormattingBlockEnv(val ctx: FormattingContext, val indent: Int) {
     // 当前行已经使用的字符数
-    var currentCharacter = 0
+    var equipOperatorAlignment = false
+    var equipOperatorAlignmentIndent = 0
 
     public fun print(text: String, autoAlignment: Boolean = true) {
         val alignmentCharacter = ctx.currentLineWidth
