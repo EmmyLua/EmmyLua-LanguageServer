@@ -14,8 +14,6 @@ object FormattingOptions {
     var functionSpacing = 1
     // 循环语句与上文间距设定
     var loopSpacing = 1
-    // return语句与上文间距
-    var returnSpacing = 1
     // 表的行宽，超过该值,表会全部换行
     var tableLineWidth = 80
     

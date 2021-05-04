@@ -720,16 +720,10 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     } else {
                         ctx.print(lineSeparator)
                     }
-                }
-                else if(type == FormattingType.ReturnStatement){
-                    val lastType = lastElement?.type
-                    if (lastType == FormattingType.Comment) {
-                        if (lineDiff > 1) {
-                            // 保持原始布局
-                            ctx.print(lineSeparator.repeat(lineDiff - 1))
-                        }
-                    } else {
-                        ctx.print(lineSeparator.repeat(FormattingOptions.loopSpacing))
+                } else if (type == FormattingType.ReturnStatement) {
+                    if (lineDiff > 1) {
+                        // 保持原始布局
+                        ctx.print(lineSeparator.repeat(lineDiff - 1))
                     }
                 }
             }
@@ -784,7 +778,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                 equipOperatorIndent =
                                     max(
                                         equipOperatorIndent,
-                                         equipOperatorElementLineInfo.second - startLineInfo.second
+                                        equipOperatorElementLineInfo.second - startLineInfo.second
                                     )
                             }
 
