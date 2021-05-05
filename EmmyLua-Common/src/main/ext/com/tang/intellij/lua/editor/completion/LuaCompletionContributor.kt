@@ -20,9 +20,14 @@ import com.intellij.codeInsight.completion.CompletionContributor
 import com.intellij.codeInsight.completion.CompletionInitializationContext
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionType
+import com.intellij.patterns.PatternCondition
 import com.intellij.patterns.PlatformPatterns.psiElement
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.tree.TokenSet
+import com.intellij.util.ProcessingContext
 import com.tang.intellij.lua.Constants
+import com.tang.intellij.lua.project.LuaSettings
 import com.tang.intellij.lua.psi.*
 
 /**
@@ -133,7 +138,7 @@ class LuaCompletionContributor : CompletionContributor() {
                 .withParent(
                         psiElement(LuaTypes.LITERAL_EXPR).withParent(
                                 psiElement(LuaArgs::class.java).afterSibling(
-                                        psiElement().withName(Constants.WORD_REQUIRE)
+                                        psiElement().with(RequireLikePatternCondition())
                                 )
                         )
                 )
@@ -179,5 +184,12 @@ class LuaCompletionContributor : CompletionContributor() {
                 true
             }*/
         }
+    }
+}
+
+class RequireLikePatternCondition : PatternCondition<PsiElement>("requireLike"){
+    override fun accepts(psi: PsiElement, context: ProcessingContext?): Boolean {
+        val name = (psi as? PsiNamedElement)?.name
+        return if (name != null) LuaSettings.isRequireLikeFunctionName(name) else false
     }
 }

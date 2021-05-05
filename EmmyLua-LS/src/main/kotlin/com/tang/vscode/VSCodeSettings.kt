@@ -2,6 +2,7 @@ package com.tang.vscode
 
 import com.google.gson.*
 import com.tang.intellij.lua.IVSCodeSettings
+import com.tang.intellij.lua.project.LuaSettings
 import com.tang.vscode.formatter.FormattingOptions
 import com.yevdo.jwildcard.JWildcard
 
@@ -86,6 +87,14 @@ object VSCodeSettings : IVSCodeSettings {
             if (it > 0) {
                 FormattingOptions.loopSpacing = it
             }
+        }
+
+        path("emmylua.constructorNames")?.asString?.let {
+            LuaSettings.instance.constructorNames = it.split(";").filter { it.isNotEmpty() }.toTypedArray()
+        }
+
+        path("emmylua.requireLikeFunctions")?.asString?.let {
+            LuaSettings.instance.requireLikeFunctions = it.split(";").filter { it.isNotEmpty() }.toTypedArray()
         }
 
         return SettingsUpdateResult(associationChanged)

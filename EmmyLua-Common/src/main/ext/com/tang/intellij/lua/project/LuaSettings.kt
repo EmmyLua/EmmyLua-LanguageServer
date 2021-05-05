@@ -26,6 +26,8 @@ import com.tang.intellij.lua.lang.LuaLanguageLevel
 class LuaSettings {
     var constructorNames: Array<String> = arrayOf("new", "get")
 
+    var requireLikeFunctions : Array<String> = arrayOf("require")
+
     //Doc文档严格模式，对不合法的注解报错
     var isStrictDoc: Boolean = false
 
@@ -51,7 +53,7 @@ class LuaSettings {
      */
     var enableGeneric: Boolean = false
 
-    var languageLevel: LuaLanguageLevel = LuaLanguageLevel.LUA53
+    var languageLevel: LuaLanguageLevel = LuaLanguageLevel.LUA54
 
     companion object {
 
@@ -62,7 +64,7 @@ class LuaSettings {
         }
 
         fun isRequireLikeFunctionName(name: String): Boolean {
-            return name == Constants.WORD_REQUIRE
+            return name == Constants.WORD_REQUIRE || instance.requireLikeFunctions.contains(name.toLowerCase())
         }
     }
 }
