@@ -2,14 +2,9 @@ package com.tang.vscode.formatter
 
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
-import com.intellij.psi.tree.IElementType
-import com.tang.intellij.lua.comment.psi.api.LuaComment
-import com.tang.intellij.lua.psi.LuaElementType
 import com.tang.lsp.ILuaFile
-import com.tang.lsp.range
-import org.eclipse.lsp4j.Range
-import java.lang.StringBuilder
 import kotlin.math.max
+import kotlin.math.min
 
 class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     private var fileElement: FormattingElement =
@@ -846,7 +841,6 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     }
 
     private fun printCallExpr(element: FormattingElement) {
-
         element.children.forEach {
             when (it.type) {
                 FormattingType.CallArgs -> {
@@ -856,27 +850,63 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     if (lastEndLine > firstLeftBracketLine) {
                         val firstArgs = it.children.firstOrNull { it -> it.type != FormattingType.Operator }
                         val lastArgs = it.children.lastOrNull { it -> it.type != FormattingType.Operator }
-                        if (lastArgs != null) {
-                            val lastLineInfo = file.getLine(lastArgs.textRange.startOffset)
-                            if (lastLineInfo.first == firstLeftBracketLine) {
-                                // 认为最后一个参数和左括号在同一行,这个时候不做参数对齐
-                                printElement(it)
+                        if (lastArgs != null && firstArgs != null) {
+                            val firstArgsLineInfo = file.getLine(firstArgs.textRange.startOffset)
+
+                            // 第一个调用的参数开始已经换行,则换行对齐到第一个参数的位置
+                            if (firstArgsLineInfo.first > firstLeftBracketLine) {
+                                printCallArgsAlignment(it, false, firstArgsLineInfo.second)
                                 return@forEach
                             }
-                        }
 
-                        if (firstArgs != null) {
+                            // 第一个参数开始没有换行
 
-                            val firstArgsLine = file.getLine(firstArgs.textRange.startOffset).first
-                            // 第一个调用的参数已经换行则只做一个缩进
-                            if (firstArgsLine > firstLeftBracketLine) {
-                                printCallArgsAlignment(it, false)
-                            } else {
-                                //第一个参数还在原行上，则与第一个参数对齐
-                                printCallArgsAlignment(it, true)
+                            val lastStartLineInfo = file.getLine(lastArgs.textRange.startOffset)
+                            val lastEndLineInfo = file.getLine(lastArgs.textRange.endOffset)
+                            if (lastStartLineInfo.first == firstLeftBracketLine) {
+                                // 认为最后一个参数和左括号在同一行
+
+                                if (lastEndLineInfo.first == lastStartLineInfo.first) {
+                                    // 认为最后一个参数没有换行
+                                    printElement(it)
+                                    return@forEach
+                                }
+
+                                // 最后一个参数换了行 比如表，比如 函数
+                                // 那么就对齐到该参数中缩进最小的元素
+                                var minIndent = lastStartLineInfo.second
+                                when (lastArgs.type) {
+                                    FormattingType.Closure -> {
+                                        lastArgs.children
+                                            .lastOrNull { it2 -> it2.type == FormattingType.FunctionBody }
+                                            ?.children?.lastOrNull { it2 -> it2.type == FormattingType.KeyWorld && it2.psi.text == "end" }
+                                            ?.let { endElement ->
+                                                minIndent = file.getLine(endElement.textRange.startOffset).second
+                                            }
+                                    }
+                                    FormattingType.TableExpr -> {
+                                        lastArgs.children
+                                            .lastOrNull { it2 -> it2.type == FormattingType.Operator && it2.psi.text == "}" }
+                                            ?.let { op ->
+                                                minIndent = file.getLine(op.textRange.startOffset).second
+                                            }
+                                    }
+                                    else -> {
+                                        lastArgs.children.forEach { it2 ->
+                                            val ch = file.getLine(it2.textRange.startOffset).second
+                                            minIndent = min(ch, minIndent)
+                                        }
+                                    }
+                                }
+                                printCallArgsLastArgAlignment(it, minIndent)
+                                return@forEach
                             }
+                            //最后一个参数和第一个参数不在同一行则对齐到括号
+                            printCallArgsAlignment(it, true)
+
                             return@forEach
                         }
+
                     }
 
                     printElement(it)
@@ -1084,7 +1114,14 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
         }
     }
 
-    private fun printCallArgsAlignment(element: FormattingElement, alignmentTobracket: Boolean) {
+    /**
+     * @param alignmentIndent 如果 alignmentTobracket 为false，并且该值不为-1，则对齐到指定缩进
+     */
+    private fun printCallArgsAlignment(
+        element: FormattingElement,
+        alignmentTobracket: Boolean,
+        alignmentIndent: Int = -1
+    ) {
         element.children.forEach {
             when (it.type) {
                 FormattingType.Operator -> {
@@ -1099,7 +1136,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                 ctx.enterBlockEnv(ctx.currentLineWidth)
                             } else {
                                 ctx.print(lineSeparator)
-                                ctx.enterBlockEnv()
+                                ctx.enterBlockEnv(alignmentIndent)
                             }
                         }
                         ")" -> {
@@ -1118,6 +1155,41 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                 }
                 else -> {
                     printElement(it)
+                }
+            }
+        }
+    }
+
+    private fun printCallArgsLastArgAlignment(
+        element: FormattingElement,
+        alignmentIndent: Int = -1
+    ) {
+        for (index in element.children.indices) {
+            val childElement = element.children[index]
+            if (index > 0 && index == element.children.lastIndex - 1) {
+                ctx.enterBlockEnv(alignmentIndent)
+            }
+            when (childElement.type) {
+                FormattingType.Operator -> {
+                    val text = childElement.psi.text
+                    when (text) {
+                        "," -> {
+                            ctx.print(text).print(emptyWhite)
+                        }
+                        "(" -> {
+                            ctx.print(text)
+                        }
+                        ")" -> {
+                            ctx.exitBlockEnv()
+                            ctx.print(text)
+                        }
+                        else -> {
+                            printElement(childElement)
+                        }
+                    }
+                }
+                else -> {
+                    printElement(childElement)
                 }
             }
         }
