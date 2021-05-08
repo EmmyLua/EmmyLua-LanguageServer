@@ -46,6 +46,10 @@ class FormattingContext {
         return blockEnvQueue.last().indent
     }
 
+    public fun getNextIndent(): Int{
+        return getCurrentIndent() + FormattingOptions.indent
+    }
+
     var equipOperatorAlignment: Boolean
     get() {
         return blockEnvQueue.isNotEmpty() && blockEnvQueue.last().equipOperatorAlignment

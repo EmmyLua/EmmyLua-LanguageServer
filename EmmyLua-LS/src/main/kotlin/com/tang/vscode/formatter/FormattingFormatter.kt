@@ -838,6 +838,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
         element.children.forEach {
             printElement(it)
         }
+
     }
 
     private fun printCallExpr(element: FormattingElement) {
@@ -853,9 +854,12 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         if (lastArgs != null && firstArgs != null) {
                             val firstArgsLineInfo = file.getLine(firstArgs.textRange.startOffset)
 
-                            // 第一个调用的参数开始已经换行,则换行对齐到第一个参数的位置
+                            // 第一个调用的参数开始已经换行,则换行对齐到第一个参数，或者正常缩进中最大的位置
                             if (firstArgsLineInfo.first > firstLeftBracketLine) {
-                                printCallArgsAlignment(it, false, firstArgsLineInfo.second)
+                                var maxIndent = firstArgsLineInfo.second
+                                maxIndent = max(maxIndent, ctx.getNextIndent())
+
+                                printCallArgsAlignment(it, false, maxIndent)
                                 return@forEach
                             }
 
@@ -878,22 +882,26 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                 when (lastArgs.type) {
                                     FormattingType.Closure -> {
                                         lastArgs.children
-                                            .lastOrNull { it2 -> it2.type == FormattingType.FunctionBody }
-                                            ?.children?.lastOrNull { it2 -> it2.type == FormattingType.KeyWorld && it2.psi.text == "end" }
+                                            .lastOrNull { arg -> arg.type == FormattingType.FunctionBody }
+                                            ?.children?.lastOrNull { child -> child.type == FormattingType.KeyWorld && child.psi.text == "end" }
                                             ?.let { endElement ->
-                                                minIndent = file.getLine(endElement.textRange.startOffset).second
+                                                minIndent = min(
+                                                    minIndent,
+                                                    file.getLine(endElement.textRange.startOffset).second
+                                                )
                                             }
                                     }
                                     FormattingType.TableExpr -> {
                                         lastArgs.children
-                                            .lastOrNull { it2 -> it2.type == FormattingType.Operator && it2.psi.text == "}" }
+                                            .lastOrNull { arg -> arg.type == FormattingType.Operator && arg.psi.text == "}" }
                                             ?.let { op ->
-                                                minIndent = file.getLine(op.textRange.startOffset).second
+                                                minIndent =
+                                                    min(minIndent, file.getLine(op.textRange.startOffset).second)
                                             }
                                     }
                                     else -> {
-                                        lastArgs.children.forEach { it2 ->
-                                            val ch = file.getLine(it2.textRange.startOffset).second
+                                        lastArgs.children.forEach { child ->
+                                            val ch = file.getLine(child.textRange.startOffset).second
                                             minIndent = min(ch, minIndent)
                                         }
                                     }
