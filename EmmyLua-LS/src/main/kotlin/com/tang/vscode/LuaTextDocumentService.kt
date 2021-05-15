@@ -72,13 +72,12 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val paramHints = mutableListOf<RenderRange>()
         val localHints = mutableListOf<RenderRange>()
 
+        // 认为所有local名称定义一开始都是未使用的
+        val psiNotUse = mutableSetOf<PsiElement>()
         file.psi?.acceptChildren(object : LuaRecursiveVisitor() {
             override fun visitParamNameDef(o: LuaParamNameDef) {
-//                if (ReferencesSearch.search(o).findFirst() != null) {
-                params.add(o.textRange)
-//                } else {
-//                    notUse.add(o.textRange)
-//                }
+//                params.add(o.textRange)
+                psiNotUse.add(o)
             }
 
             override fun visitFuncDef(o: LuaFuncDef) {
@@ -94,8 +93,20 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     return
 
                 val context = SearchContext.get(o.project)
-                when (resolveInFile(o.name, o, context)) {
-                    is LuaParamNameDef -> params.add(o.textRange)
+                val declPsi = resolveInFile(o.name, o, context)
+
+                if(psiNotUse.contains(declPsi)) {
+                    psiNotUse.remove(declPsi)
+                    // 不能和下面的合并因为不想重复渲染
+                    when(declPsi){
+                        is LuaParamNameDef->{
+                            params.add(declPsi.textRange)
+                        }
+                    }
+                }
+
+                when (declPsi) {
+                    is LuaParamNameDef ->params.add(o.textRange)
                     is LuaFuncDef -> globals.add(o.textRange)
                     is LuaNameDef -> {
                     } //local
@@ -113,14 +124,23 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     upValues.add(o.textRange)
             }
 
+            override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
+                psiNotUse.add(o)
+                o.acceptChildren(this)
+            }
+
+            override fun visitNameDef(o: LuaNameDef) {
+                psiNotUse.add(o)
+            }
+
             override fun visitLocalDef(o: LuaLocalDef) {
                 if (o.parent is LuaExprStat) // non-complete stat
                     return
-
                 val nameList = o.nameList
                 o.exprList?.exprList.let { _ ->
                     nameList?.nameDefList?.forEach {
                         it.nameRange?.let { nameRange ->
+
                             // 这个类型联合的名字太长对大多数情况都不是必要的，将进行必要的裁剪
                             val gussType = it.guessType(SearchContext.get(o.project))
                             val displayName = gussType.displayName
@@ -148,13 +168,68 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     }
                                 }
                             }
-//                            if (ReferencesSearch.search(it).findFirst() == null) {
-//                                notUse.add(nameRange)
-//                            }
                         }
                     }
                 }
                 o.acceptChildren(this)
+            }
+
+            override fun visitCallExpr(callExpr: LuaCallExpr) {
+                var activeParameter = 0
+                var nCommas = 0
+                val literalMap = mutableMapOf<Int, Int>()
+                callExpr.args.firstChild?.let { firstChild ->
+                    var child: PsiElement? = firstChild
+                    while (child != null) {
+                        if (child.node.elementType == LuaTypes.COMMA) {
+                            activeParameter++
+                            nCommas++
+                        } else if (child.node.elementType == LuaTypes.LITERAL_EXPR
+                                || child.node.elementType == LuaTypes.TABLE_EXPR
+                                || child.node.elementType == LuaTypes.CLOSURE_EXPR
+                                || child.node.elementType == LuaTypes.BINARY_EXPR
+                        ) {
+                            paramHints.add(RenderRange(child.textRange.toRange(file), null))
+                            literalMap[activeParameter] = paramHints.size - 1;
+                        }
+
+                        child = child.nextSibling
+                    }
+                }
+
+                callExpr.guessParentType(SearchContext.get(callExpr.project)).let { parentType ->
+                    parentType.each { ty ->
+                        if (ty is ITyFunction) {
+                            val active = ty.findPerfectSignature(nCommas + 1)
+                            ty.process(Processor { sig ->
+                                if (sig == active) {
+                                    var index = 0;
+
+                                    if (sig.colonCall && callExpr.isMethodDotCall) {
+                                        literalMap[index]?.let {
+                                            paramHints[it].hint = "self"
+                                        }
+                                        index++
+                                    }
+                                    var skipSelf = false
+                                    sig.params.forEach { pi ->
+                                        if (index == 0 && !skipSelf && !sig.colonCall && callExpr.isMethodColonCall) {
+                                            skipSelf = true
+                                        } else {
+                                            literalMap[index]?.let {
+                                                paramHints[it].hint = pi.name
+                                            }
+                                            index++
+                                        }
+                                    }
+                                }
+
+                                true
+                            })
+                        }
+                    }
+                }
+                callExpr.acceptChildren(this)
             }
 
             override fun visitElement(element: PsiElement) {
@@ -182,67 +257,23 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             super.visitTagAlias(o)
                         }
                     })
-                } else if (element is LuaCallExpr) {
-                    val callExpr = element
-                    var activeParameter = 0
-                    var nCommas = 0
-                    val literalMap = mutableMapOf<Int, Int>()
-                    callExpr.args.firstChild?.let { firstChild ->
-                        var child: PsiElement? = firstChild
-                        while (child != null) {
-                            if (child.node.elementType == LuaTypes.COMMA) {
-                                activeParameter++
-                                nCommas++
-                            } else if (child.node.elementType == LuaTypes.LITERAL_EXPR
-                                || child.node.elementType == LuaTypes.TABLE_EXPR
-                                || child.node.elementType == LuaTypes.CLOSURE_EXPR
-                                || child.node.elementType == LuaTypes.BINARY_EXPR
-                            ) {
-                                paramHints.add(RenderRange(child.textRange.toRange(file), null))
-                                literalMap[activeParameter] = paramHints.size - 1;
-                            }
-
-                            child = child.nextSibling
-                        }
-                    }
-
-                    callExpr.guessParentType(SearchContext.get(callExpr.project)).let { parentType ->
-                        parentType.each { ty ->
-                            if (ty is ITyFunction) {
-                                val active = ty.findPerfectSignature(nCommas + 1)
-                                ty.process(Processor { sig ->
-                                    if (sig == active) {
-                                        var index = 0;
-
-                                        if (sig.colonCall && callExpr.isMethodDotCall) {
-                                            literalMap[index]?.let {
-                                                paramHints[it].hint = "self"
-                                            }
-                                            index++
-                                        }
-                                        var skipSelf = false
-                                        sig.params.forEach { pi ->
-                                            if (index == 0 && !skipSelf && !sig.colonCall && callExpr.isMethodColonCall) {
-                                                skipSelf = true
-                                            } else {
-                                                literalMap[index]?.let {
-                                                    paramHints[it].hint = pi.name
-                                                }
-                                                index++
-                                            }
-                                        }
-                                    }
-
-                                    true
-                                })
-                            }
-                        }
-                    }
-                    element.acceptChildren(this)
-                } else
+                }  else
                     super.visitElement(element)
             }
         })
+
+        psiNotUse.forEach {
+            when(it){
+                is LuaLocalFuncDef->{
+                    it.nameRange?.let { it1 -> notUse.add(it1) };
+                }
+                else->{
+                    notUse.add(it.textRange)
+                }
+            }
+
+        }
+
         val all = mutableListOf<Annotator>()
         val uri = file.uri.toString()
         if (params.isNotEmpty())
