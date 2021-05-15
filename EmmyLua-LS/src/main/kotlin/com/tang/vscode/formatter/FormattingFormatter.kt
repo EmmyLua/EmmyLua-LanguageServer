@@ -8,7 +8,7 @@ import kotlin.math.min
 
 class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     private var fileElement: FormattingElement =
-        FormattingElement(psi, FormattingType.Block, psi.textRange, mutableListOf());
+            FormattingElement(psi, FormattingType.Block, psi.textRange, mutableListOf());
     private val lineSeparator = FormattingOptions.lineSeparator
     private val emptyWhite = FormattingOptions.emptyWhite
 
@@ -33,7 +33,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     list.add(index + 1, element)
                     return
                 } else if (element.textRange.endOffset <= list[index].textRange.endOffset
-                    && element.textRange.startOffset >= list[index].textRange.startOffset
+                        && element.textRange.startOffset >= list[index].textRange.startOffset
                 ) {
 
                     add(list[index].children, element)
@@ -296,7 +296,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         }
                     }
                 }
-                // 这是由于if语句块内的首行注释也被认为是if语句的注释要特别处理
+                // 这是由于if语句块内的首行注释也被认为是if语句的注释,所以要特别处理
                 FormattingType.Comment -> {
                     val startLine = file.getLine(it.textRange.startOffset).first
                     if (startLine - ifStartLine > 0) {
@@ -693,7 +693,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                 }
                 // 在语句块和前文之间至少一个空格
                 else if (type == FormattingType.ForAStatement || type == FormattingType.ForBStatement || type == FormattingType.RepeatStatement
-                    || type == FormattingType.WhileStatement
+                        || type == FormattingType.WhileStatement
                 ) {
                     if (lastElement?.type == FormattingType.Comment) {
                         if (lineDiff > 1) {
@@ -735,7 +735,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                 } else {
                     // 认为此时为local or assign语句的首行
                     val equipOperatorIndex =
-                        childElement.children.indexOfFirst { it -> it.type == FormattingType.Operator && it.psi.text == "=" }
+                            childElement.children.indexOfFirst { it -> it.type == FormattingType.Operator && it.psi.text == "=" }
                     // 是否要对齐等号
                     var alignment = false
                     var equipOperatorIndent = 0
@@ -749,7 +749,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         if (equipOperatorElementLineInfo.second - lastNotEquipElementLineInfo.second > 1) {
                             alignment = true
                             equipOperatorIndent =
-                                equipOperatorElementLineInfo.second - startLineInfo.second
+                                    equipOperatorElementLineInfo.second - startLineInfo.second
                         }
                     }
 
@@ -762,23 +762,23 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         if (localAssignType == FormattingType.LocalStatement || localAssignType == FormattingType.AssignStatement) {
                             secondLocalOrAssignmentFounded = true
                             val localOrAssignEquipOperatorIndex =
-                                localOrAssignElement.children.indexOfFirst { it -> it.type == FormattingType.Operator && it.psi.text == "=" }
+                                    localOrAssignElement.children.indexOfFirst { it -> it.type == FormattingType.Operator && it.psi.text == "=" }
 
                             if (localOrAssignEquipOperatorIndex > 0 && localOrAssignEquipOperatorIndex < childElement.children.size) {
                                 val equipOperatorElement =
-                                    localOrAssignElement.children[localOrAssignEquipOperatorIndex]
+                                        localOrAssignElement.children[localOrAssignEquipOperatorIndex]
                                 val equipOperatorElementLineInfo =
-                                    file.getLine(equipOperatorElement.textRange.startOffset)
+                                        file.getLine(equipOperatorElement.textRange.startOffset)
 
                                 equipOperatorIndent =
-                                    max(
-                                        equipOperatorIndent,
-                                        equipOperatorElementLineInfo.second - startLineInfo.second
-                                    )
+                                        max(
+                                                equipOperatorIndent,
+                                                equipOperatorElementLineInfo.second - startLineInfo.second
+                                        )
                             }
 
                             localOrAssignRange =
-                                Pair(startLine, file.getLine(localOrAssignElement.textRange.endOffset).first)
+                                    Pair(startLine, file.getLine(localOrAssignElement.textRange.endOffset).first)
                         } else if (localAssignType == FormattingType.Comment) {
                             // ignore
                         } else {
@@ -882,22 +882,22 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                 when (lastArgs.type) {
                                     FormattingType.Closure -> {
                                         lastArgs.children
-                                            .lastOrNull { arg -> arg.type == FormattingType.FunctionBody }
-                                            ?.children?.lastOrNull { child -> child.type == FormattingType.KeyWorld && child.psi.text == "end" }
-                                            ?.let { endElement ->
-                                                minIndent = min(
-                                                    minIndent,
-                                                    file.getLine(endElement.textRange.startOffset).second
-                                                )
-                                            }
+                                                .lastOrNull { arg -> arg.type == FormattingType.FunctionBody }
+                                                ?.children?.lastOrNull { child -> child.type == FormattingType.KeyWorld && child.psi.text == "end" }
+                                                ?.let { endElement ->
+                                                    minIndent = min(
+                                                            minIndent,
+                                                            file.getLine(endElement.textRange.startOffset).second
+                                                    )
+                                                }
                                     }
                                     FormattingType.TableExpr -> {
                                         lastArgs.children
-                                            .lastOrNull { arg -> arg.type == FormattingType.Operator && arg.psi.text == "}" }
-                                            ?.let { op ->
-                                                minIndent =
-                                                    min(minIndent, file.getLine(op.textRange.startOffset).second)
-                                            }
+                                                .lastOrNull { arg -> arg.type == FormattingType.Operator && arg.psi.text == "}" }
+                                                ?.let { op ->
+                                                    minIndent =
+                                                            min(minIndent, file.getLine(op.textRange.startOffset).second)
+                                                }
                                     }
                                     else -> {
                                         lastArgs.children.forEach { child ->
@@ -944,10 +944,10 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                 ctx.print(lineSeparator)
                                 //换行之后如何对齐，那就跟以前一样对齐就好了
                                 ctx.enterBlockEnv(
-                                    if (childLineInfo.second < lastChildLineInfo.second)
-                                        childLineInfo.second
-                                    else
-                                        lastChildLineInfo.second
+                                        if (childLineInfo.second < lastChildLineInfo.second)
+                                            childLineInfo.second
+                                        else
+                                            lastChildLineInfo.second
                                 )
                                 lineBreak = true
                             }
@@ -974,6 +974,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
         val endLine = file.getLine(element.textRange.endOffset).first
         var lastFieldOrSepElement: FormattingElement? = null
         if (endLine > startLine || element.textRange.endOffset - element.textRange.startOffset > FormattingOptions.tableLineWidth) {
+            var firstTableField = true
             //执行换行对齐
             for (index in element.children.indices) {
                 val child = element.children[index]
@@ -986,6 +987,12 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                 ctx.enterBlockEnv()
                             }
                             "}" -> {
+                                if (ctx.equipOperatorAlignment) {
+                                    ctx.equipOperatorAlignment = false
+                                    ctx.equipOperatorAlignmentIndent = 0
+                                }
+
+
                                 val lastUseCharacter = ctx.getCurrentCharacter()
                                 ctx.exitBlockEnv()
 
@@ -1001,7 +1008,33 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         }
                     }
                     FormattingType.TableField -> {
-                        // TableField认为他的缩进已经被TableExpr打印了
+                        // 试图分析出table field的等号对齐
+                        if (firstTableField) {
+                            val eqIndex = child.children.indexOfFirst { it.type == FormattingType.Operator && it.psi.text == "=" }
+                            if (eqIndex != -1 && eqIndex > 0) {
+                                val keyElement = child.children[eqIndex - 1]
+                                val eqElement = child.children[eqIndex]
+
+                                val keyCh = file.getLine(keyElement.textRange.endOffset).second
+                                val eqCh = file.getLine(eqElement.textRange.startOffset).second
+                                val childStart = file.getLine(child.textRange.startOffset).second
+                                var maxIndent = eqCh - childStart
+                                if (eqCh - keyCh > 1) {
+                                    for (fieldIndex in (index + 1)..element.children.lastIndex) {
+                                        val fieldElement = element.children[fieldIndex]
+                                        val fieldEqElement = fieldElement.children.firstOrNull { it.type == FormattingType.Operator && it.psi.text == "=" }
+                                        if (fieldEqElement != null) {
+                                            val fieldEqStart = file.getLine(fieldEqElement.textRange.startOffset).second
+                                            val start = file.getLine(fieldElement.textRange.startOffset).second
+                                            maxIndent = max(maxIndent, fieldEqStart - start)
+                                        }
+                                    }
+                                    ctx.equipOperatorAlignment = true
+                                    ctx.equipOperatorAlignmentIndent = maxIndent
+                                }
+                            }
+                            firstTableField = false
+                        }
                         printElement(child)
                         lastFieldOrSepElement = child
                     }
@@ -1126,9 +1159,9 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
      * @param alignmentIndent 如果 alignmentTobracket 为false，并且该值不为-1，则对齐到指定缩进
      */
     private fun printCallArgsAlignment(
-        element: FormattingElement,
-        alignmentTobracket: Boolean,
-        alignmentIndent: Int = -1
+            element: FormattingElement,
+            alignmentTobracket: Boolean,
+            alignmentIndent: Int = -1
     ) {
         element.children.forEach {
             when (it.type) {
@@ -1169,8 +1202,8 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     }
 
     private fun printCallArgsLastArgAlignment(
-        element: FormattingElement,
-        alignmentIndent: Int = -1
+            element: FormattingElement,
+            alignmentIndent: Int = -1
     ) {
         for (index in element.children.indices) {
             val childElement = element.children[index]
@@ -1264,7 +1297,13 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     val text = it.psi.text
                     when (text) {
                         "=" -> {
-                            ctx.print(emptyWhite).print(text).print(emptyWhite)
+                            if (ctx.equipOperatorAlignment) {
+                                ctx.enterBlockEnv(ctx.getCurrentIndent() + ctx.equipOperatorAlignmentIndent)
+                                ctx.print(text).print(emptyWhite)
+                                ctx.exitBlockEnv()
+                            } else {
+                                ctx.print(emptyWhite).print(text).print(emptyWhite)
+                            }
                         }
                         else -> {
                             printElement(it)
