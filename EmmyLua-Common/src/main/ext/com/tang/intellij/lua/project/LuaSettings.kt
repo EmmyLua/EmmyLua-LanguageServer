@@ -55,6 +55,12 @@ class LuaSettings {
 
     var languageLevel: LuaLanguageLevel = LuaLanguageLevel.LUA54
 
+    var paramHint = true
+
+    var localHint = false
+
+    var varargHint = false
+
     companion object {
 
         val instance: LuaSettings = LuaSettings()

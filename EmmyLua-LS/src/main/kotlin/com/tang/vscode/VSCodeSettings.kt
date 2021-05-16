@@ -77,16 +77,32 @@ object VSCodeSettings : IVSCodeSettings {
             }
         }
 
-        path("emmylua.format.functionSpacing")?.asInt?.let {
+        path("emmylua.format.functionLineSpacing")?.asInt?.let {
             if (it > 0) {
                 FormattingOptions.functionSpacing = it
             }
         }
 
-        path("emmylua.format.loopSpacing")?.asInt?.let {
+        path("emmylua.format.loopLineSpacing")?.asInt?.let {
             if (it > 0) {
                 FormattingOptions.loopSpacing = it
             }
+        }
+
+        path("emmylua.format.blankBeforeFirstArg")?.asBoolean?.let {
+            FormattingOptions.blankBeforeFirstArg = it
+        }
+
+        path("emmylua.hint.paramHint")?.asBoolean?.let {
+            LuaSettings.instance.paramHint = it
+        }
+
+        path("emmylua.hint.localHint")?.asBoolean?.let {
+            LuaSettings.instance.localHint = it
+        }
+
+        path("emmylua.hint.varargHint")?.asBoolean?.let {
+            LuaSettings.instance.varargHint = it
         }
 
         path("emmylua.constructorNames")?.asString?.let {

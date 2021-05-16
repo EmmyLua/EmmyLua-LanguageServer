@@ -1135,6 +1135,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     }
 
     private fun printCallArgs(element: FormattingElement) {
+        var firstArg = true
         element.children.forEach {
             when (it.type) {
                 FormattingType.Operator -> {
@@ -1149,6 +1150,12 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     }
                 }
                 else -> {
+                    if (firstArg) {
+                        if (FormattingOptions.blankBeforeFirstArg) {
+                            ctx.print(FormattingOptions.emptyWhite)
+                        }
+                        firstArg = false
+                    }
                     printElement(it)
                 }
             }
@@ -1163,13 +1170,24 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
             alignmentTobracket: Boolean,
             alignmentIndent: Int = -1
     ) {
-        element.children.forEach {
-            when (it.type) {
+        for (index in element.children.indices) {
+            val child = element.children[index]
+            when (child.type) {
                 FormattingType.Operator -> {
-                    val text = it.psi.text
+                    val text = child.psi.text
                     when (text) {
                         "," -> {
-                            ctx.print(it.psi.text).print(lineSeparator)
+                            ctx.print(child.psi.text)
+                            // 会试探逗号的下一个元素是不是和逗号在同一行如果是就不换行
+                            if (index < element.children.lastIndex) {
+                                val next = element.children[index + 1]
+                                val commonLine = file.getLine(child.textRange.startOffset).first
+                                val line = file.getLine(next.textRange.startOffset).first
+                                if (line > commonLine) {
+                                    ctx.print(lineSeparator)
+                                }
+                            }
+
                         }
                         "(" -> {
                             ctx.print(text)
@@ -1190,14 +1208,16 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                             }
                         }
                         else -> {
-                            printElement(it)
+                            printElement(child)
                         }
                     }
                 }
                 else -> {
-                    printElement(it)
+
+                    printElement(child)
                 }
             }
+
         }
     }
 
@@ -1219,6 +1239,9 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         }
                         "(" -> {
                             ctx.print(text)
+                            if (FormattingOptions.blankBeforeFirstArg) {
+                                ctx.print(emptyWhite)
+                            }
                         }
                         ")" -> {
                             ctx.exitBlockEnv()
