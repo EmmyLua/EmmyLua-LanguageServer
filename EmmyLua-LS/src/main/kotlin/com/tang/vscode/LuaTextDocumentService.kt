@@ -19,6 +19,7 @@ import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyFunction
 import com.tang.intellij.lua.ty.findPerfectSignature
+import com.tang.intellij.lua.ty.hasVarargs
 import com.tang.intellij.lua.ty.process
 import com.tang.lsp.ILuaFile
 import com.tang.lsp.getRangeInFile
@@ -222,6 +223,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                             index++
                                         }
                                     }
+                                    
+                                    if(sig.hasVarargs()){
+                                        literalMap[index]?.let {
+                                            paramHints[it].hint = "..."
+                                        }
+                                    }
+
                                 }
 
                                 true

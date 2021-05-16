@@ -91,6 +91,13 @@ internal fun renderSignature(sb: StringBuilder, sig: IFunSignature) {
             sb.append("${it.name}: ")
             renderTy(sb, it.ty)
         }
+        if (sig.hasVarargs()) {
+            sig.varargTy?.let {
+                if (idx++ != 0) sb.append(", ")
+                sb.append("...: ")
+                renderTy(sb, it)
+            }
+        }
     }
     renderTy(sb, sig.returnTy)
 }

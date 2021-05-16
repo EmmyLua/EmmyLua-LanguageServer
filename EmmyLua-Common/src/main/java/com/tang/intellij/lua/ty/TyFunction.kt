@@ -127,6 +127,11 @@ abstract class FunSignatureBase(override val colonCall: Boolean,
         params.forEach {
             paramSB.add(it.name + ":" + it.ty.displayName)
         }
+        if(hasVarargs()){
+            varargTy?.let {
+                paramSB.add("...:"+ it.displayName)
+            }
+        }
         "fun(${paramSB.joinToString(", ")}):${returnTy.displayName}"
     }
 
