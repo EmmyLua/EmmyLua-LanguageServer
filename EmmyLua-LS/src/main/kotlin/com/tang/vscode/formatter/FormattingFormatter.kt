@@ -1170,7 +1170,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
             alignmentTobracket: Boolean,
             alignmentIndent: Int = -1
     ) {
-        for (index in element.children.indices) {
+        loop@ for (index in element.children.indices) {
             val child = element.children[index]
             when (child.type) {
                 FormattingType.Operator -> {
@@ -1185,8 +1185,10 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                 val line = file.getLine(next.textRange.startOffset).first
                                 if (line > commonLine) {
                                     ctx.print(lineSeparator)
+                                    continue@loop
                                 }
                             }
+                            ctx.print(emptyWhite)
 
                         }
                         "(" -> {
