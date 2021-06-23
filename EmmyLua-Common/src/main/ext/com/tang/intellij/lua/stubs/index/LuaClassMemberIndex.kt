@@ -58,10 +58,9 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
                         return false
 
                     // from supper
-                    val superClassName = type.superClassName
-                    if (superClassName != null && superClassName != className) {
-                        return process(superClassName, fieldName, context, processor)
-                    }
+                    return type.processSuperClass(Processor {
+                        process(it, fieldName, context, processor)
+                    })
                 }
             }
             return true

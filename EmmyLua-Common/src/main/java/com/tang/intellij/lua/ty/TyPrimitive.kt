@@ -40,7 +40,7 @@ class TyPrimitiveClass(override val primitiveKind: TyPrimitiveKind,
 
     override val kind = TyKind.Primitive
 
-    override fun getSuperClass(context: SearchContext): ITy? = null
+    override fun getSuperClass(context: SearchContext): List<ITy> = mutableListOf()
 
     override fun doLazyInit(searchContext: SearchContext) { }
 

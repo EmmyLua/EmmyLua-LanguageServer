@@ -37,6 +37,7 @@ interface ITyClass : ITy {
     var superClassName: String?
     var aliasName: String?
     fun processAlias(processor: Processor<String>): Boolean
+    fun processSuperClass(processor: Processor<String>) : Boolean
     fun lazyInit(searchContext: SearchContext)
     fun processMembers(context: SearchContext, processor: (ITyClass, LuaClassMember) -> Unit, deep: Boolean = true)
     fun processMembers(context: SearchContext, processor: (ITyClass, LuaClassMember) -> Unit) {
@@ -94,6 +95,15 @@ abstract class TyClass(override val className: String,
         if (!isGlobal && !isAnonymous && LuaSettings.instance.isRecognizeGlobalNameAsType)
             return processor.process(getGlobalTypeName(className))
         return true
+    }
+
+    override fun processSuperClass(processor: Processor<String>): Boolean {
+        val classes = superClassName!!.split(',')
+        var ret = false
+        classes.forEach {
+            ret = processor.process(it) || ret
+        }
+        return ret
     }
 
     override fun processMembers(context: SearchContext, processor: (ITyClass, LuaClassMember) -> Unit, deep: Boolean) {
@@ -161,13 +171,19 @@ abstract class TyClass(override val className: String,
         }
     }
 
-    override fun getSuperClass(context: SearchContext): ITy? {
+    override fun getSuperClass(context: SearchContext): List<ITy> {
         lazyInit(context)
         val clsName = superClassName
-        if (clsName != null && clsName != className) {
-            return Ty.getBuiltin(clsName) ?: LuaShortNamesManager.getInstance(context.project).findClass(clsName, context)?.type
+        val ret = mutableListOf<ITy>()
+        clsName?.split(',')?.forEach {
+            if (it != className) {
+                val superClass = Ty.getBuiltin(it) ?: LuaShortNamesManager.getInstance(context.project)
+                    .findClass(it, context)?.type
+                if (superClass != null)
+                    ret.add(superClass)
+            }
         }
-        return null
+        return ret
     }
 
     override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
@@ -218,17 +234,20 @@ abstract class TyClass(override val className: String,
         fun processSuperClass(start: ITyClass, searchContext: SearchContext, processor: (ITyClass) -> Boolean): Boolean {
             val processedName = mutableSetOf<String>()
             var cur: ITy? = start
-            while (cur != null) {
-                val cls = cur.getSuperClass(searchContext)
-                if (cls is ITyClass) {
-                    if (!processedName.add(cls.className)) {
-                        // todo: Infinite inheritance
-                        return false
+            if (cur != null) {
+                val classes = start.getSuperClass(searchContext)
+                classes.forEach {
+                    if (it is ITyClass) {
+                        if (!processedName.add(it.className)) {
+                            // todo: Infinite inheritance
+                            return false
+                        }
+                        if (!processor(it))
+                            return false
+                        if (!processSuperClass(it, searchContext, processor))
+                            return false
                     }
-                    if (!processor(cls))
-                        return false
                 }
-                cur = cls
             }
             return true
         }
@@ -238,9 +257,7 @@ abstract class TyClass(override val className: String,
 class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
 
     init {
-        val supperRef = tagClass.superClassNameRef
-        if (supperRef != null)
-            superClassName = supperRef.text
+        superClassName = tagClass.superClassNameRef.joinToString(",") { it.text }
         aliasName = tagClass.aliasName
     }
 
