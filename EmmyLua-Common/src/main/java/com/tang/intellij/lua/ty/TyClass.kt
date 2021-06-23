@@ -98,10 +98,11 @@ abstract class TyClass(override val className: String,
     }
 
     override fun processSuperClass(processor: Processor<String>): Boolean {
-        val classes = superClassName!!.split(',')
+        val cls = superClassName ?: return false
+        val classes = cls.split(',')
         var ret = false
         classes.forEach {
-            ret = processor.process(it) || ret
+            ret = it != className && processor.process(it) || ret
         }
         return ret
     }
@@ -257,7 +258,8 @@ abstract class TyClass(override val className: String,
 class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
 
     init {
-        superClassName = tagClass.superClassNameRef.joinToString(",") { it.text }
+        if (tagClass.superClassNameRef.size > 0)
+            superClassName = tagClass.superClassNameRef.joinToString(",") { it.text }
         aliasName = tagClass.aliasName
     }
 
