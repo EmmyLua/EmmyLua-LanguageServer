@@ -256,6 +256,7 @@ open class TySerializedClass(name: String,
     init {
         aliasName = alias
         this.flags = flags
+
     }
 
     override fun recoverAlias(context: SearchContext, aliasSubstitutor: TyAliasSubstitutor): ITy {

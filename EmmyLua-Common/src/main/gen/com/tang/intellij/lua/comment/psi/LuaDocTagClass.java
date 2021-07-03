@@ -44,4 +44,7 @@ public interface LuaDocTagClass extends LuaDocPsiElement, PsiNameIdentifierOwner
   @Nullable
   PsiElement getModule();
 
+  @Nullable
+  PsiElement getEnum();
+
 }

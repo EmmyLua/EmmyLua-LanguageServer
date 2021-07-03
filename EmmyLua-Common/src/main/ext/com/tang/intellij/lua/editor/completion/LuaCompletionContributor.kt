@@ -36,6 +36,7 @@ import com.tang.intellij.lua.psi.*
  */
 class LuaCompletionContributor : CompletionContributor() {
     private var suggestWords = true
+
     init {
         //可以override
         /*extend(CompletionType.BASIC, SHOW_OVERRIDE, OverrideCompletionProvider())
@@ -80,6 +81,9 @@ class LuaCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, IN_TABLE_STRING_INDEX, TableStringIndexCompletionProvider())
         // lua5.4
         extend(CompletionType.BASIC, ATTRIBUTE, AttributeCompletionProvider())
+        // enum
+        extend(CompletionType.BASIC, SHOW_ENUM, EnumCompletionProvider())
+
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
@@ -143,6 +147,12 @@ class LuaCompletionContributor : CompletionContributor() {
                         )
                 )
 
+        private val SHOW_ENUM = psiElement(LuaTypes.ID)
+                    .withParent(psiElement(LuaNameExpr::class.java)
+                            .withParent(psiElement(LuaArgs::class.java))
+                )
+
+
         private val GOTO = psiElement(LuaTypes.ID).withParent(LuaGotoStat::class.java)
 
         private val IN_TABLE_FIELD = psiElement().andOr(
@@ -187,7 +197,7 @@ class LuaCompletionContributor : CompletionContributor() {
     }
 }
 
-class RequireLikePatternCondition : PatternCondition<PsiElement>("requireLike"){
+class RequireLikePatternCondition : PatternCondition<PsiElement>("requireLike") {
     override fun accepts(psi: PsiElement, context: ProcessingContext?): Boolean {
         val name = (psi as? PsiNamedElement)?.name
         return if (name != null) LuaSettings.isRequireLikeFunctionName(name) else false
