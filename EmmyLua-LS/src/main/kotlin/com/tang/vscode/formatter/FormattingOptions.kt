@@ -16,6 +16,8 @@ object FormattingOptions {
     var loopSpacing = 1
     // 表的行宽，超过该值,表会全部换行
     var tableLineWidth = 80
+    // 调用表达式是否要对齐到第一个参数
+    var callExprAlignToFirstArg = true
     // 函数第一个参数之前保持一个空格
     var blankBeforeFirstArg = false
 }

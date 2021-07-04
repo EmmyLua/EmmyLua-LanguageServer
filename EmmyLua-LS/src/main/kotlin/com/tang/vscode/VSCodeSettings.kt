@@ -17,7 +17,7 @@ private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
 }
 
 class SettingsUpdateResult(
-        val associationChanged: Boolean
+    val associationChanged: Boolean
 )
 
 private const val DEFAULT_ASSOCIATION = "*.lua"
@@ -75,6 +75,16 @@ object VSCodeSettings : IVSCodeSettings {
             if (it > 0) {
                 FormattingOptions.indent = it
             }
+        }
+
+        path("emmylua.format.tableLineWidth")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.tableLineWidth = it
+            }
+        }
+
+        path("emmylua.format.callExprAlignToFirstArg")?.asBoolean?.let {
+            FormattingOptions.callExprAlignToFirstArg = it
         }
 
         path("emmylua.format.functionLineSpacing")?.asInt?.let {

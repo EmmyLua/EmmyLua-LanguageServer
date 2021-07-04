@@ -718,13 +718,12 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                             if (lastArg != null) {
                                 val lastArgLine = file.getLine(lastArg.textRange.endOffset).first
                                 val bracketLine = file.getLine(child.textRange.endOffset).first
-                                if(lastArgLine == bracketLine){
+                                if (lastArgLine == bracketLine) {
                                     ctx.print(text)
                                     ctx.exitBlockEnv()
                                     ctx.print(lineSeparator)
                                     continue@loop
-                                }
-                                else{
+                                } else {
                                     ctx.print(lineSeparator)
                                 }
                             }
@@ -891,7 +890,9 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     }
                 }
             } else if (type == FormattingType.Comment) {
-                // ignore
+                // 试图对 localStatement, assignStatement, CallExprStatement 的后置注释做对齐
+
+
             } else {
                 localOrAssignRange = null
                 ctx.equipOperatorAlignment = false
@@ -946,7 +947,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     val firstLeftBracketLine = file.getLine(it.textRange.startOffset).first
                     val lastEndLine = file.getLine(it.textRange.endOffset).first
 
-                    if (lastEndLine > firstLeftBracketLine) {
+                    if (lastEndLine > firstLeftBracketLine && FormattingOptions.callExprAlignToFirstArg) {
                         val firstArgs = it.children.firstOrNull { it -> it.type != FormattingType.Operator }
                         val lastArgs = it.children.lastOrNull { it -> it.type != FormattingType.Operator }
                         if (lastArgs != null && firstArgs != null) {
@@ -1070,134 +1071,248 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     private fun printTableExpr(element: FormattingElement) {
         val startLine = file.getLine(element.textRange.startOffset).first
         val endLine = file.getLine(element.textRange.endOffset).first
+
+        if (endLine > startLine) {
+            // 试图分析出是 { aaa,bbb }
+            // 还是{ aaa
+            //      bbb
+            //      }
+            if (element.children.size > 1) {
+                val firstElement = element.children[0]
+                val secondElement = element.children[1]
+
+                if (file.getLine(firstElement.textRange.startOffset).first < file.getLine(secondElement.textRange.startOffset).first) {
+                    return printTableExprLineBreakAlignment(element)
+                }
+            }
+        }
+        printTableExprAlignment(element)
+    }
+
+    // 全换行对齐
+    private fun printTableExprLineBreakAlignment(element: FormattingElement) {
+        var firstTableField = true
         var lastFieldOrSepElement: FormattingElement? = null
-        if (endLine > startLine || element.textRange.endOffset - element.textRange.startOffset > FormattingOptions.tableLineWidth) {
-            var firstTableField = true
-            //执行换行对齐
-            for (index in element.children.indices) {
-                val child = element.children[index]
-                when (child.type) {
-                    FormattingType.Operator -> {
-                        val text = child.psi.text
-                        when (text) {
-                            "{" -> {
-                                ctx.print(text).print(lineSeparator)
-                                ctx.enterBlockEnv()
-                            }
-                            "}" -> {
-                                if (ctx.equipOperatorAlignment) {
-                                    ctx.equipOperatorAlignment = false
-                                    ctx.equipOperatorAlignmentIndent = 0
-                                }
-
-
-                                val lastUseCharacter = ctx.getCurrentCharacter()
-                                ctx.exitBlockEnv()
-
-                                if (lastUseCharacter != 0) {
-                                    ctx.print(lineSeparator)
-                                }
-
-                                ctx.print(text)
-                            }
-                            else -> {
-                                printElement(child)
-                            }
+        //执行换行对齐
+        for (index in element.children.indices) {
+            val child = element.children[index]
+            when (child.type) {
+                FormattingType.Operator -> {
+                    val text = child.psi.text
+                    when (text) {
+                        "{" -> {
+                            ctx.print(text).print(lineSeparator)
+                            ctx.enterBlockEnv()
                         }
-                    }
-                    FormattingType.TableField -> {
-                        // 试图分析出table field的等号对齐
-                        if (firstTableField) {
-                            val eqIndex =
-                                child.children.indexOfFirst { it.type == FormattingType.Operator && it.psi.text == "=" }
-                            if (eqIndex != -1 && eqIndex > 0) {
-                                val keyElement = child.children[eqIndex - 1]
-                                val eqElement = child.children[eqIndex]
-
-                                val keyCh = file.getLine(keyElement.textRange.endOffset).second
-                                val eqCh = file.getLine(eqElement.textRange.startOffset).second
-                                val childStart = file.getLine(child.textRange.startOffset).second
-                                var maxIndent = eqCh - childStart
-                                if (eqCh - keyCh > 1) {
-                                    for (fieldIndex in (index + 1)..element.children.lastIndex) {
-                                        val fieldElement = element.children[fieldIndex]
-                                        val fieldEqElement =
-                                            fieldElement.children.firstOrNull { it.type == FormattingType.Operator && it.psi.text == "=" }
-                                        if (fieldEqElement != null) {
-                                            val fieldEqStart = file.getLine(fieldEqElement.textRange.startOffset).second
-                                            val start = file.getLine(fieldElement.textRange.startOffset).second
-                                            maxIndent = max(maxIndent, fieldEqStart - start)
-                                        }
-                                    }
-                                    ctx.equipOperatorAlignment = true
-                                    ctx.equipOperatorAlignmentIndent = maxIndent
-                                }
+                        "}" -> {
+                            if (ctx.equipOperatorAlignment) {
+                                ctx.equipOperatorAlignment = false
+                                ctx.equipOperatorAlignmentIndent = 0
                             }
-                            firstTableField = false
+
+
+                            val lastUseCharacter = ctx.getCurrentCharacter()
+                            ctx.exitBlockEnv()
+
+                            if (lastUseCharacter != 0) {
+                                ctx.print(lineSeparator)
+                            }
+
+                            ctx.print(text)
                         }
-                        printElement(child)
-                        lastFieldOrSepElement = child
-                    }
-                    /**
-                     * 在表的表达式上有多种注释风格 可以是field = 123, --注解内容
-                     * 也可以是
-                     *  --注解内容
-                     *  field = 123,
-                     *  怎么这么多奇怪的习惯
-                     */
-                    FormattingType.Comment -> {
-                        if (lastFieldOrSepElement != null) {
-                            // 还有人会用多行注释？那我只好换行了
-                            val commentLine = file.getLine(child.textRange.endOffset).first
-                            val lastFieldEndLine = file.getLine(lastFieldOrSepElement.textRange.endOffset).first
-
-                            if (lastFieldEndLine != commentLine) {
-                                printElement(child)
-                            } else {
-                                ctx.print(emptyWhite).print(child.psi.text).print(lineSeparator)
-                            }
-                        } else {
+                        else -> {
                             printElement(child)
                         }
                     }
-                    FormattingType.TableFieldSep -> {
-                        ctx.print(child.psi.text)
-                        var isAddLineSeparator = true
-                        // 考察一下 下一个child是不是comment
-                        if (index + 1 < element.children.size) {
-                            val nextChild = element.children[index + 1]
-                            if (nextChild.type == FormattingType.Comment) {
-                                // 考察一下该注释是否和自己在同一行
-                                val sepLine = file.getLine(child.textRange.endOffset).first
-                                val commentLine = file.getLine(nextChild.textRange.endOffset).first
-                                if (sepLine == commentLine) {
-                                    isAddLineSeparator = false
+                }
+                FormattingType.TableField -> {
+                    // 试图分析出table field的等号对齐
+                    if (firstTableField) {
+                        val eqIndex =
+                            child.children.indexOfFirst { it.type == FormattingType.Operator && it.psi.text == "=" }
+                        if (eqIndex != -1 && eqIndex > 0) {
+                            val keyElement = child.children[eqIndex - 1]
+                            val eqElement = child.children[eqIndex]
+
+                            val keyCh = file.getLine(keyElement.textRange.endOffset).second
+                            val eqCh = file.getLine(eqElement.textRange.startOffset).second
+                            val childStart = file.getLine(child.textRange.startOffset).second
+                            var maxIndent = eqCh - childStart
+                            if (eqCh - keyCh > 1) {
+                                for (fieldIndex in (index + 1)..element.children.lastIndex) {
+                                    val fieldElement = element.children[fieldIndex]
+                                    val fieldEqElement =
+                                        fieldElement.children.firstOrNull { it.type == FormattingType.Operator && it.psi.text == "=" }
+                                    if (fieldEqElement != null) {
+                                        val fieldEqStart = file.getLine(fieldEqElement.textRange.startOffset).second
+                                        val start = file.getLine(fieldElement.textRange.startOffset).second
+                                        maxIndent = max(maxIndent, fieldEqStart - start)
+                                    }
                                 }
+                                ctx.equipOperatorAlignment = true
+                                ctx.equipOperatorAlignmentIndent = maxIndent
                             }
                         }
-                        if (isAddLineSeparator) {
-                            ctx.print(lineSeparator)
-                        }
-                        lastFieldOrSepElement = child
+                        firstTableField = false
                     }
-                    else -> {
+                    printElement(child)
+                    lastFieldOrSepElement = child
+                }
+                /**
+                 * 在表的表达式上有多种注释风格 可以是field = 123, --注解内容
+                 * 也可以是
+                 *  --注解内容
+                 *  field = 123,
+                 *  怎么这么多奇怪的习惯
+                 */
+                FormattingType.Comment -> {
+                    if (lastFieldOrSepElement != null) {
+                        // 还有人会用多行注释？那我只好换行了
+                        val commentLine = file.getLine(child.textRange.endOffset).first
+                        val lastFieldEndLine = file.getLine(lastFieldOrSepElement.textRange.endOffset).first
+
+                        if (lastFieldEndLine != commentLine) {
+                            printElement(child)
+                        } else {
+                            ctx.print(emptyWhite).print(child.psi.text).print(lineSeparator)
+                        }
+                    } else {
                         printElement(child)
                     }
                 }
+                FormattingType.TableFieldSep -> {
+                    ctx.print(child.psi.text)
+                    var isAddLineSeparator = true
+                    // 考察一下 下一个child是不是comment
+                    if (index + 1 < element.children.size) {
+                        val nextChild = element.children[index + 1]
+                        if (nextChild.type == FormattingType.Comment) {
+                            // 考察一下该注释是否和自己在同一行
+                            val sepLine = file.getLine(child.textRange.endOffset).first
+                            val commentLine = file.getLine(nextChild.textRange.endOffset).first
+                            if (sepLine == commentLine) {
+                                isAddLineSeparator = false
+                            }
+                        }
+                    }
+                    if (isAddLineSeparator) {
+                        ctx.print(lineSeparator)
+                    }
+                    lastFieldOrSepElement = child
+                }
+                else -> {
+                    printElement(child)
+                }
             }
-        } else {
-            //执行非换行对齐
-            element.children.forEach {
-                when (it.type) {
-                    FormattingType.TableField -> {
-                        printElement(it)
+        }
+
+    }
+
+    // 普通对齐
+    private fun printTableExprAlignment(element: FormattingElement) {
+        var lastFieldOrSepElement: FormattingElement? = null
+        for (index in element.children.indices) {
+            val child = element.children[index]
+            when (child.type) {
+                FormattingType.Operator -> {
+                    val text = child.psi.text
+                    when (text) {
+                        "{" -> {
+                            ctx.print(text)
+                            if (index + 1 < element.children.size) {
+                                val nextChild = element.children[index + 1]
+                                val nextChildLineInfo = file.getLine(nextChild.textRange.startOffset)
+                                if (nextChildLineInfo.first > file.getLine(child.textRange.startOffset).first) {
+                                    ctx.print(lineSeparator)
+                                } else if (nextChild.type != FormattingType.Operator) {
+                                    ctx.print(emptyWhite)
+                                }
+                                ctx.enterBlockEnv(ctx.currentLineWidth)
+                            }
+
+                        }
+                        "}" -> {
+                            val lastUseCharacter = ctx.getCurrentCharacter()
+                            if (lastUseCharacter != 0) {
+                                if (lastFieldOrSepElement != null) {
+                                    val lastLine = file.getLine(lastFieldOrSepElement.textRange.endOffset).first
+                                    val line = file.getLine(child.textRange.startOffset).first
+                                    if (line > lastLine) {
+                                        ctx.print(lineSeparator)
+                                    } else {
+                                        ctx.print(emptyWhite)
+                                    }
+                                }
+
+                            }
+                            ctx.print(text)
+                            ctx.exitBlockEnv()
+                        }
+                        else -> {
+                            printElement(child)
+                        }
                     }
-                    FormattingType.TableFieldSep -> {
-                        ctx.print(it.psi.text).print(emptyWhite)
+                }
+                FormattingType.TableField -> {
+                    printElement(child)
+                    lastFieldOrSepElement = child
+                }
+                /**
+                 * 在表的表达式上有多种注释风格 可以是field = 123, --注解内容
+                 * 也可以是
+                 *  --注解内容
+                 *  field = 123,
+                 *  怎么这么多奇怪的习惯
+                 */
+                FormattingType.Comment -> {
+                    if (lastFieldOrSepElement != null) {
+                        // 还有人会用多行注释？那我只好换行了
+                        val commentLine = file.getLine(child.textRange.endOffset).first
+                        val lastFieldEndLine = file.getLine(lastFieldOrSepElement.textRange.endOffset).first
+
+                        if (lastFieldEndLine != commentLine) {
+                            printElement(child)
+                        } else {
+                            ctx.print(emptyWhite).print(child.psi.text).print(lineSeparator)
+                        }
+                    } else {
+                        printElement(child)
                     }
-                    else -> {
-                        printElement(it)
+                }
+                FormattingType.TableFieldSep -> {
+                    ctx.print(child.psi.text)
+                    var isAddLineSeparator = false
+                    var nextTableField = false
+                    // 考察一下 下一个child是不是comment
+                    if (index + 1 < element.children.size) {
+                        val nextChild = element.children[index + 1]
+                        val sepLine = file.getLine(child.textRange.endOffset).first
+                        val nextLine = file.getLine(nextChild.textRange.endOffset).first
+
+                        if (nextChild.type == FormattingType.Comment) {
+                            // 考察一下该注释是否和自己在同一行
+                            if (sepLine != nextLine) {
+                                isAddLineSeparator = true
+                            }
+                        } else if (nextChild.type == FormattingType.TableField) {
+                            if (ctx.getCurrentCharacter() > FormattingOptions.tableLineWidth) {
+                                isAddLineSeparator = true
+                            } else if (sepLine != nextLine) {
+                                isAddLineSeparator = true
+                            }
+                        }
                     }
+
+                    if (isAddLineSeparator) {
+                        ctx.print(lineSeparator)
+                    } else {
+                        ctx.print(emptyWhite)
+                    }
+
+                    lastFieldOrSepElement = child
+                }
+                else -> {
+                    printElement(child)
                 }
             }
         }
@@ -1236,6 +1351,8 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printCallArgs(element: FormattingElement) {
         var firstArg = true
+        // 上一个参数
+        var lastArgOrBracket: FormattingElement? = null;
         element.children.forEach {
             when (it.type) {
                 FormattingType.Operator -> {
@@ -1243,6 +1360,20 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     when (text) {
                         "," -> {
                             ctx.print(it.psi.text).print(emptyWhite)
+                        }
+                        "(" -> {
+                            ctx.print(text)
+                            ctx.enterBlockEnv()
+                            lastArgOrBracket = it
+                        }
+                        ")" -> {
+                            lastArgOrBracket?.let { arg ->
+                                if (file.getLine(arg.textRange.endOffset).first != file.getLine(it.textRange.startOffset).first) {
+                                    ctx.print(lineSeparator)
+                                }
+                            }
+                            ctx.exitBlockEnv()
+                            ctx.print(text)
                         }
                         else -> {
                             printElement(it)
@@ -1256,7 +1387,16 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         }
                         firstArg = false
                     }
+
+                    lastArgOrBracket?.let { arg ->
+                        if (file.getLine(arg.textRange.endOffset).first != file.getLine(it.textRange.startOffset).first) {
+                            ctx.print(lineSeparator)
+                        }
+                    }
+
+
                     printElement(it)
+                    lastArgOrBracket = it
                 }
             }
         }
@@ -1306,12 +1446,11 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                             if (lastCallArg != null) {
                                 val lastCallArgLine = file.getLine(lastCallArg.textRange.endOffset).first
                                 val bracketLine = file.getLine(child.textRange.endOffset).first
-                                if(lastCallArgLine == bracketLine){
+                                if (lastCallArgLine == bracketLine) {
                                     ctx.print(text)
                                     ctx.exitBlockEnv()
                                     continue@loop
-                                }
-                                else{
+                                } else {
                                     ctx.print(lineSeparator)
                                 }
                             }
