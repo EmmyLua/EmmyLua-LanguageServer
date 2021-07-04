@@ -72,7 +72,6 @@ abstract class TyClass(override val className: String,
                        override val varName: String = "",
                        override var superClassName: String? = null
 ) : Ty(TyKind.Class), ITyClass {
-
     final override var aliasName: String? = null
 
     private var _lazyInitialized: Boolean = false

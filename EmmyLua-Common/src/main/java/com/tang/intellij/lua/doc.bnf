@@ -91,7 +91,6 @@ private doc_item ::= '@' (tag_param
     | tag_vararg
     | tag_return
     | tag_class
-    | tag_enum
     | tag_field
     | tag_type
     | tag_lan

@@ -19,6 +19,7 @@ package com.tang.vscode.documentation
 import com.intellij.psi.PsiElement
 import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.comment.psi.api.LuaComment
+import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.ty.*
 
 inline fun StringBuilder.wrap(prefix: String, postfix: String, crossinline body: () -> Unit) {
@@ -218,3 +219,4 @@ internal fun renderSee(sb: StringBuilder, see: LuaDocTagSee) {
         }
     }
 }
+

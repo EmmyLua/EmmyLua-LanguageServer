@@ -23,6 +23,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.*
+import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
 import com.tang.intellij.lua.ty.*
@@ -60,6 +61,7 @@ class LuaDocumentationProvider : DocumentationProvider {
 
     override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
         val sb = StringBuilder()
+
         when (element) {
             is LuaParamNameDef -> renderParamNameDef(sb, element)
             is LuaDocTagClass -> renderClassDef(sb, element)
@@ -110,10 +112,10 @@ class LuaDocumentationProvider : DocumentationProvider {
                     is TyClass -> {
                         sb.append("class ")
                     }
-                    is TyUnion ->{
+                    is TyUnion -> {
                         sb.append("union ")
                     }
-                    else ->{
+                    else -> {
                         sb.append("property ")
                     }
                 }

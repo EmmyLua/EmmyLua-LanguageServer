@@ -70,9 +70,9 @@ class EnumCompletionProvider : LuaCompletionProvider() {
         }
     }
 
-    fun addEnum(luaType: ITyClass,
-                searchContext: SearchContext,
-                completionResultSet: CompletionResultSet) {
+    private fun addEnum(luaType: ITyClass,
+                        searchContext: SearchContext,
+                        completionResultSet: CompletionResultSet) {
         luaType.lazyInit(searchContext)
         luaType.processMembers(searchContext) { curType, member ->
             ProgressManager.checkCanceled()
@@ -86,10 +86,10 @@ class EnumCompletionProvider : LuaCompletionProvider() {
         }
     }
 
-    fun addEnumField(completionResultSet: CompletionResultSet,
-                     member: LuaClassMember,
-                     name: String,
-                     fieldType: ITyClass) {
+    private fun addEnumField(completionResultSet: CompletionResultSet,
+                             member: LuaClassMember,
+                             name: String,
+                             fieldType: ITyClass) {
 
         if (member is LuaClassField) {
             val element = LookupElementFactory.createFieldLookupElement(fieldType.className, name, member, fieldType, true)
