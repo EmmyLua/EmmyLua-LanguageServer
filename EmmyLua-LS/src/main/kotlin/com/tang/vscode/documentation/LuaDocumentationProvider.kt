@@ -23,12 +23,10 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.*
+import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
-import com.tang.intellij.lua.ty.ITyFunction
-import com.tang.intellij.lua.ty.TyFunction
-import com.tang.intellij.lua.ty.infer
-import com.tang.intellij.lua.ty.isColonCall
+import com.tang.intellij.lua.ty.*
 
 /**
  * Documentation support
@@ -63,12 +61,13 @@ class LuaDocumentationProvider : DocumentationProvider {
 
     override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
         val sb = StringBuilder()
+
         when (element) {
             is LuaParamNameDef -> renderParamNameDef(sb, element)
             is LuaDocTagClass -> renderClassDef(sb, element)
             is LuaClassMember -> renderClassMember(sb, element)
             is LuaNameDef -> { //local xx
-                sb.wrapTag("pre") {
+                sb.wrapLanguage("typescript") {
                     sb.append("local ${element.name}:")
                     val ty = element.guessType(SearchContext.get(element.project))
                     renderTy(sb, ty)
@@ -79,13 +78,19 @@ class LuaDocumentationProvider : DocumentationProvider {
                 owner?.let { renderComment(sb, owner.comment) }
             }
             is LuaLocalFuncDef -> {
-                sb.wrapTag("pre") {
+                sb.wrapLanguage("typescript") {
                     sb.append("local function ${element.name}")
                     val type = element.guessType(SearchContext.get(element.project)) as ITyFunction
                     renderSignature(sb, type.mainSignature)
                 }
                 renderComment(sb, element.comment)
             }
+            is LuaPsiFile -> {
+                sb.wrapLanguage("typescript") {
+                    sb.append("module \"${element.virtualFile.path.substringAfter("file:/")}\"")
+                }
+            }
+
         }
         if (sb.isNotEmpty()) return sb.toString()
 
@@ -99,17 +104,33 @@ class LuaDocumentationProvider : DocumentationProvider {
 
         //base info
         if (parentType != null) {
-            renderTy(sb, parentType)
-            with(sb) {
+            sb.wrapLanguage("typescript") {
                 when (ty) {
                     is TyFunction -> {
-                        append(if (ty.isColonCall) ":" else ".")
-                        append(classMember.name)
-                        renderSignature(sb, ty.mainSignature)
+                        sb.append("function ")
+                    }
+                    is TyClass -> {
+                        sb.append("class ")
+                    }
+                    is TyUnion -> {
+                        sb.append("union ")
                     }
                     else -> {
-                        append(".${classMember.name}:")
-                        renderTy(sb, ty)
+                        sb.append("property ")
+                    }
+                }
+                renderTy(sb, parentType)
+                with(sb) {
+                    when (ty) {
+                        is TyFunction -> {
+                            append(if (ty.isColonCall) ":" else ".")
+                            append(classMember.name)
+                            renderSignature(sb, ty.mainSignature)
+                        }
+                        else -> {
+                            append(".${classMember.name}:")
+                            renderTy(sb, ty)
+                        }
                     }
                 }
             }
@@ -117,21 +138,24 @@ class LuaDocumentationProvider : DocumentationProvider {
             //NameExpr
             if (classMember is LuaNameExpr) {
                 val nameExpr: LuaNameExpr = classMember
-                with(sb) {
-                    append(nameExpr.name)
-                    when (ty) {
-                        is TyFunction -> renderSignature(sb, ty.mainSignature)
-                        else -> {
-                            append(":")
-                            renderTy(sb, ty)
+                sb.wrapLanguage("typescript") {
+                    sb.append("global ")
+                    with(sb) {
+                        append(nameExpr.name)
+                        when (ty) {
+                            is TyFunction -> renderSignature(sb, ty.mainSignature)
+                            else -> {
+                                append(":")
+                                renderTy(sb, ty)
+                            }
                         }
                     }
                 }
-
                 val stat = nameExpr.parent.parent // VAR_LIST ASSIGN_STAT
                 if (stat is LuaAssignStat) renderComment(sb, stat.comment)
             }
         }
+
 
         //comment content
         if (classMember is LuaCommentOwner)

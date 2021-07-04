@@ -19,6 +19,7 @@ package com.tang.vscode.documentation
 import com.intellij.psi.PsiElement
 import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.comment.psi.api.LuaComment
+import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.ty.*
 
 inline fun StringBuilder.wrap(prefix: String, postfix: String, crossinline body: () -> Unit) {
@@ -34,6 +35,10 @@ fun StringBuilder.appendLine(context: String) {
 inline fun StringBuilder.wrapTag(tag: String, crossinline body: () -> Unit) {
     body()
     //wrap("<$tag>", "</$tag>", body)
+}
+
+inline fun StringBuilder.wrapLanguage(language: String, crossinline body: () -> Unit) {
+    wrap("```${language}\n", "\n```\n***\n", body)
 }
 
 internal fun StringBuilder.appendClassLink(clazz: String) {
@@ -57,12 +62,18 @@ internal fun renderTy(sb: StringBuilder, ty: ITy) {
             sb.append("any")
         }
         is TyUnion -> {
-            var idx = 0
-            TyUnion.eachPerfect(ty) {
-                if (idx++ != 0) sb.append("|")
-                renderTy(sb, it)
-                true
-            }
+            // 可是这也太难看了
+            // 一个普通的定义 fff = {}
+            // hover 出来是 fff: table|[global fff]|[global fff]
+            // var idx = 0
+            // TyUnion.eachPerfect(ty) {
+            //    if (idx++ != 0) sb.append("|")
+            //       renderTy(sb, it)
+            //       true
+            //     }
+
+            // Union 的hover并不是大而全就好,得清晰
+            sb.append(ty.displayName)
         }
         is TyPrimitive -> {
             sb.appendClassLink(ty.displayName)
@@ -78,8 +89,15 @@ internal fun renderSignature(sb: StringBuilder, sig: IFunSignature) {
         var idx = 0
         sig.params.forEach {
             if (idx++ != 0) sb.append(", ")
-            sb.append("`${it.name}`: ")
+            sb.append("${it.name}: ")
             renderTy(sb, it.ty)
+        }
+        if (sig.hasVarargs()) {
+            sig.varargTy?.let {
+                if (idx++ != 0) sb.append(", ")
+                sb.append("...: ")
+                renderTy(sb, it)
+            }
         }
     }
     renderTy(sb, sig.returnTy)
@@ -95,13 +113,11 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
             if (elementType == LuaDocTypes.STRING) {
                 seenString = true
                 sb.append(child.text)
-            }
-            else if (elementType == LuaDocTypes.DASHES) {
+            } else if (elementType == LuaDocTypes.DASHES) {
                 if (seenString) {
                     sb.append("\n")
                 }
-            }
-            else if (child is LuaDocPsiElement){
+            } else if (child is LuaDocPsiElement) {
                 seenString = false
                 when (child) {
                     is LuaDocTagParam -> {
@@ -203,3 +219,4 @@ internal fun renderSee(sb: StringBuilder, see: LuaDocTagSee) {
         }
     }
 }
+

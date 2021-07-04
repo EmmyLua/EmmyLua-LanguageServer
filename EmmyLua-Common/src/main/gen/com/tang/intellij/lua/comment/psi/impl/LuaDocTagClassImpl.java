@@ -101,4 +101,10 @@ public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocTagClassSt
     return findChildByType(TAG_NAME_MODULE);
   }
 
+  @Nullable
+  @Override
+  public PsiElement getEnum() {
+    return findChildByType(TAG_NAME_ENUM);
+  }
+
 }

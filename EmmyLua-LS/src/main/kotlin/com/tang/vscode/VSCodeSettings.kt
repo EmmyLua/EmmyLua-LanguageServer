@@ -2,6 +2,8 @@ package com.tang.vscode
 
 import com.google.gson.*
 import com.tang.intellij.lua.IVSCodeSettings
+import com.tang.intellij.lua.project.LuaSettings
+import com.tang.vscode.formatter.FormattingOptions
 import com.yevdo.jwildcard.JWildcard
 
 private fun <T> listEquals(a: List<T>, b: List<T>): Boolean {
@@ -68,6 +70,58 @@ object VSCodeSettings : IVSCodeSettings {
 
         // show codeLens
         myShowCodeLens = path("emmylua.codeLens")?.asBoolean == true
+
+        path("emmylua.format.indentCount")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.indent = it
+            }
+        }
+
+        path("emmylua.format.tableLineWidth")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.tableLineWidth = it
+            }
+        }
+
+        path("emmylua.format.callExprAlignToFirstArg")?.asBoolean?.let {
+            FormattingOptions.callExprAlignToFirstArg = it
+        }
+
+        path("emmylua.format.functionLineSpacing")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.functionSpacing = it
+            }
+        }
+
+        path("emmylua.format.loopLineSpacing")?.asInt?.let {
+            if (it > 0) {
+                FormattingOptions.loopSpacing = it
+            }
+        }
+
+        path("emmylua.format.blankBeforeFirstArg")?.asBoolean?.let {
+            FormattingOptions.blankBeforeFirstArg = it
+        }
+
+        path("emmylua.hint.paramHint")?.asBoolean?.let {
+            LuaSettings.instance.paramHint = it
+        }
+
+        path("emmylua.hint.localHint")?.asBoolean?.let {
+            LuaSettings.instance.localHint = it
+        }
+
+        path("emmylua.hint.varargHint")?.asBoolean?.let {
+            LuaSettings.instance.varargHint = it
+        }
+
+        path("emmylua.constructorNames")?.asString?.let {
+            LuaSettings.instance.constructorNames = it.split(";").filter { it.isNotEmpty() }.toTypedArray()
+        }
+
+        path("emmylua.requireLikeFunctions")?.asString?.let {
+            LuaSettings.instance.requireLikeFunctions = it.split(";").filter { it.isNotEmpty() }.toTypedArray()
+        }
 
         return SettingsUpdateResult(associationChanged)
     }
