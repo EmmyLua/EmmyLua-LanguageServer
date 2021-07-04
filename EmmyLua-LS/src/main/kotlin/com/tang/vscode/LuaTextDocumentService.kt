@@ -227,8 +227,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                         }
 
                                         if (sig.hasVarargs() && LuaSettings.instance.varargHint) {
-                                            for(paramIndex in literalMap.keys){
-                                                if(paramIndex >= index) {
+                                            for (paramIndex in literalMap.keys) {
+                                                if (paramIndex >= index) {
                                                     literalMap[paramIndex]?.let {
                                                         paramHints[it].hint = "var" + (paramIndex - index).toString()
                                                     }
@@ -628,6 +628,30 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     psi.acceptChildren(object : LuaVisitor() {
                         override fun visitComment(comment: PsiComment?) {
                             comment?.let {
+                                // 判断是不是行内注释
+                                if (it.tokenType.toString() == "SHORT_COMMENT") {
+                                    var sibling = it.prevSibling
+                                    while (sibling != null) {
+                                        if (sibling.node.elementType.toString() != "WHITE_SPACE") {
+                                            val commentLine = file.getLine(comment.textRange.startOffset).first
+                                            val siblingLine = file.getLine(sibling.textRange.endOffset).first
+                                            if (siblingLine == commentLine) {
+                                                if (sibling is LuaLocalDef
+                                                        || sibling is LuaAssignStat
+                                                        || sibling is LuaExprStat
+                                                        || sibling is LuaBreakStat
+                                                        || sibling is LuaReturnStat
+                                                        || sibling is LuaLabelStat) {
+                                                    formatter.attachTo(sibling, it)
+                                                    return
+                                                }
+                                            }
+                                            break;
+                                        }
+                                        sibling = sibling.prevSibling
+                                    }
+                                }
+
                                 formatter.add(it, FormattingType.Comment)
                             }
                         }
@@ -707,6 +731,11 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                         override fun visitBlock(o: LuaBlock) {
                             formatter.add(o, FormattingType.Block)
+                            o.acceptChildren(this)
+                        }
+
+                        override fun visitStatement(o: LuaStatement) {
+                            formatter.add(o, FormattingType.Statement)
                             o.acceptChildren(this)
                         }
 
@@ -855,6 +884,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     }
                                     "ID" -> {
                                         formatter.add(element, FormattingType.Id)
+                                    }
+                                    else -> {
+                                        // ignore
                                     }
                                 }
                             }
