@@ -833,6 +833,17 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         ctx.print(lineSeparator.repeat(FormattingOptions.functionSpacing))
                     }
                 }
+                else if(type == FormattingType.IfStatement){
+                    if (lastElement?.type == FormattingType.Comment) {
+                        if (lineDiff > 1) {
+                            // 保持原始布局
+                            ctx.print(lineSeparator.repeat(lineDiff - 1))
+                        }
+                    } else {
+                        // if 语句保持1行间距
+                        ctx.print(lineSeparator)
+                    }
+                }
                 // 在语句块和前文之间至少一个空格
                 else if (type == FormattingType.ForAStatement || type == FormattingType.ForBStatement || type == FormattingType.RepeatStatement
                         || type == FormattingType.WhileStatement

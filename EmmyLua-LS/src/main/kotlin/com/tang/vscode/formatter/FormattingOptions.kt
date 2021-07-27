@@ -18,6 +18,8 @@ object FormattingOptions {
     var tableLineWidth = 80
     // 调用表达式是否要对齐到第一个参数
     var callExprAlignToFirstArg = true
+    // 格式化换行对齐到vscode 垂直对齐线
+    var alignToVerticalAlignmentLine = true
     // 函数第一个参数之前保持一个空格
     var blankBeforeFirstArg = false
 }
