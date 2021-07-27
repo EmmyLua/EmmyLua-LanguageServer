@@ -23,6 +23,7 @@ import com.tang.lsp.FileURI
 import com.tang.lsp.ILuaFile
 import com.tang.lsp.Word
 import com.tang.lsp.toRange
+import com.tang.vscode.diagnostics.DiagnosticsService
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -128,25 +129,28 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         val psi = node.psi
         _myPsi = psi as LuaPsiFile
         _myPsi?.virtualFile = this
-        PsiTreeUtil.processElements(psi) {
-            if (it is PsiErrorElement) {
-                val diagnostic = Diagnostic()
-                diagnostic.message = it.errorDescription
-                diagnostic.severity =
-                    if (it.parent is LuaDocPsiElement) DiagnosticSeverity.Warning else DiagnosticSeverity.Error
-                diagnostic.range = it.textRange.toRange(this)
-                diagnostics.add(diagnostic)
-            } else if (it is LuaExprStat) {
-                if (it.expr !is LuaCallExpr && PsiTreeUtil.findChildOfType(it, PsiErrorElement::class.java) == null) {
-                    val diagnostic = Diagnostic()
-                    diagnostic.message = "non-complete statement"
-                    diagnostic.severity = DiagnosticSeverity.Error
-                    diagnostic.range = it.textRange.toRange(this)
-                    diagnostics.add(diagnostic)
-                }
-            }
-            true
-        }
+
+        DiagnosticsService.diagnosticFile(this, diagnostics)
+
+//        PsiTreeUtil.processElements(psi) {
+//            if (it is PsiErrorElement) {
+//                val diagnostic = Diagnostic()
+//                diagnostic.message = it.errorDescription
+//                diagnostic.severity =
+//                    if (it.parent is LuaDocPsiElement) DiagnosticSeverity.Warning else DiagnosticSeverity.Error
+//                diagnostic.range = it.textRange.toRange(this)
+//                diagnostics.add(diagnostic)
+//            } else if (it is LuaExprStat) {
+//                if (it.expr !is LuaCallExpr && PsiTreeUtil.findChildOfType(it, PsiErrorElement::class.java) == null) {
+//                    val diagnostic = Diagnostic()
+//                    diagnostic.message = "non-complete statement"
+//                    diagnostic.severity = DiagnosticSeverity.Error
+//                    diagnostic.range = it.textRange.toRange(this)
+//                    diagnostics.add(diagnostic)
+//                }
+//            }
+//            true
+//        }
         index()
     }
 

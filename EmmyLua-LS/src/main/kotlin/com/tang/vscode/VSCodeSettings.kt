@@ -3,6 +3,7 @@ package com.tang.vscode
 import com.google.gson.*
 import com.tang.intellij.lua.IVSCodeSettings
 import com.tang.intellij.lua.project.LuaSettings
+import com.tang.vscode.diagnostics.DiagnosticsOptions
 import com.tang.vscode.formatter.FormattingOptions
 import com.yevdo.jwildcard.JWildcard
 
@@ -122,6 +123,20 @@ object VSCodeSettings : IVSCodeSettings {
         path("emmylua.requireLikeFunctions")?.asString?.let {
             LuaSettings.instance.requireLikeFunctions = it.split(";").filter { it.isNotEmpty() }.toTypedArray()
         }
+
+        path("emmylua.diagnostics.parameterValidation")?.asBoolean?.let {
+            DiagnosticsOptions.parameterValidation = it
+        }
+        path("emmylua.diagnostics.anyTypeCanAssignToAnyDefineType")?.asBoolean?.let {
+            DiagnosticsOptions.anyTypeCanAssignToAnyDefineType = it
+        }
+        path("emmylua.diagnostics.defineAnyTypeCanBeAssignedByAnyVariable")?.asBoolean?.let {
+            DiagnosticsOptions.defineAnyTypeCanBeAssignedByAnyVariable = it
+        }
+        path("emmylua.diagnostics.defineTypeCanReceiveNilType")?.asBoolean?.let {
+            DiagnosticsOptions.defineTypeCanReceiveNilType = it
+        }
+        
 
         return SettingsUpdateResult(associationChanged)
     }
