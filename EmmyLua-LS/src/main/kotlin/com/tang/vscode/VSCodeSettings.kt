@@ -136,7 +136,7 @@ object VSCodeSettings : IVSCodeSettings {
         path("emmylua.diagnostics.defineTypeCanReceiveNilType")?.asBoolean?.let {
             DiagnosticsOptions.defineTypeCanReceiveNilType = it
         }
-        
+
 
         return SettingsUpdateResult(associationChanged)
     }

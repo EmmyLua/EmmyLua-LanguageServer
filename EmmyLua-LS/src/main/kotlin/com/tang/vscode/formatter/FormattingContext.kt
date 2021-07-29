@@ -11,16 +11,18 @@ class FormattingContext {
     private var firstEnv = true
 
 
-    public fun enterBlockEnv(indent: Int = -1, firstLineIndent: Boolean = true) {
+    public fun enterBlockEnv(indent: Int = -1, autoRoundToIndent: Boolean = false) {
         if (firstEnv) {
             firstEnv = false
             blockEnvQueue.add(FormattingBlockEnv(this, 0))
             return
         }
 
+
         val lastEnv = blockEnvQueue.last()
         var newIndent = if (indent == -1) lastEnv.indent + FormattingOptions.indent else indent
-        if (FormattingOptions.alignToVerticalAlignmentLine) {
+
+        if (FormattingOptions.alignToVerticalAlignmentLine && autoRoundToIndent) {
             val rest = newIndent % FormattingOptions.indent
             // 如果基本缩进为1,2 则不断向前对齐
             // 还有选3缩进的吗？？
