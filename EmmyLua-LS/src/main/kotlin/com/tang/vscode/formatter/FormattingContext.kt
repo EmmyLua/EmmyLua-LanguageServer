@@ -27,7 +27,7 @@ class FormattingContext {
             // 如果基本缩进为1,2 则不断向前对齐
             // 还有选3缩进的吗？？
             // 4缩进的时候也尽量向前对齐
-            if (rest < 3) {
+            if (rest < 4) {
                 newIndent -= rest
             } else {
                 newIndent += FormattingOptions.indent - rest
