@@ -130,28 +130,10 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         _myPsi = psi as LuaPsiFile
         _myPsi?.virtualFile = this
 
-        DiagnosticsService.diagnosticFile(this, diagnostics)
-
-//        PsiTreeUtil.processElements(psi) {
-//            if (it is PsiErrorElement) {
-//                val diagnostic = Diagnostic()
-//                diagnostic.message = it.errorDescription
-//                diagnostic.severity =
-//                    if (it.parent is LuaDocPsiElement) DiagnosticSeverity.Warning else DiagnosticSeverity.Error
-//                diagnostic.range = it.textRange.toRange(this)
-//                diagnostics.add(diagnostic)
-//            } else if (it is LuaExprStat) {
-//                if (it.expr !is LuaCallExpr && PsiTreeUtil.findChildOfType(it, PsiErrorElement::class.java) == null) {
-//                    val diagnostic = Diagnostic()
-//                    diagnostic.message = "non-complete statement"
-//                    diagnostic.severity = DiagnosticSeverity.Error
-//                    diagnostic.range = it.textRange.toRange(this)
-//                    diagnostics.add(diagnostic)
-//                }
-//            }
-//            true
-//        }
         index()
+
+        // 索引建立完之后再诊断
+        DiagnosticsService.diagnosticFile(this, diagnostics)
     }
 
     /*private fun getLineStart(line: Int): Int {
