@@ -965,15 +965,21 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
 
 
     private fun printBinaryExpr(element: FormattingElement) {
-        var currentLine = file.getLine(element.textRange.startOffset).first
+        // 二元表达式的布局 可能是 aaa and bbb
+        // 也可能是 aaa or
+        //          bbb
+        // 还可能是 aaa
+        //          or bbb
         var lastElement: FormattingElement? = null
         element.children.forEach {
-            val line = file.getLine(it.textRange.startOffset).first
-            if (line > currentLine) {
-                currentLine = line
-                if (lastElement?.type != FormattingType.Comment) {
-                    //则换行
-                    ctx.print(lineSeparator)
+            lastElement?.let {lastElement->
+                val lastElementLine = file.getLine(lastElement.textRange.endOffset).first
+                val line = file.getLine(it.textRange.startOffset).first
+                if (line > lastElementLine) {
+                    if (lastElement.type != FormattingType.Comment) {
+                        //则换行
+                        ctx.print(lineSeparator)
+                    }
                 }
             }
 
@@ -1407,6 +1413,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
 
     private fun printCallArgs(element: FormattingElement) {
         var firstArg = true
+        var isAlignment = false
         // 上一个参数
         var lastArgOrBracket: FormattingElement? = null;
         element.children.forEach {
@@ -1419,7 +1426,6 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         }
                         "(" -> {
                             ctx.print(text)
-                            ctx.enterBlockEnv()
                             lastArgOrBracket = it
                         }
                         ")" -> {
@@ -1428,7 +1434,9 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                     ctx.print(lineSeparator)
                                 }
                             }
-                            ctx.exitBlockEnv()
+                            if (isAlignment) {
+                                ctx.exitBlockEnv()
+                            }
                             ctx.print(text)
                         }
                         else -> {
@@ -1437,21 +1445,18 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                     }
                 }
                 else -> {
-                    if (firstArg) {
-                        if (FormattingOptions.blankBeforeFirstArg) {
-                            ctx.print(FormattingOptions.emptyWhite)
-                        }
-                        firstArg = false
-                    }
-
                     lastArgOrBracket?.let { arg ->
                         if (file.getLine(arg.textRange.endOffset).first != file.getLine(it.textRange.startOffset).first) {
                             ctx.print(lineSeparator)
                         }
                     }
-
-
                     printElement(it)
+
+                    if (firstArg) {
+                        ctx.enterBlockEnv()
+                        isAlignment = true
+                        firstArg = false
+                    }
                     lastArgOrBracket = it
                 }
             }
