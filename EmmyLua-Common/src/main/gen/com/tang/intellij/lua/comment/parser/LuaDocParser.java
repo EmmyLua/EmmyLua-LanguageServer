@@ -53,6 +53,9 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     else if (t == TAG_CLASS) {
       r = tag_class(b, 0);
     }
+    else if(t == TAG_ENUM){
+      r = tag_class(b, 0);
+    }
     else if (t == TAG_DEF) {
       r = tag_def(b, 0);
     }
@@ -98,7 +101,11 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     exit_section_(b, 0, m, t, r, true, TRUE_CONDITION);
   }
 
-  protected boolean parse_root_(IElementType t, PsiBuilder b, int l) {
+  protected boolean parse_root_(IElementType t, PsiBuilder b) {
+    return parse_root_(t, b, 0);
+  }
+
+  static boolean parse_root_(IElementType t, PsiBuilder b, int l) {
     return doc(b, l + 1);
   }
 
@@ -218,9 +225,11 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   /* ********************************************************** */
   // '@' (tag_param
   //     | tag_alias
+  //     | tag_suppress
   //     | tag_vararg
   //     | tag_return
   //     | tag_class
+  //     | tag_enum
   //     | tag_field
   //     | tag_type
   //     | tag_lan
@@ -242,9 +251,11 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
 
   // tag_param
   //     | tag_alias
+  //     | tag_suppress
   //     | tag_vararg
   //     | tag_return
   //     | tag_class
+  //     | tag_enum
   //     | tag_field
   //     | tag_type
   //     | tag_lan
@@ -258,9 +269,11 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     boolean r;
     r = tag_param(b, l + 1);
     if (!r) r = tag_alias(b, l + 1);
+    if (!r) r = tag_suppress(b, l + 1);
     if (!r) r = tag_vararg(b, l + 1);
     if (!r) r = tag_return(b, l + 1);
     if (!r) r = tag_class(b, l + 1);
+    if (!r) r = consumeToken(b, TAG_ENUM);
     if (!r) r = tag_field(b, l + 1);
     if (!r) r = tag_type(b, l + 1);
     if (!r) r = tag_lan(b, l + 1);
@@ -589,10 +602,9 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // (TAG_NAME_CLASS|TAG_NAME_MODULE) ID (EXTENDS class_name_ref)? comment_string?
+  // (TAG_NAME_CLASS|TAG_NAME_MODULE|TAG_NAME_ENUM) ID (EXTENDS class_name_ref)? comment_string?
   public static boolean tag_class(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "tag_class")) return false;
-    if (!nextTokenIs(b, "<tag class>", TAG_NAME_CLASS, TAG_NAME_MODULE)) return false;
     boolean r, p;
     Marker m = enter_section_(b, l, _NONE_, TAG_CLASS, "<tag class>");
     r = tag_class_0(b, l + 1);
@@ -604,12 +616,13 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     return r || p;
   }
 
-  // TAG_NAME_CLASS|TAG_NAME_MODULE
+  // TAG_NAME_CLASS|TAG_NAME_MODULE|TAG_NAME_ENUM
   private static boolean tag_class_0(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "tag_class_0")) return false;
     boolean r;
     r = consumeToken(b, TAG_NAME_CLASS);
     if (!r) r = consumeToken(b, TAG_NAME_MODULE);
+    if (!r) r = consumeToken(b, TAG_NAME_ENUM);
     return r;
   }
 
@@ -855,6 +868,41 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     boolean r;
     Marker m = enter_section_(b);
     r = consumeTokens(b, 0, SHARP, ID);
+    exit_section_(b, m, null, r);
+    return r;
+  }
+
+  /* ********************************************************** */
+  // TAG_NAME_SUPPRESS ID (',' ID)*
+  public static boolean tag_suppress(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "tag_suppress")) return false;
+    if (!nextTokenIs(b, TAG_NAME_SUPPRESS)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, TAG_SUPPRESS, null);
+    r = consumeTokens(b, 1, TAG_NAME_SUPPRESS, ID);
+    p = r; // pin = 1
+    r = r && tag_suppress_2(b, l + 1);
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  // (',' ID)*
+  private static boolean tag_suppress_2(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "tag_suppress_2")) return false;
+    while (true) {
+      int c = current_position_(b);
+      if (!tag_suppress_2_0(b, l + 1)) break;
+      if (!empty_element_parsed_guard_(b, "tag_suppress_2", c)) break;
+    }
+    return true;
+  }
+
+  // ',' ID
+  private static boolean tag_suppress_2_0(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "tag_suppress_2_0")) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeTokens(b, 0, COMMA, ID);
     exit_section_(b, m, null, r);
     return r;
   }

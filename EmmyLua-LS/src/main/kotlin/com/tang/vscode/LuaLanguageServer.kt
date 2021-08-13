@@ -98,6 +98,8 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.workspace.workspaceFolders = WorkspaceFoldersOptions()
         capabilities.workspace.workspaceFolders.supported = true
         capabilities.workspace.workspaceFolders.changeNotifications = Either.forLeft(WORKSPACE_FOLDERS_CAPABILITY_ID)
+        capabilities.foldingRangeProvider = Either.forLeft(true)
+        capabilities.documentFormattingProvider = true
 
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Full)
 

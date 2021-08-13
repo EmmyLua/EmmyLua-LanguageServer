@@ -10,11 +10,16 @@ enum class AnnotatorType {
     Global,
     DocName,
     Upvalue,
+    NotUse,
+    ParamHint,
+    LocalHint
 }
 
 data class AnnotatorParams(val uri: String)
 
-data class Annotator(val uri: String, val ranges: List<Range>, val type: AnnotatorType)
+data class RenderRange(val range: Range, var hint: String?)
+
+data class Annotator(val uri: String, val ranges: List<RenderRange>, val type: AnnotatorType)
 
 data class ProgressReport(val text: String, val percent: Float)
 

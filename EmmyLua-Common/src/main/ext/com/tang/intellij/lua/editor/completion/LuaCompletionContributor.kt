@@ -20,9 +20,14 @@ import com.intellij.codeInsight.completion.CompletionContributor
 import com.intellij.codeInsight.completion.CompletionInitializationContext
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionType
+import com.intellij.patterns.PatternCondition
 import com.intellij.patterns.PlatformPatterns.psiElement
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.tree.TokenSet
+import com.intellij.util.ProcessingContext
 import com.tang.intellij.lua.Constants
+import com.tang.intellij.lua.project.LuaSettings
 import com.tang.intellij.lua.psi.*
 
 /**
@@ -31,6 +36,7 @@ import com.tang.intellij.lua.psi.*
  */
 class LuaCompletionContributor : CompletionContributor() {
     private var suggestWords = true
+
     init {
         //可以override
         /*extend(CompletionType.BASIC, SHOW_OVERRIDE, OverrideCompletionProvider())
@@ -71,6 +77,13 @@ class LuaCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, SHOW_CLASS_FIELD, ClassMemberCompletionProvider())
         //提示全局函数,local变量,local函数
         extend(CompletionType.BASIC, IN_NAME_EXPR, LocalAndGlobalCompletionProvider(LocalAndGlobalCompletionProvider.ALL))
+        // 表的[]索引方式提示
+        extend(CompletionType.BASIC, IN_TABLE_STRING_INDEX, TableStringIndexCompletionProvider())
+        // lua5.4
+        extend(CompletionType.BASIC, ATTRIBUTE, AttributeCompletionProvider())
+        // enum
+        extend(CompletionType.BASIC, SHOW_ENUM, EnumCompletionProvider())
+
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
@@ -129,10 +142,16 @@ class LuaCompletionContributor : CompletionContributor() {
                 .withParent(
                         psiElement(LuaTypes.LITERAL_EXPR).withParent(
                                 psiElement(LuaArgs::class.java).afterSibling(
-                                        psiElement().withName(Constants.WORD_REQUIRE)
+                                        psiElement().with(RequireLikePatternCondition())
                                 )
                         )
                 )
+
+        private val SHOW_ENUM = psiElement(LuaTypes.ID)
+                    .withParent(psiElement(LuaNameExpr::class.java)
+                            .withParent(psiElement(LuaArgs::class.java))
+                )
+
 
         private val GOTO = psiElement(LuaTypes.ID).withParent(LuaGotoStat::class.java)
 
@@ -142,6 +161,20 @@ class LuaCompletionContributor : CompletionContributor() {
                 ),
                 psiElement(LuaTypes.ID).withParent(LuaTableField::class.java)
         )
+
+        private val IN_TABLE_STRING_INDEX = psiElement().andOr(
+//                psiElement(LuaTypes.LITERAL_EXPR).withParent(
+//                        psiElement(LuaIndexExpr::class.java)
+//                ),
+                psiElement(LuaTypes.STRING)
+                        .withParent(
+                                psiElement(LuaTypes.LITERAL_EXPR).withParent(
+                                        psiElement(LuaIndexExpr::class.java)
+                                )
+                        )
+        )
+
+        private val ATTRIBUTE = psiElement(LuaTypes.ID).withParent(LuaAttribute::class.java)
 
         private fun suggestWordsInFile(parameters: CompletionParameters) {
             /*val session = CompletionSession[parameters]!!
@@ -161,5 +194,12 @@ class LuaCompletionContributor : CompletionContributor() {
                 true
             }*/
         }
+    }
+}
+
+class RequireLikePatternCondition : PatternCondition<PsiElement>("requireLike") {
+    override fun accepts(psi: PsiElement, context: ProcessingContext?): Boolean {
+        val name = (psi as? PsiNamedElement)?.name
+        return if (name != null) LuaSettings.isRequireLikeFunctionName(name) else false
     }
 }

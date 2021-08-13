@@ -11,6 +11,7 @@ import com.tang.intellij.lua.psi.LuaPsiElement
 import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
 import com.tang.intellij.lua.ty.ITyFunction
+import com.tang.intellij.lua.ty.hasVarargs
 import com.tang.lsp.ILuaFile
 import org.eclipse.lsp4j.CompletionItemKind
 import javax.swing.Icon
@@ -87,6 +88,9 @@ object LookupElementFactory {
             for (i in pIndex until params.size) {
                 val p = params[i]
                 strings.add(p.name)
+            }
+            if(signature.hasVarargs()){
+                strings.add("...")
             }
             append(strings.joinToString(","))
             append(")")

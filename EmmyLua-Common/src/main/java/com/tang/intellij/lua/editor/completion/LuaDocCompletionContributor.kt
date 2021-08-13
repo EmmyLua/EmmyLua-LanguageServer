@@ -33,6 +33,7 @@ import com.tang.intellij.lua.psi.LuaFuncBodyOwner
 import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITyClass
+import org.eclipse.lsp4j.CompletionItemKind
 
 /**
  * doc 相关代码完成
@@ -86,8 +87,21 @@ class LuaDocCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, SHOW_CLASS, object : CompletionProvider<CompletionParameters>() {
             override fun addCompletions(completionParameters: CompletionParameters, processingContext: ProcessingContext, completionResultSet: CompletionResultSet) {
                 val project = completionParameters.position.project
-                LuaShortNamesManager.getInstance(project).processAllClassNames(project, Processor{
-                    completionResultSet.addElement(LookupElementBuilder.create(it).withIcon(LuaIcons.CLASS))
+                // 为什么 text会带emmy?
+                val prefix = completionParameters.position.text.substringBefore("emmy")
+                val dotIndex = completionParameters.position.text.indexOf('.')
+                LuaShortNamesManager.getInstance(project).processAllClassNames(project, Processor {
+                    if (dotIndex != -1 && prefix.isNotEmpty()) {
+                        if (it.startsWith(prefix)) {
+                            val luaLookElement = LuaLookupElement(it.substringAfter(prefix))
+                            luaLookElement.kind = CompletionItemKind.Class
+                            completionResultSet.addElement(luaLookElement)
+                        }
+                    } else {
+                        val luaLookElement = LuaLookupElement(it)
+                        luaLookElement.kind = CompletionItemKind.Class
+                        completionResultSet.addElement(luaLookElement)
+                    }
                     true
                 })
 

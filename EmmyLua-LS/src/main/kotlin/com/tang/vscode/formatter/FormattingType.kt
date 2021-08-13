@@ -1,0 +1,57 @@
+package com.tang.vscode.formatter
+
+enum class FormattingType {
+    General,
+    Comment,
+    BlockComment,
+    Function,
+    LocalFunction,
+
+    FunctionBody,
+    Block,
+    DoBlock,
+
+    Statement,
+    IfStatement,
+    ForAStatement,
+    ForBStatement,
+    WhileStatement,
+    RepeatStatement,
+    AssignStatement,
+    LocalStatement,
+    ExprStatement,
+    BreakStatement,
+    EmptyStatement,
+    ReturnStatement,
+    GotoStatement,
+    LabelStatement,
+    CommentStatement,
+
+    CallExpr,
+    IndexExpr,
+    LiteralExpr,
+    BinaryExpr,
+    UnaryExpr,
+    NamedExpr,
+    TableExpr,
+    TableField,
+    TableFieldSep,
+
+    Closure,
+    ParentExpr,
+    Expr,
+    ExprList,
+
+    Arg,
+    CallArgs,
+    SingleArg,
+    KeyWorld,
+    BinaryOperator,
+    UnaryOperator,
+    Operator,
+    NameDef,
+    NameDefList,
+    Attribute,
+    Id,
+    Error
+}

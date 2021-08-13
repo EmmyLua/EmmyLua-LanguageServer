@@ -80,6 +80,7 @@ interface ITy : Comparable<ITy> {
     fun accept(visitor: ITyVisitor)
 
     fun acceptChildren(visitor: ITyVisitor)
+
 }
 
 fun ITy.hasFlag(flag: Int): Boolean = flags and flag == flag

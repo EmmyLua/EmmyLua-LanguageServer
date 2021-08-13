@@ -23,11 +23,12 @@ import com.tang.lsp.FileURI
 import com.tang.lsp.ILuaFile
 import com.tang.lsp.Word
 import com.tang.lsp.toRange
+import com.tang.vscode.diagnostics.DiagnosticsService
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 
-internal data class Line(val line: Int, val startOffset:Int, val stopOffset: Int)
+internal data class Line(val line: Int, val startOffset: Int, val stopOffset: Int)
 
 class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, VirtualFile {
     private var _text: CharSequence = ""
@@ -120,33 +121,19 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         unindex()
         val parser = LuaParser()
         val builder = PsiBuilderFactory.getInstance().createBuilder(
-                LuaParserDefinition(),
-                FlexAdapter(_LuaLexer(LuaLanguageLevel.LUA54)),
-                text
+            LuaParserDefinition(),
+            FlexAdapter(_LuaLexer(LuaLanguageLevel.LUA54)),
+            text
         )
         val node = parser.parse(LuaParserDefinition.FILE, builder)
         val psi = node.psi
         _myPsi = psi as LuaPsiFile
         _myPsi?.virtualFile = this
-        PsiTreeUtil.processElements(psi) {
-            if (it is PsiErrorElement) {
-                val diagnostic = Diagnostic()
-                diagnostic.message = it.errorDescription
-                diagnostic.severity = if (it.parent is LuaDocPsiElement) DiagnosticSeverity.Warning else DiagnosticSeverity.Error
-                diagnostic.range = it.textRange.toRange(this)
-                diagnostics.add(diagnostic)
-            } else if (it is LuaExprStat) {
-                if (it.expr !is LuaCallExpr && PsiTreeUtil.findChildOfType(it, PsiErrorElement::class.java) == null) {
-                    val diagnostic = Diagnostic()
-                    diagnostic.message = "non-complete statement"
-                    diagnostic.severity = DiagnosticSeverity.Error
-                    diagnostic.range = it.textRange.toRange(this)
-                    diagnostics.add(diagnostic)
-                }
-            }
-            true
-        }
+
         index()
+
+        // 索引建立完之后再诊断
+        DiagnosticsService.diagnosticFile(this, diagnostics)
     }
 
     /*private fun getLineStart(line: Int): Int {
@@ -155,10 +142,33 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
     @Synchronized
     override fun getLine(offset: Int): Pair<Int, Int> {
-        val line = _lines.firstOrNull { it.startOffset <= offset && it.stopOffset >= offset }
-        if (line != null)
-            return Pair(line.line, offset - line.startOffset)
-        return Pair(0, 0)
+        if (_lines.size <= 1) {
+            return Pair(0, offset)
+        }
+        var lowIndex = 0
+        var highIndex = _lines.size - 1
+        var currentLine: Line? = null
+        while (lowIndex <= highIndex) {
+            val index = (lowIndex + highIndex) / 2
+            val line = _lines[index]
+            if (line.startOffset <= offset && line.stopOffset >= offset) {
+                currentLine = line
+                break
+            }
+            if (offset < line.startOffset) {
+                highIndex = index - 1
+            } else {
+                lowIndex = index + 1
+            }
+        }
+
+        if (currentLine != null) {
+            //如果找到了
+            return Pair(currentLine.line, offset - currentLine.startOffset)
+        } else {
+            // 没找到那么就认为是lowIndex所在行第0个字符,也可以是currentLine所在行最后一个+1字符
+            return Pair(_lines[lowIndex].line, 0)
+        }
     }
 
     @Synchronized
@@ -183,10 +193,10 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     override fun processWords(processor: (w: Word) -> Boolean) {
         if (_words == null) {
             val scanner = DefaultWordsScanner(
-                    LuaLexer(),
-                    TokenSet.EMPTY,
-                    TokenSet.EMPTY,
-                    TokenSet.EMPTY
+                LuaLexer(),
+                TokenSet.EMPTY,
+                TokenSet.EMPTY,
+                TokenSet.EMPTY
             )
             val list = mutableListOf<Word>()
             scanner.processWords(this._text) {
