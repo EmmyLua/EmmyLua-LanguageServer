@@ -972,7 +972,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
         //          or bbb
         var lastElement: FormattingElement? = null
         element.children.forEach {
-            lastElement?.let {lastElement->
+            lastElement?.let { lastElement ->
                 val lastElementLine = file.getLine(lastElement.textRange.endOffset).first
                 val line = file.getLine(it.textRange.startOffset).first
                 if (line > lastElementLine) {
@@ -1064,6 +1064,11 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                                         lastArgs.children.forEach { child ->
                                             val ch = file.getLine(child.textRange.startOffset).second
                                             minIndent = min(ch, minIndent)
+                                            // minIndent 会试图向下圆整到缩进的整数倍
+                                            val rest = minIndent % FormattingOptions.indent
+                                            if (rest > 0) {
+                                                minIndent -= rest
+                                            }
                                         }
                                     }
                                 }
