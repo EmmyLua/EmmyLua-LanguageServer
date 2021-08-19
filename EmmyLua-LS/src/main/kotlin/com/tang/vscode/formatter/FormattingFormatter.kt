@@ -3,6 +3,7 @@ package com.tang.vscode.formatter
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.tang.intellij.lua.psi.LuaTableExpr
 import com.tang.lsp.ILuaFile
 import kotlin.math.max
 import kotlin.math.min
@@ -1156,11 +1157,10 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
         printTableExprAlignment(element)
     }
 
-    // 全换行对齐
     private fun printTableExprLineBreakAlignment(element: FormattingElement) {
         var firstTableField = true
         var lastFieldOrSepElement: FormattingElement? = null
-        //执行换行对齐
+
         for (index in element.children.indices) {
             val child = element.children[index]
             when (child.type) {
@@ -1222,6 +1222,7 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                         }
                         firstTableField = false
                     }
+
                     printElement(child)
                     lastFieldOrSepElement = child
                 }
@@ -1250,20 +1251,21 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                 FormattingType.TableFieldSep -> {
                     ctx.print(child.psi.text)
                     var isAddLineSeparator = true
-                    // 考察一下 下一个child是不是comment
+
                     if (index + 1 < element.children.size) {
                         val nextChild = element.children[index + 1]
-                        if (nextChild.type == FormattingType.Comment) {
-                            // 考察一下该注释是否和自己在同一行
-                            val sepLine = file.getLine(child.textRange.endOffset).first
-                            val commentLine = file.getLine(nextChild.textRange.endOffset).first
-                            if (sepLine == commentLine) {
-                                isAddLineSeparator = false
-                            }
+                        val sepLine = file.getLine(child.textRange.endOffset).first
+                        val nextElementLine = file.getLine(nextChild.textRange.endOffset).first
+
+                        if (sepLine == nextElementLine) {
+                            isAddLineSeparator = (nextChild.type == FormattingType.TableField && ctx.equipOperatorAlignment)
                         }
+
                     }
                     if (isAddLineSeparator) {
                         ctx.print(lineSeparator)
+                    } else {
+                        ctx.print(emptyWhite)
                     }
                     lastFieldOrSepElement = child
                 }
@@ -1567,10 +1569,11 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
         element: FormattingElement,
         alignmentIndent: Int = -1
     ) {
+        var isLastElement = false
         for (index in element.children.indices) {
             val childElement = element.children[index]
             if (index > 0 && index == element.children.lastIndex - 1) {
-                ctx.enterBlockEnv(alignmentIndent)
+                isLastElement = true
             }
             when (childElement.type) {
                 FormattingType.Operator -> {
@@ -1586,11 +1589,18 @@ class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
                             }
                         }
                         ")" -> {
-                            ctx.exitBlockEnv()
+
                             ctx.print(text)
                         }
                         else -> {
-                            printElement(childElement)
+                            if (isLastElement) {
+                                isLastElement = false
+                                ctx.enterBlockEnv(alignmentIndent)
+                                printElement(element)
+                                ctx.exitBlockEnv()
+                            } else {
+                                printElement(childElement)
+                            }
                         }
                     }
                 }
