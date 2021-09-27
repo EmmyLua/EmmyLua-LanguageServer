@@ -2,7 +2,7 @@ package com.tang.vscode.diagnostics
 
 object DiagnosticsOptions {
     // 参数验证诊断
-    var parameterValidation = true
+    var parameterValidation = false
 
     // any 类型是否可以赋值给其他类型
     var anyTypeCanAssignToAnyDefineType = true
