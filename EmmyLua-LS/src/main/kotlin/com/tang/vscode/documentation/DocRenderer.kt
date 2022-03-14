@@ -85,7 +85,7 @@ internal fun renderTy(sb: StringBuilder, ty: ITy) {
 }
 
 internal fun renderSignature(sb: StringBuilder, sig: IFunSignature) {
-    sb.wrap("(", "): ") {
+    sb.wrap("(", ") -> ") {
         var idx = 0
         sig.params.forEach {
             if (idx++ != 0) sb.append(", ")

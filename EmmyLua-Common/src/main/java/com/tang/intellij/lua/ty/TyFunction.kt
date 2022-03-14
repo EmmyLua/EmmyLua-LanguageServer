@@ -132,7 +132,7 @@ abstract class FunSignatureBase(override val colonCall: Boolean,
                 paramSB.add("...:"+ it.displayName)
             }
         }
-        "fun(${paramSB.joinToString(", ")}):${returnTy.displayName}"
+        "(${paramSB.joinToString(", ")}) -> ${returnTy.displayName}"
     }
 
     override val paramSignature: String get() {
