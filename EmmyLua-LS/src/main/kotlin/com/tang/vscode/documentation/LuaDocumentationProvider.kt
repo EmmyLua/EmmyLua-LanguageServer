@@ -108,19 +108,30 @@ class LuaDocumentationProvider : DocumentationProvider {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
         val ty = classMember.guessType(context)
-
         //base info
         if (parentType != null) {
             sb.wrapLanguage("lua") {
+                when (classMember.visibility) {
+                    Visibility.PUBLIC -> {
+                        sb.append("(public) ")
+                    }
+                    Visibility.PRIVATE -> {
+                        sb.append("(private) ")
+                    }
+                    Visibility.PROTECTED -> {
+                        sb.append("(protected) ")
+                    }
+                }
                 when (ty) {
                     is TyFunction -> {
                         sb.append("function ")
-                        if(parentType.displayName != "_G") {
+                        if (parentType.displayName != "_G") {
                             renderTy(sb, parentType)
                             sb.append(if (ty.isColonCall) ":" else ".")
                         }
                         sb.append(classMember.name)
                         renderSignature(sb, ty.mainSignature)
+
                         return@wrapLanguage
                     }
                     is TyClass -> {
