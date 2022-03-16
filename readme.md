@@ -127,3 +127,7 @@ add following code to your `~/.emacs` or `.emacs.d/init.el` .
 work with company-mode and lua-mode in Emacs 26.1:
 
 ![work-with-emacs](img/work-with-emacs.png)
+
+## Adding to Vim/NeoVim
+
+Install [Vim-EasyComplete](https://github.com/jayli/vim-easycomplete). Run `InstallLspServer` after opening a lua file with vim.
