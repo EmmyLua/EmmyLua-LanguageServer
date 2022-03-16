@@ -85,7 +85,7 @@ internal fun renderTy(sb: StringBuilder, ty: ITy) {
 }
 
 internal fun renderSignature(sb: StringBuilder, sig: IFunSignature) {
-    sb.wrap("(", "): ") {
+    sb.wrap("(", ") -> ") {
         var idx = 0
         sig.params.forEach {
             if (idx++ != 0) sb.append(", ")
@@ -171,10 +171,11 @@ internal fun renderFieldDef(sb: StringBuilder, def: LuaDocTagField) {
 
 internal fun renderDocParam(sb: StringBuilder, child: LuaDocTagParam) {
     val paramNameRef = child.paramNameRef
-    if (paramNameRef != null) {
+    val commentString = child.commentString
+    if (paramNameRef != null && commentString != null && commentString.text.isNotEmpty()) {
         sb.appendLine("@_param_ `${paramNameRef.text}`: ")
         renderTypeUnion(null, null, sb, child.ty)
-        renderCommentString("  ", null, sb, child.commentString)
+        renderCommentString("  ", null, sb, commentString)
     }
 }
 

@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.2.31'
+    ext.kotlin_version = '1.6.0'
     repositories {
         mavenCentral()
     }
@@ -9,8 +9,8 @@ buildscript {
 }
 
 plugins {
-    id "org.jetbrains.kotlin.jvm" version "1.2.30"
-    id 'com.github.johnrengelman.shadow' version '4.0.3'
+    id "org.jetbrains.kotlin.jvm" version "1.6.0"
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
 }
 
 apply plugin: "java"

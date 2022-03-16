@@ -90,6 +90,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.codeLensProvider = CodeLensOptions(true)
         capabilities.documentHighlightProvider = true
         capabilities.renameProvider = true
+
         capabilities.signatureHelpProvider = SignatureHelpOptions(listOf(",", "("))
         capabilities.documentSymbolProvider = true
         capabilities.workspaceSymbolProvider = true
@@ -99,7 +100,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.workspace.workspaceFolders.supported = true
         capabilities.workspace.workspaceFolders.changeNotifications = Either.forLeft(WORKSPACE_FOLDERS_CAPABILITY_ID)
         capabilities.foldingRangeProvider = Either.forLeft(true)
-        capabilities.documentFormattingProvider = true
+//        capabilities.documentFormattingProvider = true
 
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Full)
 

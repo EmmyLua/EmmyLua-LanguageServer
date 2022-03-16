@@ -76,7 +76,11 @@ class LuaCompletionContributor : CompletionContributor() {
         //提示属性, 提示方法
         extend(CompletionType.BASIC, SHOW_CLASS_FIELD, ClassMemberCompletionProvider())
         //提示全局函数,local变量,local函数
-        extend(CompletionType.BASIC, IN_NAME_EXPR, LocalAndGlobalCompletionProvider(LocalAndGlobalCompletionProvider.ALL))
+        extend(
+            CompletionType.BASIC,
+            IN_NAME_EXPR,
+            LocalAndGlobalCompletionProvider(LocalAndGlobalCompletionProvider.ALL)
+        )
         // 表的[]索引方式提示
         extend(CompletionType.BASIC, IN_TABLE_STRING_INDEX, TableStringIndexCompletionProvider())
         // lua5.4
@@ -84,6 +88,7 @@ class LuaCompletionContributor : CompletionContributor() {
         // enum
         extend(CompletionType.BASIC, SHOW_ENUM, EnumCompletionProvider())
 
+        extend(CompletionType.BASIC, SHOW_CALLBACK, CallbackCompletionProvider())
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
@@ -121,57 +126,63 @@ class LuaCompletionContributor : CompletionContributor() {
         private val IGNORE_SET = TokenSet.create(LuaTypes.STRING, LuaTypes.NUMBER, LuaTypes.CONCAT)
 
         private val SHOW_CLASS_FIELD = psiElement(LuaTypes.ID)
-                .withParent(LuaIndexExpr::class.java)
+            .withParent(LuaIndexExpr::class.java)
 
         private val IN_FUNC_NAME = psiElement(LuaTypes.ID)
-                .withParent(LuaIndexExpr::class.java)
-                .inside(LuaClassMethodName::class.java)
+            .withParent(LuaIndexExpr::class.java)
+            .inside(LuaClassMethodName::class.java)
         private val AFTER_FUNCTION = psiElement()
-                .afterLeaf(psiElement(LuaTypes.FUNCTION))
+            .afterLeaf(psiElement(LuaTypes.FUNCTION))
         private val IN_CLASS_METHOD_NAME = psiElement().andOr(IN_FUNC_NAME, AFTER_FUNCTION)
 
         private val IN_NAME_EXPR = psiElement(LuaTypes.ID)
-                .withParent(LuaNameExpr::class.java)
+            .withParent(LuaNameExpr::class.java)
 
         private val SHOW_OVERRIDE = psiElement()
-                .withParent(LuaClassMethodName::class.java)
+            .withParent(LuaClassMethodName::class.java)
         private val IN_CLASS_METHOD = psiElement(LuaTypes.ID)
-                .withParent(LuaNameExpr::class.java)
-                .inside(LuaClassMethodDef::class.java)
+            .withParent(LuaNameExpr::class.java)
+            .inside(LuaClassMethodDef::class.java)
         private val SHOW_REQUIRE_PATH = psiElement(LuaTypes.STRING)
-                .withParent(
-                        psiElement(LuaTypes.LITERAL_EXPR).withParent(
-                                psiElement(LuaArgs::class.java).afterSibling(
-                                        psiElement().with(RequireLikePatternCondition())
-                                )
-                        )
+            .withParent(
+                psiElement(LuaTypes.LITERAL_EXPR).withParent(
+                    psiElement(LuaArgs::class.java).afterSibling(
+                        psiElement().with(RequireLikePatternCondition())
+                    )
                 )
+            )
 
         private val SHOW_ENUM = psiElement(LuaTypes.ID)
-                    .withParent(psiElement(LuaNameExpr::class.java)
-                            .withParent(psiElement(LuaArgs::class.java))
-                )
+            .withParent(
+                psiElement(LuaNameExpr::class.java)
+                    .withParent(psiElement(LuaArgs::class.java))
+            )
 
+        private val SHOW_CALLBACK = psiElement(LuaTypes.ID)
+            .withParent(
+                psiElement(LuaNameExpr::class.java)
+                    .withParent(psiElement(LuaArgs::class.java))
+            )
 
         private val GOTO = psiElement(LuaTypes.ID).withParent(LuaGotoStat::class.java)
 
         private val IN_TABLE_FIELD = psiElement().andOr(
-                psiElement().withParent(
-                        psiElement(LuaTypes.NAME_EXPR).withParent(LuaTableField::class.java)
-                ),
-                psiElement(LuaTypes.ID).withParent(LuaTableField::class.java)
+            psiElement().withParent(
+                psiElement(LuaTypes.NAME_EXPR).withParent(LuaTableField::class.java)
+            ),
+            psiElement(LuaTypes.ID).withParent(LuaTableField::class.java)
         )
 
         private val IN_TABLE_STRING_INDEX = psiElement().andOr(
 //                psiElement(LuaTypes.LITERAL_EXPR).withParent(
 //                        psiElement(LuaIndexExpr::class.java)
 //                ),
-                psiElement(LuaTypes.STRING)
-                        .withParent(
-                                psiElement(LuaTypes.LITERAL_EXPR).withParent(
-                                        psiElement(LuaIndexExpr::class.java)
-                                )
-                        )
+            psiElement(LuaTypes.STRING)
+                .withParent(
+                    psiElement(LuaTypes.LITERAL_EXPR).withParent(
+                        psiElement(LuaIndexExpr::class.java)
+                    )
+                )
         )
 
         private val ATTRIBUTE = psiElement(LuaTypes.ID).withParent(LuaAttribute::class.java)

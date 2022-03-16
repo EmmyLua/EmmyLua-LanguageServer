@@ -51,11 +51,19 @@ class LuaDocumentationProvider : DocumentationProvider {
         return null
     }
 
-    override fun getDocumentationElementForLookupItem(psiManager: PsiManager, obj: Any, element: PsiElement): PsiElement? {
+    override fun getDocumentationElementForLookupItem(
+        psiManager: PsiManager,
+        obj: Any,
+        element: PsiElement
+    ): PsiElement? {
         return null
     }
 
-    override fun getDocumentationElementForLink(psiManager: PsiManager, link: String, context: PsiElement?): PsiElement? {
+    override fun getDocumentationElementForLink(
+        psiManager: PsiManager,
+        link: String,
+        context: PsiElement?
+    ): PsiElement? {
         return LuaClassIndex.find(link, SearchContext.get(psiManager.project))
     }
 
@@ -67,18 +75,19 @@ class LuaDocumentationProvider : DocumentationProvider {
             is LuaDocTagClass -> renderClassDef(sb, element)
             is LuaClassMember -> renderClassMember(sb, element)
             is LuaNameDef -> { //local xx
-                sb.wrapLanguage("typescript") {
+                sb.wrapLanguage("lua") {
                     sb.append("local ${element.name}:")
                     val ty = element.guessType(SearchContext.get(element.project))
                     renderTy(sb, ty)
                     sb.append("\n")
+
                 }
 
                 val owner = PsiTreeUtil.getParentOfType(element, LuaCommentOwner::class.java)
                 owner?.let { renderComment(sb, owner.comment) }
             }
             is LuaLocalFuncDef -> {
-                sb.wrapLanguage("typescript") {
+                sb.wrapLanguage("lua") {
                     sb.append("local function ${element.name}")
                     val type = element.guessType(SearchContext.get(element.project)) as ITyFunction
                     renderSignature(sb, type.mainSignature)
@@ -86,9 +95,7 @@ class LuaDocumentationProvider : DocumentationProvider {
                 renderComment(sb, element.comment)
             }
             is LuaPsiFile -> {
-                sb.wrapLanguage("typescript") {
-                    sb.append("module \"${element.virtualFile.path.substringAfter("file:/")}\"")
-                }
+                sb.append(element.virtualFile.path.substringAfter("file:/"))
             }
 
         }
@@ -101,13 +108,31 @@ class LuaDocumentationProvider : DocumentationProvider {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
         val ty = classMember.guessType(context)
-
         //base info
         if (parentType != null) {
-            sb.wrapLanguage("typescript") {
+            sb.wrapLanguage("lua") {
+                when (classMember.visibility) {
+                    Visibility.PUBLIC -> {
+                        sb.append("(public) ")
+                    }
+                    Visibility.PRIVATE -> {
+                        sb.append("(private) ")
+                    }
+                    Visibility.PROTECTED -> {
+                        sb.append("(protected) ")
+                    }
+                }
                 when (ty) {
                     is TyFunction -> {
                         sb.append("function ")
+                        if (parentType.displayName != "_G") {
+                            renderTy(sb, parentType)
+                            sb.append(if (ty.isColonCall) ":" else ".")
+                        }
+                        sb.append(classMember.name)
+                        renderSignature(sb, ty.mainSignature)
+
+                        return@wrapLanguage
                     }
                     is TyClass -> {
                         sb.append("class ")
@@ -120,25 +145,14 @@ class LuaDocumentationProvider : DocumentationProvider {
                     }
                 }
                 renderTy(sb, parentType)
-                with(sb) {
-                    when (ty) {
-                        is TyFunction -> {
-                            append(if (ty.isColonCall) ":" else ".")
-                            append(classMember.name)
-                            renderSignature(sb, ty.mainSignature)
-                        }
-                        else -> {
-                            append(".${classMember.name}:")
-                            renderTy(sb, ty)
-                        }
-                    }
-                }
+                sb.append(".${classMember.name}:")
+                renderTy(sb, ty)
             }
         } else {
             //NameExpr
             if (classMember is LuaNameExpr) {
                 val nameExpr: LuaNameExpr = classMember
-                sb.wrapLanguage("typescript") {
+                sb.wrapLanguage("lua") {
                     sb.append("global ")
                     with(sb) {
                         append(nameExpr.name)
