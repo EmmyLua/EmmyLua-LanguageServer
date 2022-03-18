@@ -335,22 +335,22 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover?> {
+    override fun hover(params: HoverParams?): CompletableFuture<Hover?> {
         return computeAsync {
             var hover: Hover? = null
-
-            val file = workspace.findFile(position.textDocument.uri)
-            if (file is ILuaFile) {
-                val pos = file.getPosition(position.position.line, position.position.character)
-                val element = TargetElementUtil.findTarget(file.psi, pos)
-                if (element != null) {
-                    val ref = element.reference?.resolve() ?: element
-                    val doc = documentProvider.generateDoc(ref, element)
-                    if (doc != null)
-                        hover = Hover(listOf(Either.forLeft(doc)))
+            if (params != null) {
+                val file = workspace.findFile(params.textDocument.uri)
+                if (file is ILuaFile) {
+                    val pos = file.getPosition(params.position.line, params.position.character)
+                    val element = TargetElementUtil.findTarget(file.psi, pos)
+                    if (element != null) {
+                        val ref = element.reference?.resolve() ?: element
+                        val doc = documentProvider.generateDoc(ref, element)
+                        if (doc != null)
+                            hover = Hover(listOf(Either.forLeft(doc)))
+                    }
                 }
             }
-
             hover
         }
     }
@@ -400,10 +400,6 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
             list
         }
-    }
-
-    override fun rangeFormatting(params: DocumentRangeFormattingParams): CompletableFuture<MutableList<out TextEdit>> {
-        TODO()
     }
 
     override fun codeLens(params: CodeLensParams): CompletableFuture<MutableList<out CodeLens>> {
@@ -494,7 +490,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     changes.add(TextDocumentEdit(documentIdentifier, u))
                 }
             }
-            val edit = WorkspaceEdit(changes)
+            val edit = WorkspaceEdit(changes.map { Either.forLeft(it) })
             edit
         }
     }
@@ -550,52 +546,57 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     }
 
-    override fun signatureHelp(position: TextDocumentPositionParams): CompletableFuture<SignatureHelp> {
+    override fun signatureHelp(params: SignatureHelpParams?): CompletableFuture<SignatureHelp?> {
         return computeAsync {
             val list = mutableListOf<SignatureInformation>()
             var activeParameter = 0
             var activeSig = 0
-            withPsiFile(position) { _, psiFile, i ->
-                val callExpr = PsiTreeUtil.findElementOfClassAtOffset(psiFile, i, LuaCallExpr::class.java, false)
-                var nCommas = 0
-                callExpr?.args?.firstChild?.let { firstChild ->
-                    var child: PsiElement? = firstChild
-                    while (child != null) {
-                        if (child.node.elementType == LuaTypes.COMMA) {
-                            activeParameter++
-                            nCommas++
+            var signatureHelp: SignatureHelp? = null
+            if(params != null) {
+                withPsiFile(params.textDocument, params.position) { _, psiFile, i ->
+                    val callExpr = PsiTreeUtil.findElementOfClassAtOffset(psiFile, i, LuaCallExpr::class.java, false)
+                    var nCommas = 0
+                    callExpr?.args?.firstChild?.let { firstChild ->
+                        var child: PsiElement? = firstChild
+                        while (child != null) {
+                            if (child.node.elementType == LuaTypes.COMMA) {
+                                activeParameter++
+                                nCommas++
+                            }
+                            child = child.nextSibling
                         }
-                        child = child.nextSibling
                     }
-                }
 
-                callExpr?.guessParentType(SearchContext.get(psiFile.project))?.let { parentType ->
-                    parentType.each { ty ->
-                        if (ty is ITyFunction) {
-                            val active = ty.findPerfectSignature(nCommas + 1)
-                            var idx = 0
-                            ty.process(Processor { sig ->
-                                val information = SignatureInformation()
-                                information.parameters = mutableListOf()
-                                sig.params.forEach { pi ->
-                                    val paramInfo =
+                    callExpr?.guessParentType(SearchContext.get(psiFile.project))?.let { parentType ->
+                        parentType.each { ty ->
+                            if (ty is ITyFunction) {
+                                val active = ty.findPerfectSignature(nCommas + 1)
+                                var idx = 0
+                                ty.process(Processor { sig ->
+                                    val information = SignatureInformation()
+                                    information.parameters = mutableListOf()
+                                    sig.params.forEach { pi ->
+                                        val paramInfo =
                                             ParameterInformation("${pi.name}:${pi.ty.displayName}", pi.ty.displayName)
-                                    information.parameters.add(paramInfo)
-                                }
-                                information.label = sig.displayName
-                                list.add(information)
+                                        information.parameters.add(paramInfo)
+                                    }
+                                    information.label = sig.displayName
+                                    list.add(information)
 
-                                if (sig == active) {
-                                    activeSig = idx
-                                }
-                                idx++
-                                true
-                            })
+                                    if (sig == active) {
+                                        activeSig = idx
+                                    }
+                                    idx++
+                                    true
+                                })
+                            }
                         }
                     }
                 }
+                signatureHelp = SignatureHelp(list, activeSig, activeParameter)
             }
-            SignatureHelp(list, activeSig, activeParameter)
+
+            signatureHelp
         }
     }
 
@@ -919,7 +920,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     override fun references(params: ReferenceParams): CompletableFuture<MutableList<out Location>> {
         val list = mutableListOf<Location>()
-        withPsiFile(params) { _, psiFile, pos ->
+        withPsiFile(params.textDocument, params.position) { _, psiFile, pos ->
             val element = TargetElementUtil.findTarget(psiFile, pos)
             if (element != null) {
                 val target = element.reference?.resolve() ?: element
@@ -1076,9 +1077,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    private fun withPsiFile(position: TextDocumentPositionParams, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
-        withPsiFile(position.textDocument, position.position, code)
-    }
+//    private fun withPsiFile(position: TextDocumentPositionParams, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
+//        withPsiFile(position.textDocument, position.position, code)
+//    }
 
     private fun withPsiFile(
             textDocument: TextDocumentIdentifier,

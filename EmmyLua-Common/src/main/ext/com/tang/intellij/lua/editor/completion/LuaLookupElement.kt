@@ -4,6 +4,7 @@ import com.intellij.codeInsight.lookup.LookupElement
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemKind
 import org.eclipse.lsp4j.TextEdit
+import org.eclipse.lsp4j.jsonrpc.messages.Either
 
 class LuaLookupElement(label: String) : LookupElement(label) {
     var kind = CompletionItemKind.Text
@@ -19,7 +20,7 @@ val LookupElement.asCompletionItem: CompletionItem get() {
             completionItem.insertText = insertText
             completionItem.data = data
             completionItem.kind = kind
-            completionItem.textEdit = textEdit
+            completionItem.textEdit = Either.forLeft(textEdit)
             completionItem
         }
         else -> CompletionItem(lookupString)

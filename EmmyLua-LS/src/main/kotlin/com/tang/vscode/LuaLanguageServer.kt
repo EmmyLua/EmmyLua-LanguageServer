@@ -84,23 +84,22 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         completionOptions.resolveProvider = true
         capabilities.completionProvider = completionOptions
 
-        capabilities.definitionProvider = true
-        capabilities.hoverProvider = true
-        capabilities.referencesProvider = true
+        capabilities.definitionProvider = Either.forLeft(true)
+        capabilities.hoverProvider = Either.forLeft(true)
+        capabilities.referencesProvider = Either.forLeft(true)
         capabilities.codeLensProvider = CodeLensOptions(true)
-        capabilities.documentHighlightProvider = true
-        capabilities.renameProvider = true
+        capabilities.documentHighlightProvider = Either.forLeft(true)
+        capabilities.renameProvider = Either.forLeft(true)
 
         capabilities.signatureHelpProvider = SignatureHelpOptions(listOf(",", "("))
-        capabilities.documentSymbolProvider = true
-        capabilities.workspaceSymbolProvider = true
+        capabilities.documentSymbolProvider = Either.forLeft(true)
+        capabilities.workspaceSymbolProvider = Either.forLeft(true)
 
         capabilities.workspace = WorkspaceServerCapabilities()
         capabilities.workspace.workspaceFolders = WorkspaceFoldersOptions()
         capabilities.workspace.workspaceFolders.supported = true
         capabilities.workspace.workspaceFolders.changeNotifications = Either.forLeft(WORKSPACE_FOLDERS_CAPABILITY_ID)
         capabilities.foldingRangeProvider = Either.forLeft(true)
-//        capabilities.documentFormattingProvider = true
 
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Full)
 
