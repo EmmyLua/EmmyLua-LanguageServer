@@ -16,6 +16,7 @@
 
 package com.tang.intellij.lua.ty
 
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubInputStream
@@ -30,6 +31,7 @@ import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.psi.search.LuaClassInheritorsSearch
 import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.lsp.nameRange
 
 interface ITyClass : ITy {
     val className: String
@@ -42,6 +44,34 @@ interface ITyClass : ITy {
     fun processMembers(context: SearchContext, processor: (ITyClass, LuaClassMember) -> Unit) {
         processMembers(context, processor, true)
     }
+
+    fun processVisibleMembers(context: SearchContext, contextTy: ITy, processor: (ITyClass, LuaClassMember) -> Unit) {
+        val noVisibleSet = mutableSetOf<String>()
+        val list = mutableListOf<LuaClassMember>()
+
+        processMembers(context) { curType, member ->
+            if (curType.isVisibleInScope(
+                    context.project,
+                    contextTy,
+                    member.visibility
+                )
+            ) {
+                list.add(member)
+            } else {
+                member.name?.let {
+                    noVisibleSet.add(it)
+                }
+            }
+        }
+
+        for (member in list){
+            val name = member.name
+            if(name != null && !noVisibleSet.contains(name)){
+                processor(this, member)
+            }
+        }
+    }
+
     fun findMember(name: String, searchContext: SearchContext): LuaClassMember?
     fun findMemberType(name: String, searchContext: SearchContext): ITy?
     fun findSuperMember(name: String, searchContext: SearchContext): LuaClassMember?
@@ -60,7 +90,12 @@ fun ITyClass.isVisibleInScope(project: Project, contextTy: ITy, visibility: Visi
             if (it == this)
                 isVisible = true
             else if (visibility == Visibility.PROTECTED) {
-                isVisible = LuaClassInheritorsSearch.isClassInheritFrom(GlobalSearchScope.projectScope(project), project, className, it.className)
+                isVisible = LuaClassInheritorsSearch.isClassInheritFrom(
+                    GlobalSearchScope.projectScope(project),
+                    project,
+                    className,
+                    it.className
+                )
             }
         }
         !isVisible
@@ -68,9 +103,10 @@ fun ITyClass.isVisibleInScope(project: Project, contextTy: ITy, visibility: Visi
     return isVisible
 }
 
-abstract class TyClass(override val className: String,
-                       override val varName: String = "",
-                       override var superClassName: String? = null
+abstract class TyClass(
+    override val className: String,
+    override val varName: String = "",
+    override var superClassName: String? = null
 ) : Ty(TyKind.Class), ITyClass {
     final override var aliasName: String? = null
 
@@ -164,7 +200,8 @@ abstract class TyClass(override val className: String,
         lazyInit(context)
         val clsName = superClassName
         if (clsName != null && clsName != className) {
-            return Ty.getBuiltin(clsName) ?: LuaShortNamesManager.getInstance(context.project).findClass(clsName, context)?.type
+            return Ty.getBuiltin(clsName) ?: LuaShortNamesManager.getInstance(context.project)
+                .findClass(clsName, context)?.type
         }
         return null
     }
@@ -214,7 +251,11 @@ abstract class TyClass(override val className: String,
             return g
         }
 
-        fun processSuperClass(start: ITyClass, searchContext: SearchContext, processor: (ITyClass) -> Boolean): Boolean {
+        fun processSuperClass(
+            start: ITyClass,
+            searchContext: SearchContext,
+            processor: (ITyClass) -> Boolean
+        ): Boolean {
             val processedName = mutableSetOf<String>()
             var cur: ITy? = start
             while (cur != null) {
@@ -246,12 +287,13 @@ class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
     override fun doLazyInit(searchContext: SearchContext) {}
 }
 
-open class TySerializedClass(name: String,
-                             varName: String = name,
-                             supper: String? = null,
-                             alias: String? = null,
-                             flags: Int = 0)
-    : TyClass(name, varName, supper) {
+open class TySerializedClass(
+    name: String,
+    varName: String = name,
+    supper: String? = null,
+    alias: String? = null,
+    flags: Int = 0
+) : TyClass(name, varName, supper) {
     init {
         aliasName = alias
         this.flags = flags
@@ -269,11 +311,13 @@ open class TySerializedClass(name: String,
 //todo Lazy class ty
 class TyLazyClass(name: String) : TySerializedClass(name)
 
-fun createSerializedClass(name: String,
-                          varName: String = name,
-                          supper: String? = null,
-                          alias: String? = null,
-                          flags: Int = 0): TyClass {
+fun createSerializedClass(
+    name: String,
+    varName: String = name,
+    supper: String? = null,
+    alias: String? = null,
+    flags: Int = 0
+): TyClass {
     val list = name.split("|")
     if (list.size == 3) {
         val type = list[0].toInt()
@@ -324,7 +368,11 @@ class TyTable(val table: LuaTableExpr) : TyClass(getTableTypeName(table)) {
 
     override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
         // Empty list is a table, but subtype of all lists
-        return super.subTypeOf(other, context, strict) || other == Ty.TABLE || (other is TyArray && table.tableFieldList.size == 0)
+        return super.subTypeOf(
+            other,
+            context,
+            strict
+        ) || other == Ty.TABLE || (other is TyArray && table.tableFieldList.size == 0)
     }
 }
 
@@ -363,11 +411,13 @@ object TyClassSerializer : TySerializer<ITyClass>() {
         val varName = stream.readName()
         val superName = stream.readName()
         val aliasName = stream.readName()
-        return createSerializedClass(StringRef.toString(className),
-                StringRef.toString(varName),
-                StringRef.toString(superName),
-                StringRef.toString(aliasName),
-                flags)
+        return createSerializedClass(
+            StringRef.toString(className),
+            StringRef.toString(varName),
+            StringRef.toString(superName),
+            StringRef.toString(aliasName),
+            flags
+        )
     }
 
     override fun serializeTy(ty: ITyClass, stream: StubOutputStream) {
