@@ -102,7 +102,13 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.foldingRangeProvider = Either.forLeft(true)
 
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Full)
-
+//        capabilities.semanticTokensProvider = SemanticTokensWithRegistrationOptions(
+//            SemanticTokensLegend(
+//                listOf(),
+//                listOf()
+//            ),
+//            true
+//        )
         res.capabilities = capabilities
         return CompletableFuture.completedFuture(res)
     }

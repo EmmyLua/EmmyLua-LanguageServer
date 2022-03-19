@@ -355,23 +355,25 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun documentHighlight(position: TextDocumentPositionParams): CompletableFuture<MutableList<out DocumentHighlight>> {
+    override fun documentHighlight(params: DocumentHighlightParams?): CompletableFuture<MutableList<out DocumentHighlight>?> {
         return computeAsync {
             val list = mutableListOf<DocumentHighlight>()
-            withPsiFile(position) { file, psiFile, i ->
-                val target = TargetElementUtil.findTarget(psiFile, i)
-                if (target != null) {
-                    val def = target.reference?.resolve() ?: target
+            if (params != null) {
+                withPsiFile(params.textDocument, params.position) { file, psiFile, i ->
+                    val target = TargetElementUtil.findTarget(psiFile, i)
+                    if (target != null) {
+                        val def = target.reference?.resolve() ?: target
 
-                    // self highlight
-                    if (def.containingFile == psiFile) {
-                        def.nameRange?.let { range -> list.add(DocumentHighlight(range.toRange(file))) }
-                    }
+                        // self highlight
+                        if (def.containingFile == psiFile) {
+                            def.nameRange?.let { range -> list.add(DocumentHighlight(range.toRange(file))) }
+                        }
 
-                    // references highlight
-                    val search = ReferencesSearch.search(def, GlobalSearchScope.fileScope(psiFile))
-                    search.forEach { reference ->
-                        list.add(DocumentHighlight(reference.getRangeInFile(file)))
+                        // references highlight
+                        val search = ReferencesSearch.search(def, GlobalSearchScope.fileScope(psiFile))
+                        search.forEach { reference ->
+                            list.add(DocumentHighlight(reference.getRangeInFile(file)))
+                        }
                     }
                 }
             }
@@ -383,22 +385,22 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         TODO()
     }
 
-    override fun definition(position: TextDocumentPositionParams): CompletableFuture<MutableList<out Location>> {
+    override fun definition(params: DefinitionParams?): CompletableFuture<Either<MutableList<out Location>, MutableList<out LocationLink>>?> {
         return computeAsync {
             val list = mutableListOf<Location>()
-
-            withPsiFile(position) { _, psiFile, i ->
-                val target = TargetElementUtil.findTarget(psiFile, i)
-                val resolve = target?.reference?.resolve()
-                if (resolve != null) {
-                    val sourceFile = resolve.containingFile?.virtualFile as? LuaFile
-                    val range = resolve.nameRange
-                    if (range != null && sourceFile != null)
-                        list.add(Location(sourceFile.uri.toString(), range.toRange(sourceFile)))
+            if(params != null) {
+                withPsiFile(params.textDocument, params.position) { _, psiFile, i ->
+                    val target = TargetElementUtil.findTarget(psiFile, i)
+                    val resolve = target?.reference?.resolve()
+                    if (resolve != null) {
+                        val sourceFile = resolve.containingFile?.virtualFile as? LuaFile
+                        val range = resolve.nameRange
+                        if (range != null && sourceFile != null)
+                            list.add(Location(sourceFile.uri.toString(), range.toRange(sourceFile)))
+                    }
                 }
             }
-
-            list
+            Either.forLeft(list)
         }
     }
 
@@ -1076,6 +1078,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             foldingRanges
         }
     }
+
+//    override fun semanticTokensFull(params: SemanticTokensParams?): CompletableFuture<SemanticTokens> {
+//        return super.semanticTokensFull(params)
+//    }
 
 //    private fun withPsiFile(position: TextDocumentPositionParams, code: (ILuaFile, LuaPsiFile, Int) -> Unit) {
 //        withPsiFile(position.textDocument, position.position, code)
