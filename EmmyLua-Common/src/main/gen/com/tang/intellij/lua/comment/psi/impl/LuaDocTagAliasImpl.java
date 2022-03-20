@@ -33,6 +33,7 @@ public class LuaDocTagAliasImpl extends StubBasedPsiElementBase<LuaDocTagAliasSt
     visitor.visitTagAlias(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof LuaDocVisitor) accept((LuaDocVisitor)visitor);
     else super.accept(visitor);
@@ -50,25 +51,30 @@ public class LuaDocTagAliasImpl extends StubBasedPsiElementBase<LuaDocTagAliasSt
     return findChildByType(ID);
   }
 
+  @Override
   @Nullable
   public PsiElement getNameIdentifier() {
     return LuaDocPsiImplUtilKt.getNameIdentifier(this);
   }
 
+  @Override
   @NotNull
   public PsiElement setName(@NotNull String newName) {
     return LuaDocPsiImplUtilKt.setName(this, newName);
   }
 
+  @Override
   @Nullable
   public String getName() {
     return LuaDocPsiImplUtilKt.getName(this);
   }
 
+  @Override
   public int getTextOffset() {
     return LuaDocPsiImplUtilKt.getTextOffset(this);
   }
 
+  @Override
   @NotNull
   public ITy getType() {
     return LuaDocPsiImplUtilKt.getType(this);

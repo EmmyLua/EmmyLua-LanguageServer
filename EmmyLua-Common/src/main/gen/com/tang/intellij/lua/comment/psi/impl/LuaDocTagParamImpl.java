@@ -22,6 +22,7 @@ public class LuaDocTagParamImpl extends ASTWrapperPsiElement implements LuaDocTa
     visitor.visitTagParam(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof LuaDocVisitor) accept((LuaDocVisitor)visitor);
     else super.accept(visitor);
@@ -45,6 +46,7 @@ public class LuaDocTagParamImpl extends ASTWrapperPsiElement implements LuaDocTa
     return PsiTreeUtil.getChildOfType(this, LuaDocTy.class);
   }
 
+  @Override
   @NotNull
   public ITy getType() {
     return LuaDocPsiImplUtilKt.getType(this);

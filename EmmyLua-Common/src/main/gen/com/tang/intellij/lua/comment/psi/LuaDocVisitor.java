@@ -89,6 +89,10 @@ public class LuaDocVisitor extends PsiElementVisitor {
     visitTag(o);
   }
 
+  public void visitTagDeprecated(@NotNull LuaDocTagDeprecated o) {
+    visitTag(o);
+  }
+
   public void visitTagField(@NotNull LuaDocTagField o) {
     visitLuaClassField(o);
     // visitPsiNameIdentifierOwner(o);

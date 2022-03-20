@@ -22,6 +22,7 @@ public class LuaDocParamNameRefImpl extends ASTWrapperPsiElement implements LuaD
     visitor.visitParamNameRef(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof LuaDocVisitor) accept((LuaDocVisitor)visitor);
     else super.accept(visitor);
@@ -33,6 +34,7 @@ public class LuaDocParamNameRefImpl extends ASTWrapperPsiElement implements LuaD
     return notNullChild(findChildByType(ID));
   }
 
+  @Override
   @NotNull
   public PsiReference getReference() {
     return LuaDocPsiImplUtilKt.getReference(this);

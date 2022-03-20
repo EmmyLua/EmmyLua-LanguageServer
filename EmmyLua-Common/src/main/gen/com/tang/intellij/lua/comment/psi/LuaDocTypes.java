@@ -27,6 +27,7 @@ public interface LuaDocTypes {
   IElementType TAG_ALIAS = LuaParserDefinitionKt.createDocType("TAG_ALIAS");
   IElementType TAG_CLASS = LuaParserDefinitionKt.createDocType("TAG_CLASS");
   IElementType TAG_DEF = LuaParserDefinitionKt.createDocType("TAG_DEF");
+  IElementType TAG_DEPRECATED = LuaParserDefinitionKt.createDocType("TAG_DEPRECATED");
   IElementType TAG_FIELD = LuaParserDefinitionKt.createDocType("TAG_FIELD");
   IElementType TAG_GENERIC_LIST = LuaParserDefinitionKt.createDocType("TAG_GENERIC_LIST");
   IElementType TAG_LAN = LuaParserDefinitionKt.createDocType("TAG_LAN");
@@ -64,10 +65,10 @@ public interface LuaDocTypes {
   IElementType STRING = new LuaDocTokenType("STRING");
   IElementType STRING_BEGIN = new LuaDocTokenType("STRING_BEGIN");
   IElementType STRING_LITERAL = new LuaDocTokenType("STRING_LITERAL");
-  IElementType TAG_ENUM = new LuaDocTokenType("tag_enum");
   IElementType TAG_NAME = new LuaDocTokenType("TAG_NAME");
   IElementType TAG_NAME_ALIAS = new LuaDocTokenType("alias");
   IElementType TAG_NAME_CLASS = new LuaDocTokenType("class");
+  IElementType TAG_NAME_DEPRECATED = new LuaDocTokenType("deprecated");
   IElementType TAG_NAME_ENUM = new LuaDocTokenType("enum");
   IElementType TAG_NAME_FIELD = new LuaDocTokenType("field");
   IElementType TAG_NAME_GENERIC = new LuaDocTokenType("generic");
@@ -142,6 +143,9 @@ public interface LuaDocTypes {
       }
       else if (type == TAG_DEF) {
         return new LuaDocTagDefImpl(node);
+      }
+      else if (type == TAG_DEPRECATED) {
+        return new LuaDocTagDeprecatedImpl(node);
       }
       else if (type == TAG_FIELD) {
         return new LuaDocTagFieldImpl(node);
