@@ -554,7 +554,6 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             val list = mutableListOf<SignatureInformation>()
             var activeParameter = 0
             var activeSig = 0
-            var signatureHelp: SignatureHelp? = null
             if(params != null) {
                 withPsiFile(params.textDocument, params.position) { _, psiFile, i ->
                     val callExpr = PsiTreeUtil.findElementOfClassAtOffset(psiFile, i, LuaCallExpr::class.java, false)
