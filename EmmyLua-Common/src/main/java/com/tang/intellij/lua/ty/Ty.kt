@@ -188,6 +188,11 @@ abstract class Ty(override val kind: TyKind) : ITy {
             is TyTuple -> {
                 list.firstOrNull()?.eachTopClass(fn)
             }
+            is TySerializedGeneric ->{
+                if(base == STRING){
+                    base.eachTopClass(fn)
+                }
+            }
         }
     }
 

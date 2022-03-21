@@ -89,6 +89,8 @@ class LuaCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, SHOW_ENUM, EnumCompletionProvider())
 
         extend(CompletionType.BASIC, SHOW_CALLBACK, CallbackCompletionProvider())
+
+        extend(CompletionType.BASIC, SHOW_STRING_INNER, StringInnerTypeCompletionProvider())
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
@@ -162,6 +164,13 @@ class LuaCompletionContributor : CompletionContributor() {
             .withParent(
                 psiElement(LuaNameExpr::class.java)
                     .withParent(psiElement(LuaArgs::class.java))
+            )
+
+        private val SHOW_STRING_INNER = psiElement(LuaTypes.STRING)
+            .withParent(
+                psiElement(LuaTypes.LITERAL_EXPR).withParent(
+                    psiElement(LuaArgs::class.java)
+                )
             )
 
         private val GOTO = psiElement(LuaTypes.ID).withParent(LuaGotoStat::class.java)
