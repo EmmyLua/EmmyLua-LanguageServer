@@ -62,7 +62,7 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
                                                     innerType,
                                                     searchContext,
                                                     content.value
-                                                )?.let { prefixType ->
+                                                ).forEach { prefixType ->
                                                     addInnerClass(
                                                         prefixType,
                                                         getPrefix(content.value),
@@ -108,7 +108,11 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
                     MemberCompletionMode.Dot,
                     project,
                     object : HandlerProcessor() {
-                        override fun process(element: LuaLookupElement, member: LuaClassMember, memberTy: ITy?): LookupElement {
+                        override fun process(
+                            element: LuaLookupElement,
+                            member: LuaClassMember,
+                            memberTy: ITy?
+                        ): LookupElement {
                             element.lookupString = prefix + element.lookupString
                             return PrioritizedLookupElement.withPriority(element, 10.0)
                         }
@@ -118,7 +122,7 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
         }
     }
 
-    private fun getPrefix(content: String): String{
+    private fun getPrefix(content: String): String {
         if (!content.contains('.')) {
             return ""
         }
@@ -128,23 +132,41 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
         return indexFields.joinToString(".")
     }
 
-    private fun guessPrefixType(baseType: ITyClass, context: SearchContext, content: String): ITyClass? {
-        if (!content.contains('.')) {
-            return baseType
+    private fun guessPrefixType(baseType: ITy, context: SearchContext, content: String): MutableList<ITyClass> {
+        if (content.contains('.')) {
+            return mutableListOf()
         }
 
-        var type = baseType
-        val indexFields = content.split('.')
-        for (i in 0 until indexFields.size - 1) {
-            val indexField = indexFields[i]
-            val member = type.findMember(indexField, context) ?: return null
-            val guessType = member.guessType(context)
-            if (guessType !is ITyClass) {
-                return null
+        val fields = content.split('.');
+        val result = mutableListOf<ITyClass>()
+        innerGuessPrefixType(baseType, context, fields, 0, result)
+        return result
+    }
+
+    private fun innerGuessPrefixType(type: ITy, context: SearchContext, fields: List<String>, i: Int, result: MutableList<ITyClass>){
+        when(type){
+            is TyClass->{
+                val member = type.findMember(fields[i], context) ?: return ;
+                val guessType = member.guessType(context)
+                if(i == fields.size - 2){
+                    when(guessType){
+                        is ITyClass->{
+                            result.add(guessType)
+                        }
+                        is TyUnion->{
+                            guessType.eachTopClass(Processor {
+                                result.add(it)
+                            })
+                        }
+                    }
+                }
+                else{
+                    innerGuessPrefixType(guessType, context, fields, i + 1, result)
+                }
+
             }
-
-            type = guessType
         }
-        return type
+
+
     }
 }
