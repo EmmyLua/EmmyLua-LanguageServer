@@ -550,6 +550,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     override fun signatureHelp(params: SignatureHelpParams?): CompletableFuture<SignatureHelp?> {
         return computeAsync {
+            var signatureHelp: SignatureHelp? = null
             val list = mutableListOf<SignatureInformation>()
             var activeParameter = 0
             var activeSig = 0
@@ -597,7 +598,6 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 }
                 signatureHelp = SignatureHelp(list, activeSig, activeParameter)
             }
-
             signatureHelp
         }
     }
