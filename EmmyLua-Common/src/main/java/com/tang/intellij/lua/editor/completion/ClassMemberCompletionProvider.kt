@@ -115,10 +115,10 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                            handlerProcessor: HandlerProcessor?) {
         val context = SearchContext.get(project)
         luaType.lazyInit(context)
-        luaType.processMembers(context) { curType, member ->
+        luaType.processVisibleMembers(context, contextTy) { curType, member ->
             ProgressManager.checkCanceled()
             member.name?.let {
-                if (prefixMatcher.prefixMatches(it) && curType.isVisibleInScope(project, contextTy, member.visibility)) {
+                if (prefixMatcher.prefixMatches(it)) {
                     addMember(completionResultSet,
                             member,
                             curType,

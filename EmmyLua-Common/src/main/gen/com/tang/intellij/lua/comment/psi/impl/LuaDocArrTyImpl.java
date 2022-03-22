@@ -17,10 +17,12 @@ public class LuaDocArrTyImpl extends LuaDocTyImpl implements LuaDocArrTy {
     super(node);
   }
 
+  @Override
   public void accept(@NotNull LuaDocVisitor visitor) {
     visitor.visitArrTy(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof LuaDocVisitor) accept((LuaDocVisitor)visitor);
     else super.accept(visitor);
@@ -32,6 +34,7 @@ public class LuaDocArrTyImpl extends LuaDocTyImpl implements LuaDocArrTy {
     return notNullChild(PsiTreeUtil.getChildOfType(this, LuaDocTy.class));
   }
 
+  @Override
   @NotNull
   public ITy getType() {
     return LuaDocPsiImplUtilKt.getType(this);

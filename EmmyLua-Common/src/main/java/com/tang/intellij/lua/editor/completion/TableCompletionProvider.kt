@@ -77,7 +77,7 @@ class TableCompletionProvider : ClassMemberCompletionProvider() {
                             if (member is LuaClassField) {
                                 addField(completionResultSet, curType === luaType, className, member, null, object : HandlerProcessor() {
                                     override fun process(element: LuaLookupElement, member: LuaClassMember, memberTy: ITy?): LookupElement {
-                                        element.itemText = element.itemText + " = "
+                                        element.itemText = "$className = "
                                         element.lookupString = element.lookupString + " = "
 
                                         return PrioritizedLookupElement.withPriority(element, 10.0)

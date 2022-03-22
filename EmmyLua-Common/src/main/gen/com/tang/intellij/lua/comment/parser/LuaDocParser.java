@@ -53,9 +53,6 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     else if (t == TAG_CLASS) {
       r = tag_class(b, 0);
     }
-    else if(t == TAG_ENUM){
-      r = tag_class(b, 0);
-    }
     else if (t == TAG_DEF) {
       r = tag_def(b, 0);
     }
@@ -139,7 +136,7 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     Marker m = enter_section_(b, l, _NONE_);
     r = doc_item(b, l + 1);
     if (!r) r = consumeToken(b, STRING);
-    exit_section_(b, l, m, r, false, after_dash_recover_parser_);
+    exit_section_(b, l, m, r, false, LuaDocParser::after_dash_recover);
     return r;
   }
 
@@ -229,7 +226,6 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   //     | tag_vararg
   //     | tag_return
   //     | tag_class
-  //     | tag_enum
   //     | tag_field
   //     | tag_type
   //     | tag_lan
@@ -237,7 +233,8 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   //     | tag_see
   //     | tag_def
   //     | access_modifier
-  //     | tag_generic_list)
+  //     | tag_generic_list
+  //     | tag_deprecated)
   static boolean doc_item(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "doc_item")) return false;
     if (!nextTokenIs(b, AT)) return false;
@@ -255,7 +252,6 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   //     | tag_vararg
   //     | tag_return
   //     | tag_class
-  //     | tag_enum
   //     | tag_field
   //     | tag_type
   //     | tag_lan
@@ -264,6 +260,7 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   //     | tag_def
   //     | access_modifier
   //     | tag_generic_list
+  //     | tag_deprecated
   private static boolean doc_item_1(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "doc_item_1")) return false;
     boolean r;
@@ -273,7 +270,6 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     if (!r) r = tag_vararg(b, l + 1);
     if (!r) r = tag_return(b, l + 1);
     if (!r) r = tag_class(b, l + 1);
-    if (!r) r = consumeToken(b, TAG_ENUM);
     if (!r) r = tag_field(b, l + 1);
     if (!r) r = tag_type(b, l + 1);
     if (!r) r = tag_lan(b, l + 1);
@@ -282,6 +278,7 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     if (!r) r = tag_def(b, l + 1);
     if (!r) r = access_modifier(b, l + 1);
     if (!r) r = tag_generic_list(b, l + 1);
+    if (!r) r = tag_deprecated(b, l + 1);
     return r;
   }
 
@@ -670,6 +667,18 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     if (!recursion_guard_(b, l, "tag_def_1")) return false;
     comment_string(b, l + 1);
     return true;
+  }
+
+  /* ********************************************************** */
+  // TAG_NAME_DEPRECATED
+  public static boolean tag_deprecated(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "tag_deprecated")) return false;
+    if (!nextTokenIs(b, TAG_NAME_DEPRECATED)) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeToken(b, TAG_NAME_DEPRECATED);
+    exit_section_(b, m, TAG_DEPRECATED, r);
+    return r;
   }
 
   /* ********************************************************** */
@@ -1155,9 +1164,4 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     return r;
   }
 
-  static final Parser after_dash_recover_parser_ = new Parser() {
-    public boolean parse(PsiBuilder b, int l) {
-      return after_dash_recover(b, l + 1);
-    }
-  };
 }

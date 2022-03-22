@@ -22,6 +22,7 @@ public class LuaDocVarargParamImpl extends ASTWrapperPsiElement implements LuaDo
     visitor.visitVarargParam(this);
   }
 
+  @Override
   public void accept(@NotNull PsiElementVisitor visitor) {
     if (visitor instanceof LuaDocVisitor) accept((LuaDocVisitor)visitor);
     else super.accept(visitor);
@@ -33,6 +34,7 @@ public class LuaDocVarargParamImpl extends ASTWrapperPsiElement implements LuaDo
     return PsiTreeUtil.getChildOfType(this, LuaDocTy.class);
   }
 
+  @Override
   @NotNull
   public ITy getType() {
     return LuaDocPsiImplUtilKt.getType(this);

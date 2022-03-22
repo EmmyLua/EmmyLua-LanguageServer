@@ -32,6 +32,7 @@ object LookupElementFactory {
                                     icon: Icon?): LookupElement {
         val item = buildSignatureCompletionItem(name, signature, false)
         item.kind = CompletionItemKind.Function
+
         return item
     }
 
@@ -50,6 +51,10 @@ object LookupElementFactory {
         if (file != null) {
             item.data = "${file.uri}|${classMember.textOffset}"
         }
+        if(classMember.isDeprecated){
+            item.deprecated = true
+        }
+
         return item
     }
 
@@ -64,6 +69,10 @@ object LookupElementFactory {
         if (file != null) {
             element.data = "${file.uri}|${field.textOffset}"
         }
+        if(field.isDeprecated){
+            element.deprecated = true
+        }
+
         return element
     }
 

@@ -50,7 +50,8 @@ class EnumCompletionProvider : LuaCompletionProvider() {
                                     sig.params[activeParameter].let {
                                         val paramType = it.ty
                                         if (paramType is TyClass) {
-                                            val enumClass = LuaShortNamesManager.getInstance(searchContext.project).findClass(paramType.className, searchContext)
+                                            val enumClass = LuaShortNamesManager.getInstance(searchContext.project)
+                                                .findClass(paramType.className, searchContext)
                                             if (enumClass is LuaDocTagClass && enumClass.enum != null) {
                                                 addEnum(paramType, searchContext, completionResultSet)
                                             }
