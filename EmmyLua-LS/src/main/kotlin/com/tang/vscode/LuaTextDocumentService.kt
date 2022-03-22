@@ -437,7 +437,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     override fun resolveCodeLens(unresolved: CodeLens): CompletableFuture<CodeLens> {
         return computeAsync {
             val data = unresolved.data as? JsonPrimitive
-            val command = Command("References:0", null)
+            val command = Command("References:0", "emmy.showReferences")
             val uri = data?.asString
             if (uri != null) {
                 workspace.findFile(uri)?.let { file ->
