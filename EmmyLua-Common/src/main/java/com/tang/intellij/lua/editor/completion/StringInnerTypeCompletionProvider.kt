@@ -16,6 +16,7 @@ import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.*
 import com.tang.intellij.lua.ty.Ty.Companion.STRING
 import com.tang.lsp.ILuaFile
+import org.eclipse.lsp4j.CompletionItemKind
 
 
 class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
@@ -114,6 +115,9 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
                             memberTy: ITy?
                         ): LookupElement {
                             element.lookupString = prefix + element.lookupString
+                            if(element.kind == CompletionItemKind.Method) {
+                                element.insertText = prefix + element.insertText
+                            }
                             return PrioritizedLookupElement.withPriority(element, 10.0)
                         }
                     }
@@ -132,9 +136,9 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
         return indexFields.joinToString(".")
     }
 
-    private fun guessPrefixType(baseType: ITy, context: SearchContext, content: String): MutableList<ITyClass> {
-        if (content.contains('.')) {
-            return mutableListOf()
+    private fun guessPrefixType(baseType: ITyClass, context: SearchContext, content: String): MutableList<ITyClass> {
+        if (!content.contains('.')) {
+            return mutableListOf(baseType)
         }
 
         val fields = content.split('.');
@@ -143,27 +147,37 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
         return result
     }
 
-    private fun innerGuessPrefixType(type: ITy, context: SearchContext, fields: List<String>, i: Int, result: MutableList<ITyClass>){
-        when(type){
-            is TyClass->{
-                val member = type.findMember(fields[i], context) ?: return ;
+    private fun innerGuessPrefixType(
+        type: ITy,
+        context: SearchContext,
+        fields: List<String>,
+        i: Int,
+        result: MutableList<ITyClass>
+    ) {
+        when (type) {
+            is TyClass -> {
+                val member = type.findMember(fields[i], context) ?: return;
                 val guessType = member.guessType(context)
-                if(i == fields.size - 2){
-                    when(guessType){
-                        is ITyClass->{
+                if (i == fields.size - 2) {
+                    when (guessType) {
+                        is ITyClass -> {
                             result.add(guessType)
                         }
-                        is TyUnion->{
+                        is TyUnion -> {
                             guessType.eachTopClass(Processor {
                                 result.add(it)
                             })
                         }
                     }
-                }
-                else{
+                } else {
                     innerGuessPrefixType(guessType, context, fields, i + 1, result)
                 }
-
+            }
+            is TyUnion -> {
+                type.eachTopClass(Processor {
+                    innerGuessPrefixType(it, context, fields, i, result)
+                    true
+                })
             }
         }
 
