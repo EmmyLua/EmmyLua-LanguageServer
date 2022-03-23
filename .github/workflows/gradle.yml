@@ -27,7 +27,7 @@ jobs:
         distribution: 'temurin'
     - name: Build
       run: |
-        gradlew.bat shadowJar
+        ./gradlew.bat shadowJar
     - name: Upload
       uses: actions/upload-artifact@v2
       with: 
