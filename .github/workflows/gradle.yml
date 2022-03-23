@@ -16,7 +16,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -27,7 +27,7 @@ jobs:
         distribution: 'temurin'
     - name: Build
       run: |
-        gradlew shadowJar
+        gradlew.bat shadowJar
     - name: Upload
       uses: actions/upload-artifact@v2
       with: 
