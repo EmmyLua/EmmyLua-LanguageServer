@@ -35,7 +35,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with: 
         name: EmmyLuaLs
-        path: ${{ github.workspace }}/EmmyLua-LS/build
+        path: ${{ github.workspace }}/EmmyLua-LS/build/libs
   release:
     name: Upload Release
     needs: [build]
