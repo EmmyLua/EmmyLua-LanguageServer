@@ -13,6 +13,7 @@ import com.tang.lsp.toRange
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DiagnosticTag
+import kotlin.math.exp
 
 object DiagnosticsService {
     fun diagnosticFile(file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
@@ -107,6 +108,36 @@ object DiagnosticsService {
                             diagnostic.severity = DiagnosticSeverity.Hint
                             diagnostic.tags = listOf(DiagnosticTag.Deprecated)
                             diagnostic.range = id.textRange.toRange(file)
+                            diagnostics.add(diagnostic)
+                        }
+                    }
+
+                    if(DiagnosticsOptions.fieldValidation){
+                        if(it.parent is LuaVarList){
+                            return@processElements true
+                        }
+
+                        if(resolve == null) {
+                            it.id?.let { id ->
+                                val diagnostic = Diagnostic()
+                                diagnostic.message = "undefined property '${id.text}'"
+                                diagnostic.severity = DiagnosticSeverity.Warning
+                                diagnostic.range = id.textRange.toRange(file)
+                                diagnostics.add(diagnostic)
+                            }
+                        }
+                    }
+                }
+                is LuaCallExpr -> {
+                    val expr = it.expr
+                    if(expr is LuaNameExpr) {
+                        val resolve = expr.reference?.resolve()
+                        if (resolve is LuaFuncDef && resolve.isDeprecated) {
+                            val diagnostic = Diagnostic()
+                            diagnostic.message = "deprecated"
+                            diagnostic.severity = DiagnosticSeverity.Hint
+                            diagnostic.tags = listOf(DiagnosticTag.Deprecated)
+                            diagnostic.range = expr.textRange.toRange(file)
                             diagnostics.add(diagnostic)
                         }
                     }

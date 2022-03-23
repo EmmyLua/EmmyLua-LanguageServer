@@ -12,4 +12,6 @@ object DiagnosticsOptions {
 
     // nil 是否可以赋值给任何定义类型
     var defineTypeCanReceiveNilType = true
+
+    var fieldValidation = true
 }
