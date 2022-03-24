@@ -72,38 +72,6 @@ object VSCodeSettings : IVSCodeSettings {
         // show codeLens
         myShowCodeLens = path("emmylua.codeLens")?.asBoolean == true
 
-        path("emmylua.format.indentCount")?.asInt?.let {
-            if (it > 0) {
-                FormattingOptions.indent = it
-            }
-        }
-
-        path("emmylua.format.tableLineWidth")?.asInt?.let {
-            if (it > 0) {
-                FormattingOptions.tableLineWidth = it
-            }
-        }
-
-        path("emmylua.format.callExprAlignToFirstArg")?.asBoolean?.let {
-            FormattingOptions.callExprAlignToFirstArg = it
-        }
-
-        path("emmylua.format.functionLineSpacing")?.asInt?.let {
-            if (it > 0) {
-                FormattingOptions.functionSpacing = it
-            }
-        }
-
-        path("emmylua.format.loopLineSpacing")?.asInt?.let {
-            if (it > 0) {
-                FormattingOptions.loopSpacing = it
-            }
-        }
-
-        path("emmylua.format.blankBeforeFirstArg")?.asBoolean?.let {
-            FormattingOptions.blankBeforeFirstArg = it
-        }
-
         path("emmylua.hint.paramHint")?.asBoolean?.let {
             LuaSettings.instance.paramHint = it
         }
@@ -136,7 +104,9 @@ object VSCodeSettings : IVSCodeSettings {
         path("emmylua.diagnostics.defineTypeCanReceiveNilType")?.asBoolean?.let {
             DiagnosticsOptions.defineTypeCanReceiveNilType = it
         }
-
+        path("emmylua.diagnostics.fieldValidation")?.asBoolean?.let {
+            DiagnosticsOptions.fieldValidation = it
+        }
 
         return SettingsUpdateResult(associationChanged)
     }

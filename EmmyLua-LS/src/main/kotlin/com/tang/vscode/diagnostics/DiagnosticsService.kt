@@ -116,8 +116,10 @@ object DiagnosticsService {
                         if(it.parent is LuaVarList){
                             return@processElements true
                         }
+                        val context = SearchContext.get(it.project)
+                        val prefixType = it.guessParentType(context)
 
-                        if(resolve == null) {
+                        if(prefixType !is TyUnknown &&  resolve == null) {
                             it.id?.let { id ->
                                 val diagnostic = Diagnostic()
                                 diagnostic.message = "undefined property '${id.text}'"
