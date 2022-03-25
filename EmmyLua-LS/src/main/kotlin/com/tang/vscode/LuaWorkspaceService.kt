@@ -238,7 +238,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                 processedCount++
                 val file = uri.toFile()
                 if (file != null) {
-                    monitor.setProgress("Emmy parse file: ${file.canonicalPath}", processedCount / totalFileCount)
+                    monitor.setProgress("Emmy parse file[${(processedCount / totalFileCount * 100).toInt()}%]: ${file.canonicalPath}",
+                        processedCount / totalFileCount)
                 }
                 addFile(uri, null)
             }
@@ -253,8 +254,11 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private fun sendAllDiagnostics() {
         project.process {
             val file = it.virtualFile
-            if (file is LuaFile && file.diagnostics.isNotEmpty()) {
-                client?.publishDiagnostics(PublishDiagnosticsParams(file.uri.toString(), file.diagnostics))
+            if (file is LuaFile) {
+                file.diagnose()
+                if(file.diagnostics.isNotEmpty()) {
+                    client?.publishDiagnostics(PublishDiagnosticsParams(file.uri.toString(), file.diagnostics))
+                }
             }
             true
         }

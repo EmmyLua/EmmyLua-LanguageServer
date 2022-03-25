@@ -18,10 +18,7 @@ import com.tang.intellij.lua.project.LuaSettings
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
-import com.tang.intellij.lua.ty.ITyFunction
-import com.tang.intellij.lua.ty.findPerfectSignature
-import com.tang.intellij.lua.ty.hasVarargs
-import com.tang.intellij.lua.ty.process
+import com.tang.intellij.lua.ty.*
 import com.tang.lsp.ILuaFile
 import com.tang.lsp.getRangeInFile
 import com.tang.lsp.nameRange
@@ -73,6 +70,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val notUse = mutableListOf<TextRange>()
         val paramHints = mutableListOf<RenderRange>()
         val localHints = mutableListOf<RenderRange>()
+        val overrideHint = mutableListOf<RenderRange>()
 
         // 认为所有local名称定义一开始都是未使用的
         val psiNotUse = mutableSetOf<PsiElement>()
@@ -127,6 +125,35 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
             override fun visitLocalFuncDef(o: LuaLocalFuncDef) {
                 psiNotUse.add(o)
+                o.acceptChildren(this)
+            }
+
+            override fun visitClassMethodDef(o: LuaClassMethodDef) {
+                val context = SearchContext.get(o.project)
+                val classType = o.guessClassType(context)
+                if(classType != null) {
+                    TyClass.processSuperClass(classType, context) { sup ->
+                        val id = o.classMethodName.id
+                        if(id != null) {
+                            val member = sup.findMember(id.text, context)
+                            if (member != null) {
+                                val funcBody = o.children.find { it is LuaFuncBody }
+                                if(funcBody is LuaFuncBody) {
+                                    var fchild = funcBody.firstChild
+                                    while(fchild != funcBody.lastChild){
+                                        if(fchild.text == ")"){
+                                            overrideHint.add(RenderRange(fchild.nameRange!!.toRange (file), null))
+                                        }
+
+                                        fchild = fchild.nextSibling
+                                    }
+                                }
+                            }
+                        }
+                        true
+                    }
+                }
+
                 o.acceptChildren(this)
             }
 
@@ -308,6 +335,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         if (localHints.isNotEmpty()) {
             all.add(Annotator(uri, localHints, AnnotatorType.LocalHint))
         }
+        if(overrideHint.isNotEmpty()){
+            all.add(Annotator(uri, overrideHint, AnnotatorType.OverrideHint))
+        }
+
         return all
     }
 
@@ -921,25 +952,29 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         val file = workspace.findFile(params.textDocument.uri)
         if (file is ILuaFile) {
             file.didChange(params)
+
+            file.diagnose()
             val diagnosticsParams = PublishDiagnosticsParams(params.textDocument.uri, file.diagnostics)
             client?.publishDiagnostics(diagnosticsParams)
         }
     }
 
     override fun references(params: ReferenceParams): CompletableFuture<MutableList<out Location>> {
-        val list = mutableListOf<Location>()
-        withPsiFile(params.textDocument, params.position) { _, psiFile, pos ->
-            val element = TargetElementUtil.findTarget(psiFile, pos)
-            if (element != null) {
-                val target = element.reference?.resolve() ?: element
-                val query = ReferencesSearch.search(target)
-                query.forEach { ref ->
-                    val luaFile = ref.element.containingFile.virtualFile as LuaFile
-                    list.add(Location(luaFile.uri.toString(), ref.getRangeInFile(luaFile)))
+        return computeAsync {
+            val list = mutableListOf<Location>()
+            withPsiFile(params.textDocument, params.position) { _, psiFile, pos ->
+                val element = TargetElementUtil.findTarget(psiFile, pos)
+                if (element != null) {
+                    val target = element.reference?.resolve() ?: element
+                    val query = ReferencesSearch.search(target)
+                    query.forEach { ref ->
+                        val luaFile = ref.element.containingFile.virtualFile as LuaFile
+                        list.add(Location(luaFile.uri.toString(), ref.getRangeInFile(luaFile)))
+                    }
                 }
             }
+            list
         }
-        return CompletableFuture.completedFuture(list)
     }
 
     override fun foldingRange(params: FoldingRangeRequestParams?): CompletableFuture<MutableList<FoldingRange>> {

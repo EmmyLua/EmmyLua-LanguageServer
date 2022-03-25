@@ -53,6 +53,7 @@ interface ILuaFile : IVirtualFile {
     fun unindex()
     fun getLine(offset: Int): Pair<Int, Int>
     fun didChange(params: DidChangeTextDocumentParams)
+    fun diagnose();
     fun getPosition(line:Int, char: Int): Int
     fun processWords(processor: (w: Word) -> Boolean)
 }

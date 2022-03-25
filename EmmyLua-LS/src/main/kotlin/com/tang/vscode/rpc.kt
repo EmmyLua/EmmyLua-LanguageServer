@@ -12,7 +12,8 @@ enum class AnnotatorType {
     Upvalue,
     NotUse,
     ParamHint,
-    LocalHint
+    LocalHint,
+    OverrideHint
 }
 
 data class AnnotatorParams(val uri: String)
