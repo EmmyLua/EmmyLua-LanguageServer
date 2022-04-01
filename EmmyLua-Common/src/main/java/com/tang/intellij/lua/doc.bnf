@@ -97,10 +97,12 @@ private doc_item ::= '@' (tag_param
     | tag_lan
     | tag_overload
     | tag_see
-    | tag_def
     | access_modifier
     | tag_generic_list
-    | tag_deprecated)
+    | tag_deprecated
+    | tag_def
+    | tag_other
+    )
 
 ty ::= union_ty | function_ty | table_ty | generic_ty | arr_ty | general_ty | par_ty | string_literal_ty {
     implements = ['com.tang.intellij.lua.comment.psi.LuaDocType']
@@ -325,3 +327,8 @@ tag_suppress ::= TAG_NAME_SUPPRESS ID (',' ID)* {
 tag_deprecated ::= TAG_NAME_DEPRECATED {
     pin = 1
 }
+
+tag_other ::= TAG_NAME comment_string? {
+    pin = 1
+}
+

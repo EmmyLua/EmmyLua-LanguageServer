@@ -3,7 +3,6 @@ package com.tang.vscode.diagnostics
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.util.Processor
 import com.tang.intellij.lua.comment.psi.LuaDocPsiElement
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
@@ -13,7 +12,6 @@ import com.tang.lsp.toRange
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DiagnosticTag
-import kotlin.math.exp
 
 object DiagnosticsService {
     fun diagnosticFile(file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
@@ -36,113 +34,20 @@ object DiagnosticsService {
                         diagnostic.range = it.textRange.toRange(file)
                         diagnostics.add(diagnostic)
                     }
-
-                    if (DiagnosticsOptions.parameterValidation && expr is LuaCallExpr) {
-                        val callExpr = expr
-                        var nCommas = 0
-                        val paramMap = mutableMapOf<Int, LuaTypeGuessable>()
-                        callExpr.args.firstChild?.let { firstChild ->
-                            var child: PsiElement? = firstChild
-                            while (child != null) {
-                                if (child.node.elementType == LuaTypes.COMMA) {
-                                    nCommas++
-                                } else {
-                                    if (child is LuaTypeGuessable) {
-                                        paramMap[nCommas] = child
-                                    }
-                                }
-
-                                child = child.nextSibling
-                            }
-                        }
-                        val context = SearchContext.get(callExpr.project)
-                        callExpr.guessParentType(context).let { parentType ->
-                            parentType.each { ty ->
-                                if (ty is ITyFunction) {
-                                    val sig = ty.findPerfectSignature(nCommas + 1)
-
-                                    var index = 0;
-
-                                    var skipFirstParam = false
-
-                                    if (sig.colonCall && callExpr.isMethodDotCall) {
-                                        index++;
-                                    } else if (!sig.colonCall && callExpr.isMethodColonCall) {
-                                        skipFirstParam = true
-                                    }
-
-                                    sig.params.forEach { pi ->
-                                        if (skipFirstParam) {
-                                            skipFirstParam = false
-                                            return@forEach
-                                        }
-
-                                        val param = paramMap[index]
-                                        if (param != null) {
-                                            val paramType = param.guessType(context)
-                                            if (!typeCheck(pi.ty, param, context)) {
-                                                val diagnostic = Diagnostic()
-                                                diagnostic.message =
-                                                    "Type mismatch '${paramType.displayName}' not match type '${pi.ty.displayName}'"
-                                                diagnostic.severity = DiagnosticSeverity.Warning
-                                                diagnostic.range = param.textRange.toRange(file)
-                                                diagnostics.add(diagnostic)
-                                            }
-                                        }
-                                        ++index;
-                                    }
-                                    //可变参数暂时不做验证
-                                }
-                            }
-                        }
-                    }
                 }
                 is LuaIndexExpr -> {
-                    val resolve = it.reference?.resolve()
-                    if ((resolve is LuaClassMethodDef && resolve.isDeprecated)
-                        || (resolve is LuaClassField && resolve.isDeprecated)
-                    ) {
-                        it.id?.let { id ->
-                            val diagnostic = Diagnostic()
-                            diagnostic.message = "deprecated"
-                            diagnostic.severity = DiagnosticSeverity.Hint
-                            diagnostic.tags = listOf(DiagnosticTag.Deprecated)
-                            diagnostic.range = id.textRange.toRange(file)
-                            diagnostics.add(diagnostic)
-                        }
-                    }
-
-                    if(DiagnosticsOptions.fieldValidation){
-                        if(it.parent is LuaVarList){
-                            return@processElements true
-                        }
-                        val context = SearchContext.get(it.project)
-                        val prefixType = it.guessParentType(context)
-
-                        if(prefixType !is TyUnknown &&  resolve == null) {
-                            it.id?.let { id ->
-                                val diagnostic = Diagnostic()
-                                diagnostic.message = "undefined property '${id.text}'"
-                                diagnostic.severity = DiagnosticSeverity.Warning
-                                diagnostic.range = id.textRange.toRange(file)
-                                diagnostics.add(diagnostic)
-                            }
-                        }
-                    }
+                    indexDeprecatedInspections(it, file, diagnostics)
+                    fieldValidationInspections(it, file, diagnostics)
                 }
                 is LuaCallExpr -> {
-                    val expr = it.expr
-                    if(expr is LuaNameExpr) {
-                        val resolve = expr.reference?.resolve()
-                        if (resolve is LuaFuncDef && resolve.isDeprecated) {
-                            val diagnostic = Diagnostic()
-                            diagnostic.message = "deprecated"
-                            diagnostic.severity = DiagnosticSeverity.Hint
-                            diagnostic.tags = listOf(DiagnosticTag.Deprecated)
-                            diagnostic.range = expr.textRange.toRange(file)
-                            diagnostics.add(diagnostic)
-                        }
-                    }
+                    callDeprecatedInspections(it, file, diagnostics)
+                    callExprInspections(it, file, diagnostics)
+                }
+                is LuaAssignStat -> {
+                    assignInspections(it, file, diagnostics)
+                }
+                is LuaNameExpr -> {
+                    undeclaredVariableInspections(it, file, diagnostics)
                 }
             }
 
@@ -196,4 +101,207 @@ object DiagnosticsService {
         return variableType.subTypeOf(defineType, context, true)
     }
 
+    private fun callDeprecatedInspections(o: LuaCallExpr, file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
+        val expr = o.expr
+        if (expr is LuaNameExpr) {
+            val resolve = expr.reference?.resolve()
+            if (resolve is LuaFuncDef && resolve.isDeprecated) {
+                val diagnostic = Diagnostic()
+                diagnostic.message = "deprecated"
+                diagnostic.severity = DiagnosticSeverity.Hint
+                diagnostic.tags = listOf(DiagnosticTag.Deprecated)
+                diagnostic.range = expr.textRange.toRange(file)
+                diagnostics.add(diagnostic)
+            }
+        }
+    }
+
+    private fun indexDeprecatedInspections(o: LuaIndexExpr, file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
+        val resolve = o.reference?.resolve()
+        if ((resolve is LuaClassMethodDef && resolve.isDeprecated)
+            || (resolve is LuaClassField && resolve.isDeprecated)
+        ) {
+            o.id?.let { id ->
+                val diagnostic = Diagnostic()
+                diagnostic.message = "deprecated"
+                diagnostic.severity = DiagnosticSeverity.Hint
+                diagnostic.tags = listOf(DiagnosticTag.Deprecated)
+                diagnostic.range = id.textRange.toRange(file)
+                diagnostics.add(diagnostic)
+            }
+        }
+    }
+
+    private fun fieldValidationInspections(o: LuaIndexExpr, file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
+        if (DiagnosticsOptions.fieldValidation != InspectionsLevel.None) {
+            if (o.parent is LuaVarList) {
+                return
+            }
+            val resolve = o.reference?.resolve()
+            val context = SearchContext.get(o.project)
+            val prefixType = o.guessParentType(context)
+
+            if (prefixType !is TyUnknown && resolve == null) {
+                o.id?.let { id ->
+                    val diagnostic = Diagnostic()
+                    diagnostic.message = "undefined property '${id.text}'"
+                    diagnostic.severity = makeSeverity(DiagnosticsOptions.fieldValidation)
+                    diagnostic.range = id.textRange.toRange(file)
+                    diagnostics.add(diagnostic)
+                }
+            }
+        }
+    }
+
+    private fun assignInspections(o: LuaAssignStat, file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
+        if (DiagnosticsOptions.assignValidation != InspectionsLevel.None) {
+            val assignees = o.varExprList.exprList
+            val values = o.valueExprList?.exprList ?: listOf()
+            val searchContext = SearchContext.get(o.project)
+
+            // Check right number of fields/assignments
+            if (assignees.size > values.size) {
+                for (i in values.size until assignees.size) {
+                    val diagnostic = Diagnostic()
+                    diagnostic.message = "Missing value assignment."
+                    diagnostic.severity = makeSeverity(DiagnosticsOptions.assignValidation)
+                    diagnostic.range = assignees[i].textRange.toRange(file)
+                    diagnostics.add(diagnostic)
+                }
+            } else if (assignees.size < values.size) {
+                for (i in assignees.size until values.size) {
+                    val diagnostic = Diagnostic()
+                    diagnostic.message = "Nothing to assign to."
+                    diagnostic.severity = makeSeverity(DiagnosticsOptions.assignValidation)
+                    diagnostic.range = values[i].textRange.toRange(file)
+                    diagnostics.add(diagnostic)
+                }
+            } else {
+                // Try to match types for each assignment
+                for (i in 0 until assignees.size) {
+                    val field = assignees[i]
+                    val name = field.name ?: ""
+                    val value = values[i]
+                    val valueType = value.guessType(searchContext)
+
+                    // Field access
+                    if (field is LuaIndexExpr) {
+                        // Get owner class
+                        val parent = field.guessParentType(searchContext)
+
+                        if (parent is TyClass) {
+                            val fieldType = parent.findMemberType(name, searchContext) ?: Ty.NIL
+
+                            if (!valueType.subTypeOf(fieldType, searchContext, false)) {
+                                val diagnostic = Diagnostic()
+                                diagnostic.message =
+                                    "Type mismatch. Required: '%s' Found: '%s'".format(fieldType, valueType)
+                                diagnostic.severity = makeSeverity(DiagnosticsOptions.assignValidation)
+                                diagnostic.range = value.textRange.toRange(file)
+                                diagnostics.add(diagnostic)
+                            }
+                        }
+                    } else {
+                        // Local/global var assignments, only check type if there is no comment defining it
+                        if (o.comment == null) {
+                            val fieldType = field.guessType(searchContext)
+                            if (!valueType.subTypeOf(fieldType, searchContext, false)) {
+                                val diagnostic = Diagnostic()
+                                diagnostic.message =
+                                    "Type mismatch. Required: '%s' Found: '%s'".format(fieldType, valueType)
+                                diagnostic.severity = makeSeverity(DiagnosticsOptions.assignValidation)
+                                diagnostic.range = value.textRange.toRange(file)
+                                diagnostics.add(diagnostic)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    private fun callExprInspections(callExpr: LuaCallExpr, file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
+        if (DiagnosticsOptions.parameterValidation != InspectionsLevel.None) {
+            var nCommas = 0
+            val paramMap = mutableMapOf<Int, LuaTypeGuessable>()
+            callExpr.args.firstChild?.let { firstChild ->
+                var child: PsiElement? = firstChild
+                while (child != null) {
+                    if (child.node.elementType == LuaTypes.COMMA) {
+                        nCommas++
+                    } else {
+                        if (child is LuaTypeGuessable) {
+                            paramMap[nCommas] = child
+                        }
+                    }
+
+                    child = child.nextSibling
+                }
+            }
+            val context = SearchContext.get(callExpr.project)
+            callExpr.guessParentType(context).let { parentType ->
+                parentType.each { ty ->
+                    if (ty is ITyFunction) {
+                        val sig = ty.findPerfectSignature(nCommas + 1)
+
+                        var index = 0;
+
+                        var skipFirstParam = false
+
+                        if (sig.colonCall && callExpr.isMethodDotCall) {
+                            index++;
+                        } else if (!sig.colonCall && callExpr.isMethodColonCall) {
+                            skipFirstParam = true
+                        }
+
+                        sig.params.forEach { pi ->
+                            if (skipFirstParam) {
+                                skipFirstParam = false
+                                return@forEach
+                            }
+
+                            val param = paramMap[index]
+                            if (param != null) {
+                                val paramType = param.guessType(context)
+                                if (!typeCheck(pi.ty, param, context)) {
+                                    val diagnostic = Diagnostic()
+                                    diagnostic.message =
+                                        "Type mismatch '${paramType.displayName}' not match type '${pi.ty.displayName}'"
+                                    diagnostic.severity = makeSeverity(DiagnosticsOptions.parameterValidation)
+                                    diagnostic.range = param.textRange.toRange(file)
+                                    diagnostics.add(diagnostic)
+                                }
+                            }
+                            ++index;
+                        }
+                        //可变参数暂时不做验证
+                    }
+                }
+            }
+        }
+    }
+
+    private fun undeclaredVariableInspections(o: LuaNameExpr, file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
+        if (DiagnosticsOptions.undeclaredVariable != InspectionsLevel.None) {
+            val res = resolve(o, SearchContext.get(o.project))
+
+            if (res == null) {
+                val diagnostic = Diagnostic()
+                diagnostic.message = "Undeclared variable '%s'.".format(o.text)
+                diagnostic.severity = makeSeverity(DiagnosticsOptions.undeclaredVariable)
+                diagnostic.range = o.textRange.toRange(file)
+                diagnostics.add(diagnostic)
+
+            }
+        }
+    }
+
+    private fun makeSeverity(level: InspectionsLevel): DiagnosticSeverity {
+        return when (level) {
+            InspectionsLevel.None -> DiagnosticSeverity.Information
+            InspectionsLevel.Warning -> DiagnosticSeverity.Warning
+            InspectionsLevel.Error -> DiagnosticSeverity.Error
+        }
+    }
 }

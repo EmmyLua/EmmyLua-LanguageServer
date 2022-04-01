@@ -231,10 +231,12 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   //     | tag_lan
   //     | tag_overload
   //     | tag_see
-  //     | tag_def
   //     | access_modifier
   //     | tag_generic_list
-  //     | tag_deprecated)
+  //     | tag_deprecated
+  //     | tag_def
+  //     | tag_other
+  //     )
   static boolean doc_item(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "doc_item")) return false;
     if (!nextTokenIs(b, AT)) return false;
@@ -257,10 +259,11 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   //     | tag_lan
   //     | tag_overload
   //     | tag_see
-  //     | tag_def
   //     | access_modifier
   //     | tag_generic_list
   //     | tag_deprecated
+  //     | tag_def
+  //     | tag_other
   private static boolean doc_item_1(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "doc_item_1")) return false;
     boolean r;
@@ -275,10 +278,11 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     if (!r) r = tag_lan(b, l + 1);
     if (!r) r = tag_overload(b, l + 1);
     if (!r) r = tag_see(b, l + 1);
-    if (!r) r = tag_def(b, l + 1);
     if (!r) r = access_modifier(b, l + 1);
     if (!r) r = tag_generic_list(b, l + 1);
     if (!r) r = tag_deprecated(b, l + 1);
+    if (!r) r = tag_def(b, l + 1);
+    if (!r) r = tag_other(b, l + 1);
     return r;
   }
 
@@ -786,6 +790,27 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   // comment_string?
   private static boolean tag_lan_2(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "tag_lan_2")) return false;
+    comment_string(b, l + 1);
+    return true;
+  }
+
+  /* ********************************************************** */
+  // TAG_NAME comment_string?
+  public static boolean tag_other(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "tag_other")) return false;
+    if (!nextTokenIs(b, TAG_NAME)) return false;
+    boolean r, p;
+    Marker m = enter_section_(b, l, _NONE_, TAG_OTHER, null);
+    r = consumeToken(b, TAG_NAME);
+    p = r; // pin = 1
+    r = r && tag_other_1(b, l + 1);
+    exit_section_(b, l, m, r, p, null);
+    return r || p;
+  }
+
+  // comment_string?
+  private static boolean tag_other_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "tag_other_1")) return false;
     comment_string(b, l + 1);
     return true;
   }

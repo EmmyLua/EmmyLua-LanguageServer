@@ -61,6 +61,8 @@ class LuaSettings {
 
     var varargHint = false
 
+    var overrideHint = false
+
     companion object {
 
         val instance: LuaSettings = LuaSettings()

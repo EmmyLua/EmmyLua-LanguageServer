@@ -4,6 +4,7 @@ import com.google.gson.*
 import com.tang.intellij.lua.IVSCodeSettings
 import com.tang.intellij.lua.project.LuaSettings
 import com.tang.vscode.diagnostics.DiagnosticsOptions
+import com.tang.vscode.diagnostics.InspectionsLevel
 import com.tang.vscode.formatter.FormattingOptions
 import com.yevdo.jwildcard.JWildcard
 
@@ -84,6 +85,10 @@ object VSCodeSettings : IVSCodeSettings {
             LuaSettings.instance.varargHint = it
         }
 
+        path("emmylua.hint.overrideHint")?.asBoolean?.let {
+            LuaSettings.instance.overrideHint = it
+        }
+
         path("emmylua.constructorNames")?.asString?.let {
             LuaSettings.instance.constructorNames = it.split(";").filter { it.isNotEmpty() }.toTypedArray()
         }
@@ -92,20 +97,28 @@ object VSCodeSettings : IVSCodeSettings {
             LuaSettings.instance.requireLikeFunctions = it.split(";").filter { it.isNotEmpty() }.toTypedArray()
         }
 
-        path("emmylua.diagnostics.parameterValidation")?.asBoolean?.let {
-            DiagnosticsOptions.parameterValidation = it
-        }
-        path("emmylua.diagnostics.anyTypeCanAssignToAnyDefineType")?.asBoolean?.let {
+
+        path("emmylua.typeSafety.anyTypeCanAssignToAnyDefineType")?.asBoolean?.let {
             DiagnosticsOptions.anyTypeCanAssignToAnyDefineType = it
         }
-        path("emmylua.diagnostics.defineAnyTypeCanBeAssignedByAnyVariable")?.asBoolean?.let {
+        path("emmylua.typeSafety.defineAnyTypeCanBeAssignedByAnyVariable")?.asBoolean?.let {
             DiagnosticsOptions.defineAnyTypeCanBeAssignedByAnyVariable = it
         }
-        path("emmylua.diagnostics.defineTypeCanReceiveNilType")?.asBoolean?.let {
+        path("emmylua.typeSafety.defineTypeCanReceiveNilType")?.asBoolean?.let {
             DiagnosticsOptions.defineTypeCanReceiveNilType = it
         }
-        path("emmylua.diagnostics.fieldValidation")?.asBoolean?.let {
-            DiagnosticsOptions.fieldValidation = it
+
+        path("emmylua.inspections.parameterValidation")?.asString?.let {
+            DiagnosticsOptions.parameterValidation = InspectionsLevel.valueOf(it)
+        }
+        path("emmylua.inspections.fieldValidation")?.asString?.let {
+            DiagnosticsOptions.fieldValidation = InspectionsLevel.valueOf(it)
+        }
+        path("emmylua.inspections.undeclaredVariable")?.asString?.let {
+            DiagnosticsOptions.undeclaredVariable = InspectionsLevel.valueOf(it)
+        }
+        path("emmylua.inspections.assignValidation")?.asString?.let {
+            DiagnosticsOptions.assignValidation = InspectionsLevel.valueOf(it)
         }
 
         return SettingsUpdateResult(associationChanged)

@@ -31,6 +31,7 @@ public interface LuaDocTypes {
   IElementType TAG_FIELD = LuaParserDefinitionKt.createDocType("TAG_FIELD");
   IElementType TAG_GENERIC_LIST = LuaParserDefinitionKt.createDocType("TAG_GENERIC_LIST");
   IElementType TAG_LAN = LuaParserDefinitionKt.createDocType("TAG_LAN");
+  IElementType TAG_OTHER = LuaParserDefinitionKt.createDocType("TAG_OTHER");
   IElementType TAG_OVERLOAD = LuaParserDefinitionKt.createDocType("TAG_OVERLOAD");
   IElementType TAG_PARAM = LuaParserDefinitionKt.createDocType("TAG_PARAM");
   IElementType TAG_RETURN = LuaParserDefinitionKt.createDocType("TAG_RETURN");
@@ -155,6 +156,9 @@ public interface LuaDocTypes {
       }
       else if (type == TAG_LAN) {
         return new LuaDocTagLanImpl(node);
+      }
+      else if (type == TAG_OTHER) {
+        return new LuaDocTagOtherImpl(node);
       }
       else if (type == TAG_OVERLOAD) {
         return new LuaDocTagOverloadImpl(node);
