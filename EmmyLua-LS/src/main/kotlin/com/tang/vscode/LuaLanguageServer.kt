@@ -120,9 +120,9 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         val didChangeWorkspaceFolders = Registration(WORKSPACE_FOLDERS_CAPABILITY_ID, WORKSPACE_FOLDERS_CAPABILITY_NAME)
         client?.registerCapability(RegistrationParams(listOf(didChangeWorkspaceFolders)))
 
-        if(VSCodeSettings.clientType != "vsc"){
-            workspaceService.loadWorkspace()
-        }
+        workspaceService.loadWorkspace()
+
+        workspaceService.diagnoseWorkspace()
     }
 
     override fun getWorkspaceService(): WorkspaceService {

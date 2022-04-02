@@ -144,6 +144,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                         while (fchild != funcBody.lastChild) {
                                             if (fchild.text == ")") {
                                                 overrideHint.add(RenderRange(fchild.nameRange!!.toRange(file), null))
+                                                return@processSuperClass true
                                             }
 
                                             fchild = fchild.nextSibling

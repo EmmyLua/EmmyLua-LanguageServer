@@ -146,7 +146,7 @@ object DiagnosticsService {
             if (prefixType !is TyUnknown && res == null) {
                 o.id?.let { id ->
                     val diagnostic = Diagnostic()
-                    diagnostic.message = "undefined property '${id.text}'"
+                    diagnostic.message = "Undefined property '${id.text}'"
                     diagnostic.severity = makeSeverity(DiagnosticsOptions.fieldValidation)
                     diagnostic.range = id.textRange.toRange(file)
                     diagnostics.add(diagnostic)
