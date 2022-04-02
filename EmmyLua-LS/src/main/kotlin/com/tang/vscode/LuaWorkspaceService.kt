@@ -85,6 +85,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val settings = params.settings as? JsonObject ?: return
         val ret = VSCodeSettings.update(settings)
         if (ret.associationChanged) {
+            loadWorkspace()
             diagnoseWorkspace()
         }
     }
