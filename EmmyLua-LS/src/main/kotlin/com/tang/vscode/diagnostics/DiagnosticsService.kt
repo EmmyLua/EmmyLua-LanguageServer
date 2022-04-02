@@ -36,11 +36,11 @@ object DiagnosticsService {
                     }
                 }
                 is LuaIndexExpr -> {
-                    indexDeprecatedInspections(it, file, diagnostics)
+//                    indexDeprecatedInspections(it, file, diagnostics)
                     fieldValidationInspections(it, file, diagnostics)
                 }
                 is LuaCallExpr -> {
-                    callDeprecatedInspections(it, file, diagnostics)
+//                    callDeprecatedInspections(it, file, diagnostics)
                     callExprInspections(it, file, diagnostics)
                 }
                 is LuaAssignStat -> {
@@ -117,9 +117,10 @@ object DiagnosticsService {
     }
 
     private fun indexDeprecatedInspections(o: LuaIndexExpr, file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
-        val resolve = o.reference?.resolve()
-        if ((resolve is LuaClassMethodDef && resolve.isDeprecated)
-            || (resolve is LuaClassField && resolve.isDeprecated)
+        val searchContext = SearchContext.get(o.project)
+        val res = resolve(o, searchContext)
+        if ((res is LuaClassMethodDef && res.isDeprecated)
+            || (res is LuaClassField && res.isDeprecated)
         ) {
             o.id?.let { id ->
                 val diagnostic = Diagnostic()
@@ -137,11 +138,12 @@ object DiagnosticsService {
             if (o.parent is LuaVarList) {
                 return
             }
-            val resolve = o.reference?.resolve()
+            val searchContext = SearchContext.get(o.project)
+            val res = resolve(o, searchContext)
             val context = SearchContext.get(o.project)
             val prefixType = o.guessParentType(context)
 
-            if (prefixType !is TyUnknown && resolve == null) {
+            if (prefixType !is TyUnknown && res == null) {
                 o.id?.let { id ->
                     val diagnostic = Diagnostic()
                     diagnostic.message = "undefined property '${id.text}'"
