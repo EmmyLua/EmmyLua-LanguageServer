@@ -52,7 +52,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: CodeFormat
+          name: EmmyLuaLs
           draft: false
           generate_release_notes: true
           files: |
