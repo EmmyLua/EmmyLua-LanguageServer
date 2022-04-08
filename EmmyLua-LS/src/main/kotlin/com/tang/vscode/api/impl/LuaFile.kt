@@ -28,9 +28,14 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
     private var _words: List<Word>? = null
-    private var _completeDiagnose = false;
+    private val _diagnostics = mutableListOf<Diagnostic>();
 
-    override val diagnostics = mutableListOf<Diagnostic>()
+    override val diagnostics: List<Diagnostic>
+        get() {
+            synchronized(_diagnostics) {
+                return _diagnostics.toList()
+            }
+        }
 
     @Synchronized
     override fun didChange(params: DidChangeTextDocumentParams) {
@@ -77,11 +82,9 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         onChanged()
     }
 
-    override fun diagnose(){
-        if(!_completeDiagnose) {
-            // 索引建立完之后再诊断
-            DiagnosticsService.diagnosticFile(this, diagnostics)
-            _completeDiagnose = true
+    override fun diagnose() {
+        synchronized(_diagnostics) {
+            DiagnosticsService.diagnosticFile(this, _diagnostics)
         }
     }
 
@@ -119,8 +122,9 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
     private fun doParser() {
         _words = null
-        _completeDiagnose = false
-        diagnostics.clear()
+        synchronized(_diagnostics) {
+            _diagnostics.clear()
+        }
         unindex()
         val parser = LuaParser()
         val builder = PsiBuilderFactory.getInstance().createBuilder(

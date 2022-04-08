@@ -32,6 +32,7 @@ import com.tang.intellij.lua.comment.reference.LuaDocParamNameReference
 import com.tang.intellij.lua.comment.reference.LuaDocSeeReference
 import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaElementFactory
+import com.tang.intellij.lua.psi.LuaParamNameDef
 import com.tang.intellij.lua.psi.Visibility
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.*
@@ -338,4 +339,12 @@ fun getType(alias: LuaDocTagAlias): ITy {
     val stub = alias.stub
     val ty = stub?.type ?: alias.ty?.getType()
     return ty ?: Ty.UNKNOWN
+}
+
+fun isNullable(param: LuaDocTagParam): Boolean{
+    return param.nullable != null
+}
+
+fun isNullable(field: LuaDocTagField): Boolean{
+    return field.nullable != null
 }

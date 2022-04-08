@@ -25,6 +25,9 @@ public interface LuaDocTagField extends LuaClassField, LuaDocPsiElement, PsiName
   LuaDocCommentString getCommentString();
 
   @Nullable
+  LuaDocNullable getNullable();
+
+  @Nullable
   LuaDocTy getTy();
 
   @Nullable
@@ -54,5 +57,7 @@ public interface LuaDocTagField extends LuaClassField, LuaDocPsiElement, PsiName
   ItemPresentation getPresentation();
 
   boolean isDeprecated();
+
+  boolean isNullable();
 
 }

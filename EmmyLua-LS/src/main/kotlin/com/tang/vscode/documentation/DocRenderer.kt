@@ -89,7 +89,7 @@ internal fun renderSignature(sb: StringBuilder, sig: IFunSignature) {
         var idx = 0
         sig.params.forEach {
             if (idx++ != 0) sb.append(", ")
-            sb.append("${it.name}: ")
+            sb.append("${it.name}${if (it.nullable) "?" else ""}: ")
             renderTy(sb, it.ty)
         }
         if (sig.hasVarargs()) {
@@ -164,7 +164,11 @@ internal fun renderClassDef(sb: StringBuilder, def: LuaDocTagClass) {
 }
 
 internal fun renderFieldDef(sb: StringBuilder, def: LuaDocTagField) {
-    sb.appendLine("@_field_ `${def.name}`: ")
+    if (def.isNullable) {
+        sb.appendLine("@_field_ `${def.name}?`: ")
+    } else {
+        sb.appendLine("@_field_ `${def.name}`: ")
+    }
     renderTypeUnion(null, null, sb, def.ty)
     renderCommentString("  ", null, sb, def.commentString)
 }
@@ -173,7 +177,7 @@ internal fun renderDocParam(sb: StringBuilder, child: LuaDocTagParam) {
     val paramNameRef = child.paramNameRef
     val commentString = child.commentString
     if (paramNameRef != null && commentString != null && commentString.text.isNotEmpty()) {
-        sb.appendLine("@_param_ `${paramNameRef.text}`: ")
+        sb.appendLine("@_param_ `${paramNameRef.text}${if (child.isNullable) "?" else ""}`: ")
         renderTypeUnion(null, null, sb, child.ty)
         renderCommentString("  ", null, sb, commentString)
     }

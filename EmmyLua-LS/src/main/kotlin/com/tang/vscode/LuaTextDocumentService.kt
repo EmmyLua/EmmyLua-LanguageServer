@@ -618,14 +618,24 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                     information.parameters = mutableListOf()
                                     sig.params.forEach { pi ->
                                         val paramInfo =
-                                            ParameterInformation("${pi.name}:${pi.ty.displayName}", pi.ty.displayName)
+                                            ParameterInformation("${pi.name}${if(pi.nullable) "?" else "" }:${pi.ty.displayName}")
                                         information.parameters.add(paramInfo)
                                     }
+
+                                    if(sig.hasVarargs()){
+                                        val paramInfo =
+                                            ParameterInformation("...:${sig.varargTy?.displayName}")
+                                        information.parameters.add(paramInfo)
+                                    }
+
                                     information.label = sig.displayName
                                     list.add(information)
 
                                     if (sig == active) {
                                         activeSig = idx
+                                        if(sig.hasVarargs() && activeParameter > information.parameters.size - 1){
+                                            activeParameter = information.parameters.size - 1
+                                        }
                                     }
                                     idx++
                                     true

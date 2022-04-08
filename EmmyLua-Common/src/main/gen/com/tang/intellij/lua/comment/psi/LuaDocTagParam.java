@@ -12,6 +12,9 @@ public interface LuaDocTagParam extends LuaDocTag {
   LuaDocCommentString getCommentString();
 
   @Nullable
+  LuaDocNullable getNullable();
+
+  @Nullable
   LuaDocParamNameRef getParamNameRef();
 
   @Nullable
@@ -19,5 +22,7 @@ public interface LuaDocTagParam extends LuaDocTag {
 
   @NotNull
   ITy getType();
+
+  boolean isNullable();
 
 }

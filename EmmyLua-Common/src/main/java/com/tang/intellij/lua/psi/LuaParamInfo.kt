@@ -35,6 +35,7 @@ class LuaParamInfo {
     var flags: Byte = 0
     var name: String = ""
     var ty: ITy = Ty.UNKNOWN
+    var nullable = false
 
     constructor(name: String, ty: ITy) {
         this.name = name
@@ -71,6 +72,7 @@ class LuaParamInfo {
         pi.flags = flags
         pi.name = name
         pi.ty = ty.substitute(substitutor)
+        pi.nullable = nullable
         return pi
     }
 

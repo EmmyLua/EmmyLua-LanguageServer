@@ -62,6 +62,12 @@ public class LuaDocTagFieldImpl extends StubBasedPsiElementBase<LuaDocTagFieldSt
 
   @Override
   @Nullable
+  public LuaDocNullable getNullable() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocNullable.class);
+  }
+
+  @Override
+  @Nullable
   public LuaDocTy getTy() {
     return PsiTreeUtil.getChildOfType(this, LuaDocTy.class);
   }
@@ -128,6 +134,11 @@ public class LuaDocTagFieldImpl extends StubBasedPsiElementBase<LuaDocTagFieldSt
   @Override
   public boolean isDeprecated() {
     return LuaDocPsiImplUtilKt.isDeprecated(this);
+  }
+
+  @Override
+  public boolean isNullable() {
+    return LuaDocPsiImplUtilKt.isNullable(this);
   }
 
 }

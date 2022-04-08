@@ -311,7 +311,7 @@ private fun LuaLiteralExpr.infer(): ITy {
             val o = PsiTreeUtil.getParentOfType(this, LuaFuncBodyOwner::class.java)
             o?.varargType ?: Ty.UNKNOWN
         }
-        //LuaLiteralKind.Nil -> Ty.NIL
+        LuaLiteralKind.Nil -> Ty.NIL
         else -> Ty.UNKNOWN
     }
 }

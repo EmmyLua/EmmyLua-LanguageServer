@@ -125,7 +125,7 @@ abstract class FunSignatureBase(override val colonCall: Boolean,
     override val displayName: String by lazy {
         val paramSB = mutableListOf<String>()
         params.forEach {
-            paramSB.add(it.name + ":" + it.ty.displayName)
+            paramSB.add(it.name + (if(it.nullable) "?" else "") + ":" + it.ty.displayName)
         }
         if(hasVarargs()){
             varargTy?.let {

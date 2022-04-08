@@ -393,6 +393,7 @@ private fun getParamsInner(funcBodyOwner: LuaFuncBodyOwner): Array<LuaParamInfo>
                 val paramDef = comment.getParamDef(paramName)
                 if (paramDef != null) {
                     paramInfo.ty = paramDef.type
+                    paramInfo.nullable = paramDef.isNullable
                 }
             }
             list.add(paramInfo)

@@ -58,11 +58,13 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
 %state xTAG_NAME
 %state xCOMMENT_STRING
 %state xPARAM
+%state xPARAM_ID
 %state xTYPE_REF
 %state xCLASS
 %state xCLASS_EXTEND
 %state xFIELD
 %state xFIELD_ID
+%state xFIELD_ID_NULLABLE
 %state xGENERIC
 %state xALIAS
 %state xSUPPRESS
@@ -134,18 +136,29 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
 }
 
 <xPARAM> {
-    {ID}                       { beginType(); return ID; }
+    {ID}                       { yybegin(xPARAM_ID); return ID; }
     "..."                      { beginType(); return ID; } //varargs
+}
+
+<xPARAM_ID> {
+    "?"                        { beginType(); return QM;}
+    [^]                        { beginType(); yypushback(yylength());}
 }
 
 <xFIELD> {
     "private"                  { yybegin(xFIELD_ID); return PRIVATE; }
     "protected"                { yybegin(xFIELD_ID); return PROTECTED; }
     "public"                   { yybegin(xFIELD_ID); return PUBLIC; }
-    {ID}                       { beginType(); return ID; }
+    {ID}                       { yybegin(xFIELD_ID_NULLABLE); return ID; }
 }
+
 <xFIELD_ID> {
-    {ID}                       { beginType(); return ID; }
+    {ID}                       { yybegin(xFIELD_ID_NULLABLE); return ID; }
+}
+
+<xFIELD_ID_NULLABLE>{
+    "?"                        { beginType(); return QM; }
+    [^]                        { beginType(); yypushback(yylength());}
 }
 
 <xTYPE_REF> {

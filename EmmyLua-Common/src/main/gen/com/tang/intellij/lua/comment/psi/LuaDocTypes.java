@@ -18,6 +18,7 @@ public interface LuaDocTypes {
   IElementType GENERAL_TY = LuaParserDefinitionKt.createDocType("GENERAL_TY");
   IElementType GENERIC_DEF = LuaParserDefinitionKt.createDocType("GENERIC_DEF");
   IElementType GENERIC_TY = LuaParserDefinitionKt.createDocType("GENERIC_TY");
+  IElementType NULLABLE = LuaParserDefinitionKt.createDocType("NULLABLE");
   IElementType PARAM_NAME_REF = LuaParserDefinitionKt.createDocType("PARAM_NAME_REF");
   IElementType PAR_TY = LuaParserDefinitionKt.createDocType("PAR_TY");
   IElementType STRING_LITERAL_TY = LuaParserDefinitionKt.createDocType("STRING_LITERAL_TY");
@@ -60,6 +61,7 @@ public interface LuaDocTypes {
   IElementType PRIVATE = new LuaDocTokenType("PRIVATE");
   IElementType PROTECTED = new LuaDocTokenType("PROTECTED");
   IElementType PUBLIC = new LuaDocTokenType("PUBLIC");
+  IElementType QM = new LuaDocTokenType("?");
   IElementType RCURLY = new LuaDocTokenType("}");
   IElementType RPAREN = new LuaDocTokenType(")");
   IElementType SHARP = new LuaDocTokenType("#");
@@ -117,6 +119,9 @@ public interface LuaDocTypes {
       }
       else if (type == GENERIC_TY) {
         return new LuaDocGenericTyImpl(node);
+      }
+      else if (type == NULLABLE) {
+        return new LuaDocNullableImpl(node);
       }
       else if (type == PARAM_NAME_REF) {
         return new LuaDocParamNameRefImpl(node);

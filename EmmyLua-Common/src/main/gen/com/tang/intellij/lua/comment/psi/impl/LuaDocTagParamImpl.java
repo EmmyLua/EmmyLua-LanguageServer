@@ -36,6 +36,12 @@ public class LuaDocTagParamImpl extends ASTWrapperPsiElement implements LuaDocTa
 
   @Override
   @Nullable
+  public LuaDocNullable getNullable() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocNullable.class);
+  }
+
+  @Override
+  @Nullable
   public LuaDocParamNameRef getParamNameRef() {
     return PsiTreeUtil.getChildOfType(this, LuaDocParamNameRef.class);
   }
@@ -50,6 +56,11 @@ public class LuaDocTagParamImpl extends ASTWrapperPsiElement implements LuaDocTa
   @NotNull
   public ITy getType() {
     return LuaDocPsiImplUtilKt.getType(this);
+  }
+
+  @Override
+  public boolean isNullable() {
+    return LuaDocPsiImplUtilKt.isNullable(this);
   }
 
 }

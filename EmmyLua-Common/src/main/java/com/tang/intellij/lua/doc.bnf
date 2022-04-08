@@ -49,6 +49,7 @@
         RCURLY = "}"
         STRING_LITERAL = "STRING_LITERAL"
         ARR = '[]'
+        QM = '?'
         FUN = 'fun'
         VARARG = 'vararg'
         PRIVATE = 'private'
@@ -180,7 +181,7 @@ union_ty ::= ty ('|' ty)+ {
 }
 access_modifier ::= PRIVATE | PUBLIC | PROTECTED | TAG_NAME_PRIVATE | TAG_NAME_PUBLIC | TAG_NAME_PROTECTED
 
-tag_field ::= TAG_NAME_FIELD access_modifier? ('<' class_name_ref '>')? ID ty comment_string? {
+tag_field ::= TAG_NAME_FIELD access_modifier? ('<' class_name_ref '>')? ID nullable? ty comment_string? {
     pin = 1
     implements = [
         "com.tang.intellij.lua.psi.LuaClassField"
@@ -199,6 +200,7 @@ tag_field ::= TAG_NAME_FIELD access_modifier? ('<' class_name_ref '>')? ID ty co
         toString
         getPresentation
         isDeprecated
+        isNullable
     ]
 }
 
@@ -218,11 +220,13 @@ tag_lan ::= TAG_NAME_LANGUAGE ID comment_string? { pin = 1 }
 
 //@param PARAM_NAME CLASS_REF
 param_name_ref ::= ID {
-    methods = [getReference]
+    methods = [
+        getReference
+    ]
 }
-tag_param ::= TAG_NAME_PARAM param_name_ref ty comment_string? {
+tag_param ::= TAG_NAME_PARAM param_name_ref nullable? ty comment_string? {
     pin = 1
-    methods = [getType]
+    methods = [getType isNullable]
 }
 tag_vararg ::= TAG_NAME_VARARG ty comment_string? {
     pin = 1
@@ -332,3 +336,6 @@ tag_other ::= TAG_NAME comment_string? {
     pin = 1
 }
 
+nullable ::= QM{
+    pin = 1
+}

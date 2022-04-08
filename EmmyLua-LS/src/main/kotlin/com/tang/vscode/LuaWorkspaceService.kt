@@ -264,21 +264,26 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
      */
     private fun sendAllDiagnostics() {
         workspaceDiagnoseFuture?.cancel(true)
+        val files = mutableListOf<LuaFile>()
+        project.process {
+            val file = it.virtualFile
+            if (file is LuaFile) {
+                files.add(file)
+            }
+            true
+        }
 
         workspaceDiagnoseFuture = CompletableFutures.computeAsync { cancel ->
-            project.process {
+            files.forEach { file ->
                 if (cancel.isCanceled) {
-                    return@process false
+                    return@forEach
                 }
 
-                val file = it.virtualFile
-                if (file is LuaFile) {
-                    file.diagnose()
-                    if (file.diagnostics.isNotEmpty()) {
-                        client?.publishDiagnostics(PublishDiagnosticsParams(file.uri.toString(), file.diagnostics))
-                    }
+                file.diagnose()
+                val diagnostics = file.diagnostics
+                if (diagnostics.isNotEmpty()) {
+                    client?.publishDiagnostics(PublishDiagnosticsParams(file.uri.toString(), diagnostics))
                 }
-                true
             }
             workspaceDiagnoseFuture = null
         }
