@@ -24,4 +24,6 @@ object DiagnosticsOptions {
     var undeclaredVariable = InspectionsLevel.None
 
     var assignValidation = InspectionsLevel.None
+
+    var deprecated = InspectionsLevel.Warning
 }

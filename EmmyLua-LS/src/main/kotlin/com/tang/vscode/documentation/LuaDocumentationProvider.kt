@@ -24,6 +24,7 @@ import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.psi.search.LuaShortNamesManager
+import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
 import com.tang.intellij.lua.ty.*
@@ -35,6 +36,10 @@ import com.tang.intellij.lua.ty.*
 class LuaDocumentationProvider : DocumentationProvider {
     override fun getUrlFor(element: PsiElement?, originalElement: PsiElement?): MutableList<String> {
         TODO()
+    }
+
+    override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
+        return generateDoc(element, false)
     }
 
     override fun getQuickNavigateInfo(element: PsiElement?, originalElement: PsiElement?): String? {
@@ -67,25 +72,14 @@ class LuaDocumentationProvider : DocumentationProvider {
         return LuaClassIndex.find(link, SearchContext.get(psiManager.project))
     }
 
-    override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
-        val sb = StringBuilder()
 
+    fun generateDoc(element: PsiElement, hover: Boolean): String? {
+        val sb = StringBuilder()
         when (element) {
             is LuaParamNameDef -> renderParamNameDef(sb, element)
             is LuaDocTagClass -> renderClassDef(sb, element)
-            is LuaClassMember -> renderClassMember(sb, element)
-            is LuaNameDef -> { //local xx
-                sb.wrapLanguage("lua") {
-                    sb.append("local ${element.name}:")
-                    val ty = element.guessType(SearchContext.get(element.project))
-                    renderTy(sb, ty)
-                    sb.append("\n")
-
-                }
-
-                val owner = PsiTreeUtil.getParentOfType(element, LuaCommentOwner::class.java)
-                owner?.let { renderComment(sb, owner.comment) }
-            }
+            is LuaClassMember -> renderClassMember(sb, element, hover)
+            is LuaNameDef -> renderNamDef(sb, element)
             is LuaLocalFuncDef -> {
                 sb.wrapLanguage("lua") {
                     sb.append("local function ${element.name}")
@@ -104,7 +98,7 @@ class LuaDocumentationProvider : DocumentationProvider {
         return null
     }
 
-    private fun renderClassMember(sb: StringBuilder, classMember: LuaClassMember) {
+    private fun renderClassMember(sb: StringBuilder, classMember: LuaClassMember, hover: Boolean) {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
         val ty = classMember.guessType(context)
@@ -141,6 +135,39 @@ class LuaDocumentationProvider : DocumentationProvider {
                         sb.append("union ")
                     }
                     else -> {
+                        if (hover && isConstField(classMember)) {
+
+                            when (classMember) {
+                                is LuaTableField -> {
+                                    if (classMember.exprList.isNotEmpty()) {
+                                        renderTy(sb, parentType)
+                                        sb.append(".${classMember.name} = ")
+                                        sb.append(classMember.exprList.first().text)
+                                        return@wrapLanguage
+                                    }
+                                }
+                                is LuaIndexExpr -> {
+                                    val assignStat =
+                                        PsiTreeUtil.getParentOfType(classMember, LuaAssignStat::class.java)
+                                    if (assignStat != null) {
+                                        val assignees = assignStat.varExprList.exprList
+                                        val values = assignStat.valueExprList?.exprList ?: listOf()
+
+                                        for (i in 0 until assignees.size) {
+                                            if (assignees[i] == classMember && i < values.size) {
+                                                renderTy(sb, parentType)
+                                                sb.append(".${classMember.name} = ${values[i].text}")
+                                                sb.append("\n")
+                                                return@wrapLanguage
+                                            }
+                                        }
+                                    }
+                                }
+                                else -> {
+                                    // ignore
+                                }
+                            }
+                        }
                         sb.append("property ")
                     }
                 }
@@ -197,5 +224,56 @@ class LuaDocumentationProvider : DocumentationProvider {
             sb.appendLine("@param `${paramNameDef.name}`:")
             renderTy(sb, ty)
         }
+    }
+
+    private fun renderNamDef(sb: StringBuilder, element: LuaNameDef) {
+        sb.wrapLanguage("lua") {
+            val context = SearchContext.get(element.project)
+            val ty = element.guessType(context)
+            if (Ty.STRING.subTypeOf(ty, context, true) || Ty.NUMBER.subTypeOf(ty, context, true)) {
+                if (isConstLocalVariable(element)) {
+                    val localDef = PsiTreeUtil.getParentOfType(element, LuaLocalDef::class.java)
+                    if (localDef != null) {
+                        val nameList = localDef.nameList
+                        val exprList = localDef.exprList
+                        if (nameList != null && exprList != null) {
+                            val index = localDef.getIndexFor(element)
+                            val expr = exprList.getExprAt(index)
+                            if (expr != null) {
+                                sb.append("local ${element.name} = ${expr.text}")
+                                sb.append("\n")
+                                return@wrapLanguage
+                            }
+                        }
+                    }
+
+                }
+            }
+            sb.append("local ${element.name}:")
+            renderTy(sb, ty)
+            sb.append("\n")
+        }
+        val owner = PsiTreeUtil.getParentOfType(element, LuaCommentOwner::class.java)
+        owner?.let { renderComment(sb, owner.comment) }
+    }
+
+    private fun isConstLocalVariable(element: PsiElement): Boolean {
+        val refs = ReferencesSearch.search(element)
+        for (ref in refs) {
+            if (ref.element.parent is LuaVarList) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun isConstField(element: PsiElement): Boolean {
+        val refs = ReferencesSearch.search(element)
+        for (ref in refs) {
+            if (ref.element.parent is LuaVarList) {
+                return false
+            }
+        }
+        return true
     }
 }
