@@ -28,4 +28,5 @@ object StubKeys {
     val CLASS: IndexId<String, LuaDocTagClass> = IndexId.create<String, LuaDocTagClass>("lua.index.class")
     val SUPER_CLASS: IndexId<String, LuaDocTagClass> = IndexId.create<String, LuaDocTagClass>("lua.index.super_class")
     val ALIAS: IndexId<String, LuaDocTagAlias> = IndexId.create<String, LuaDocTagAlias>("lua.index.alias")
+    val CONST: IndexId<Int, LuaPsiElement> = IndexId.create<Int, LuaPsiElement>("lua.index.const")
 }

@@ -27,6 +27,7 @@ class IndexSinkImpl(val file: LuaPsiFile) : IndexSink() {
             StubKeys.SUPER_CLASS -> LuaSuperClassIndex.instance.occurrence(file, key, value)
             StubKeys.SHORT_NAME -> LuaShortNameIndex.occurrence(file, key, value)
             StubKeys.ALIAS -> LuaAliasIndex.instance.occurrence(file, key, value)
+            StubKeys.CONST -> LuaConstIndex.instance.occurrence(file, key, value)
         }
     }
 }

@@ -354,7 +354,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         val position = arr[1].toInt()
                         file.psi?.findElementAt(position)?.let { psi ->
                             PsiTreeUtil.getParentOfType(psi, LuaClassMember::class.java)?.let { member ->
-                                val doc = documentProvider.generateDoc(member, false)
+                                val doc = documentProvider.generateDoc(member)
                                 val content = MarkupContent()
                                 content.kind = "markdown"
                                 content.value = doc
@@ -378,7 +378,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val element = TargetElementUtil.findTarget(file.psi, pos)
                     if (element != null) {
                         val ref = element.reference?.resolve() ?: element
-                        val doc = documentProvider.generateDoc(ref, true)
+                        val doc = documentProvider.generateDoc(ref)
                         if (doc != null)
                             hover = Hover(listOf(Either.forLeft(doc)))
                     }

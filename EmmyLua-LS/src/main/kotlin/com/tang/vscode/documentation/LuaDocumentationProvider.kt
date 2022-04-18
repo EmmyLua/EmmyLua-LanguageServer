@@ -39,7 +39,7 @@ class LuaDocumentationProvider : DocumentationProvider {
     }
 
     override fun generateDoc(element: PsiElement, originalElement: PsiElement?): String? {
-        return generateDoc(element, false)
+        return generateDoc(element)
     }
 
     override fun getQuickNavigateInfo(element: PsiElement?, originalElement: PsiElement?): String? {
@@ -73,12 +73,12 @@ class LuaDocumentationProvider : DocumentationProvider {
     }
 
 
-    fun generateDoc(element: PsiElement, hover: Boolean): String? {
+    fun generateDoc(element: PsiElement): String? {
         val sb = StringBuilder()
         when (element) {
             is LuaParamNameDef -> renderParamNameDef(sb, element)
             is LuaDocTagClass -> renderClassDef(sb, element)
-            is LuaClassMember -> renderClassMember(sb, element, hover)
+            is LuaClassMember -> renderClassMember(sb, element)
             is LuaNameDef -> renderNamDef(sb, element)
             is LuaLocalFuncDef -> {
                 sb.wrapLanguage("lua") {
@@ -98,7 +98,7 @@ class LuaDocumentationProvider : DocumentationProvider {
         return null
     }
 
-    private fun renderClassMember(sb: StringBuilder, classMember: LuaClassMember, hover: Boolean) {
+    private fun renderClassMember(sb: StringBuilder, classMember: LuaClassMember) {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
         val ty = classMember.guessType(context)
@@ -135,8 +135,12 @@ class LuaDocumentationProvider : DocumentationProvider {
                         sb.append("union ")
                     }
                     else -> {
-                        if (hover && isConstField(classMember)) {
-
+                        if (classMember.name != null && LuaConst.isConst(
+                                parentType.className,
+                                classMember.name!!,
+                                context
+                            )
+                        ) {
                             when (classMember) {
                                 is LuaTableField -> {
                                     if (classMember.exprList.isNotEmpty()) {
@@ -267,13 +271,4 @@ class LuaDocumentationProvider : DocumentationProvider {
         return true
     }
 
-    private fun isConstField(element: PsiElement): Boolean {
-        val refs = ReferencesSearch.search(element)
-        for (ref in refs) {
-            if (ref.element.parent is LuaVarList) {
-                return false
-            }
-        }
-        return true
-    }
 }
