@@ -191,6 +191,9 @@ private fun index(luaNameExpr: LuaNameExpr, sink: IndexSink) {
         sink.occurrence(StubKeys.SHORT_NAME, name, luaNameExpr)
         sink.occurrence(StubKeys.CONST, "${Constants.WORD_G}*$name".hashCode(), luaNameExpr)
     }
+    else{
+        sink.occurrence(StubKeys.CONST, "${luaNameExpr.containingFile.virtualFile.path}*$name".hashCode(), luaNameExpr)
+    }
 }
 
 private fun index(funcDef: LuaFuncDef, sink: IndexSink) {

@@ -23,7 +23,6 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.*
-import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
@@ -128,14 +127,9 @@ class LuaDocumentationProvider : DocumentationProvider {
 
                         return@wrapLanguage
                     }
-                    is TyClass -> {
-                        sb.append("class ")
-                    }
-                    is TyUnion -> {
-                        sb.append("union ")
-                    }
                     else -> {
-                        if (classMember.name != null && LuaConst.isConst(
+                        sb.append("field ")
+                        if (classMember.name != null && LuaConst.isConstField(
                                 parentType.className,
                                 classMember.name!!,
                                 context
@@ -158,7 +152,7 @@ class LuaDocumentationProvider : DocumentationProvider {
                                         val values = assignStat.valueExprList?.exprList ?: listOf()
 
                                         for (i in 0 until assignees.size) {
-                                            if (assignees[i] == classMember && i < values.size) {
+                                            if (assignees[i] == classMember && i < values.size && isConstLiteral(values[i])) {
                                                 renderTy(sb, parentType)
                                                 sb.append(".${classMember.name} = ${values[i].text}")
                                                 sb.append("\n")
@@ -172,7 +166,6 @@ class LuaDocumentationProvider : DocumentationProvider {
                                 }
                             }
                         }
-                        sb.append("property ")
                     }
                 }
                 renderTy(sb, parentType)
@@ -187,6 +180,25 @@ class LuaDocumentationProvider : DocumentationProvider {
                     sb.append("global ")
                     with(sb) {
                         append(nameExpr.name)
+                        if(LuaConst.isConstGlobal(nameExpr.name, context)
+                            && (Ty.STRING.subTypeOf(ty, context, true) || Ty.NUMBER.subTypeOf(ty, context, true)) ){
+                            val assignStat = nameExpr.assignStat
+
+                            if(assignStat != null) {
+                                val assignees = assignStat.varExprList.exprList
+                                val values = assignStat.valueExprList?.exprList ?: listOf()
+
+                                for (i in 0 until assignees.size) {
+                                    if (assignees[i] == nameExpr && i < values.size && isConstLiteral(values[i]))  {
+                                        sb.append(" = ${values[i].text}")
+                                        sb.append("\n")
+                                        return@wrapLanguage
+                                    }
+                                }
+
+                            }
+                        }
+
                         when (ty) {
                             is TyFunction -> renderSignature(sb, ty.mainSignature)
                             else -> {
@@ -235,7 +247,7 @@ class LuaDocumentationProvider : DocumentationProvider {
             val context = SearchContext.get(element.project)
             val ty = element.guessType(context)
             if (Ty.STRING.subTypeOf(ty, context, true) || Ty.NUMBER.subTypeOf(ty, context, true)) {
-                if (isConstLocalVariable(element)) {
+                if (LuaConst.isConstLocal(element.containingFile.virtualFile.path, element.name, context)) {
                     val localDef = PsiTreeUtil.getParentOfType(element, LuaLocalDef::class.java)
                     if (localDef != null) {
                         val nameList = localDef.nameList
@@ -243,7 +255,7 @@ class LuaDocumentationProvider : DocumentationProvider {
                         if (nameList != null && exprList != null) {
                             val index = localDef.getIndexFor(element)
                             val expr = exprList.getExprAt(index)
-                            if (expr != null) {
+                            if (expr != null && isConstLiteral(expr) ) {
                                 sb.append("local ${element.name} = ${expr.text}")
                                 sb.append("\n")
                                 return@wrapLanguage
@@ -261,14 +273,8 @@ class LuaDocumentationProvider : DocumentationProvider {
         owner?.let { renderComment(sb, owner.comment) }
     }
 
-    private fun isConstLocalVariable(element: PsiElement): Boolean {
-        val refs = ReferencesSearch.search(element)
-        for (ref in refs) {
-            if (ref.element.parent is LuaVarList) {
-                return false
-            }
-        }
-        return true
+    private fun isConstLiteral(element: PsiElement): Boolean{
+        return element.node.elementType == LuaTypes.LITERAL_EXPR
     }
 
 }

@@ -17,7 +17,12 @@ class LuaConstIndex: StubIndex<Int, LuaPsiElement>() {
 
     fun isConst(className: String, fieldName: String, context: SearchContext): Boolean {
         val key = "$className*$fieldName"
-        return LuaClassMemberIndex.instance.get(key.hashCode(), context.project, context.scope).size == 1
+        return get(key.hashCode(), context.project, context.scope).size == 1
+    }
+
+    fun isConstLocal(filePath: String, name: String, context: SearchContext): Boolean{
+        val key = "$filePath*$name"
+        return get(key.hashCode(), context.project, context.scope).size == 0
     }
 
     companion object {

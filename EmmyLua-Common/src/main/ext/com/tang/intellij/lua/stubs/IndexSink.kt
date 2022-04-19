@@ -14,6 +14,7 @@ abstract class IndexSink {
             LuaSuperClassIndex.instance.removeStubs(file)
             LuaShortNameIndex.removeStubs(file)
             LuaAliasIndex.instance.removeStubs(file)
+            LuaConstIndex.instance.removeStubs(file)
         }
     }
 }

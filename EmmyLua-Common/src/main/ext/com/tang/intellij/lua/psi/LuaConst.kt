@@ -6,14 +6,16 @@ import com.tang.intellij.lua.stubs.index.LuaConstIndex
 
 object LuaConst {
 
-    fun isConst(className: String, fieldName: String, context: SearchContext): Boolean{
+    fun isConstField(className: String, fieldName: String, context: SearchContext): Boolean{
         return LuaConstIndex.instance.isConst(className, fieldName, context)
     }
 
-    fun isConst(name: String, context: SearchContext): Boolean{
+    fun isConstGlobal(name: String, context: SearchContext): Boolean{
         return LuaConstIndex.instance.isConst(Constants.WORD_G, name, context)
     }
 
-
+    fun isConstLocal(filePath: String, name: String, context: SearchContext): Boolean{
+        return LuaConstIndex.instance.isConstLocal(filePath, name, context)
+    }
 
 }

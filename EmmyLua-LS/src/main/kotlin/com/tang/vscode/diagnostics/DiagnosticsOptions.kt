@@ -25,5 +25,5 @@ object DiagnosticsOptions {
 
     var assignValidation = InspectionsLevel.None
 
-    var deprecated = InspectionsLevel.Warning
+    var deprecated = InspectionsLevel.None
 }
