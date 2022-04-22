@@ -28,7 +28,8 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
     private var _words: List<Word>? = null
-    private val _diagnostics = mutableListOf<Diagnostic>();
+    private val _diagnostics = mutableListOf<Diagnostic>()
+    private var _completeDiagnostic = false
 
     override val diagnostics: List<Diagnostic>
         get() {
@@ -84,7 +85,10 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
     override fun diagnose() {
         synchronized(_diagnostics) {
-            DiagnosticsService.diagnosticFile(this, _diagnostics)
+            if(!_completeDiagnostic) {
+                DiagnosticsService.diagnosticFile(this, _diagnostics)
+                _completeDiagnostic = true
+            }
         }
     }
 
@@ -124,6 +128,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         _words = null
         synchronized(_diagnostics) {
             _diagnostics.clear()
+            _completeDiagnostic = false
         }
         unindex()
         val parser = LuaParser()

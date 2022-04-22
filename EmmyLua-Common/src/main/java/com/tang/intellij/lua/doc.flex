@@ -93,6 +93,7 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
     "class"                    { yybegin(xCLASS); return TAG_NAME_CLASS; }
     "module"                   { yybegin(xCLASS); return TAG_NAME_MODULE; }
     "enum"                     { yybegin(xCLASS); return TAG_NAME_ENUM; }
+    "interface"                { yybegin(xCLASS); return TAG_NAME_INTERFACE; }
     "return"                   { beginType(); return TAG_NAME_RETURN; }
     "type"                     { beginType(); return TAG_NAME_TYPE;}
     "overload"                 { beginType(); return TAG_NAME_OVERLOAD; }

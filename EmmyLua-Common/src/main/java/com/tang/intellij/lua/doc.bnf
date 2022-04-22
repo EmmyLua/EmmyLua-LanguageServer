@@ -72,6 +72,7 @@
         TAG_NAME_OVERLOAD = 'overload'
         TAG_NAME_MODULE = 'module'
         TAG_NAME_ENUM = 'enum'
+        TAG_NAME_INTERFACE = 'interface'
         TAG_NAME_SEE = 'see'
         TAG_NAME_GENERIC = 'generic'
         TAG_NAME_ALIAS = 'alias'
@@ -243,7 +244,13 @@ tag_return ::= TAG_NAME_RETURN type_list comment_string? {
 class_name_ref ::= ID {
     methods = [getReference resolveType]
 }
-tag_class ::= (TAG_NAME_CLASS|TAG_NAME_MODULE|TAG_NAME_ENUM) ID (EXTENDS class_name_ref)? comment_string? {
+
+class_name_ref_list ::= class_name_ref (',' class_name_ref)* {
+    pin = 1
+    methods = [getClasses]
+}
+
+tag_class ::= (TAG_NAME_CLASS|TAG_NAME_MODULE|TAG_NAME_ENUM|TAG_NAME_INTERFACE) ID (EXTENDS class_name_ref_list)? comment_string? {
     pin = 2
     implements = [
         "com.tang.intellij.lua.comment.psi.LuaDocPsiElement"
@@ -262,9 +269,10 @@ tag_class ::= (TAG_NAME_CLASS|TAG_NAME_MODULE|TAG_NAME_ENUM) ID (EXTENDS class_n
         toString
         isDeprecated
 
-        superClassNameRef = 'class_name_ref'
+        superClassNameRef = 'class_name_ref_list'
         module = 'TAG_NAME_MODULE'
         enum = 'TAG_NAME_ENUM'
+        interface = 'TAG_NAME_INTERFACE'
     ]
 }
 

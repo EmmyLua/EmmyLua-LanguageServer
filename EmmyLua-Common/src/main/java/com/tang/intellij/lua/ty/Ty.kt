@@ -38,6 +38,7 @@ enum class TyKind {
     GenericParam,
     StringLiteral
 }
+
 enum class TyPrimitiveKind {
     String,
     Number,
@@ -45,6 +46,7 @@ enum class TyPrimitiveKind {
     Table,
     Function
 }
+
 class TyFlags {
     companion object {
         const val ANONYMOUS = 0x1
@@ -66,6 +68,8 @@ interface ITy : Comparable<ITy> {
     fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean
 
     fun getSuperClass(context: SearchContext): ITy?
+
+    fun getInterfaces(context: SearchContext): List<ITy>?
 
     fun visitSuper(searchContext: SearchContext, processor: Processor<ITyClass>)
 
@@ -91,23 +95,24 @@ val ITy.isGlobal: Boolean
 val ITy.isAnonymous: Boolean
     get() = hasFlag(TyFlags.ANONYMOUS)
 
-private val ITy.worth: Float get() {
-    var value = 10f
-    when(this) {
-        is ITyArray, is ITyGeneric -> value = 80f
-        is ITyPrimitive -> value = 70f
-        is ITyFunction -> value = 60f
-        is ITyClass -> {
-            value = when {
-                this is TyTable -> 9f
-                this.isAnonymous -> 2f
-                this.isGlobal -> 5f
-                else -> 90f
+private val ITy.worth: Float
+    get() {
+        var value = 10f
+        when (this) {
+            is ITyArray, is ITyGeneric -> value = 80f
+            is ITyPrimitive -> value = 70f
+            is ITyFunction -> value = 60f
+            is ITyClass -> {
+                value = when {
+                    this is TyTable -> 9f
+                    this.isAnonymous -> 2f
+                    this.isGlobal -> 5f
+                    else -> 90f
+                }
             }
         }
+        return value
     }
-    return value
-}
 
 abstract class Ty(override val kind: TyKind) : ITy {
 
@@ -161,9 +166,13 @@ abstract class Ty(override val kind: TyKind) : ITy {
         return null
     }
 
+    override fun getInterfaces(context: SearchContext): List<ITy>? {
+        return null
+    }
+
     override fun visitSuper(searchContext: SearchContext, processor: Processor<ITyClass>) {
-        val superType = getSuperClass(searchContext) as? ITyClass ?: return
-        if (processor.process(superType))
+        val superType = getSuperClass(searchContext) ?: return
+        if (superType is ITyClass && processor.process(superType))
             superType.visitSuper(searchContext, processor)
     }
 
@@ -188,8 +197,8 @@ abstract class Ty(override val kind: TyKind) : ITy {
             is TyTuple -> {
                 list.firstOrNull()?.eachTopClass(fn)
             }
-            is TySerializedGeneric ->{
-                if(base == STRING){
+            is TySerializedGeneric -> {
+                if (base == STRING) {
                     base.eachTopClass(fn)
                 }
             }
@@ -208,14 +217,14 @@ abstract class Ty(override val kind: TyKind) : ITy {
         val NIL = TyNil()
 
         private val serializerMap = mapOf<TyKind, ITySerializer>(
-                TyKind.Array to TyArraySerializer,
-                TyKind.Class to TyClassSerializer,
-                TyKind.Function to TyFunctionSerializer,
-                TyKind.Generic to TyGenericSerializer,
-                TyKind.GenericParam to TyGenericParamSerializer,
-                TyKind.StringLiteral to TyStringLiteralSerializer,
-                TyKind.Tuple to TyTupleSerializer,
-                TyKind.Union to TyUnionSerializer
+            TyKind.Array to TyArraySerializer,
+            TyKind.Class to TyClassSerializer,
+            TyKind.Function to TyFunctionSerializer,
+            TyKind.Generic to TyGenericSerializer,
+            TyKind.GenericParam to TyGenericParamSerializer,
+            TyKind.StringLiteral to TyStringLiteralSerializer,
+            TyKind.Tuple to TyTupleSerializer,
+            TyKind.Union to TyUnionSerializer
         )
 
         private fun getPrimitive(mark: Byte): Ty {
@@ -262,7 +271,7 @@ abstract class Ty(override val kind: TyKind) : ITy {
         fun serialize(ty: ITy, stream: StubOutputStream) {
             stream.writeByte(ty.kind.ordinal)
             stream.writeInt(ty.flags)
-            when(ty) {
+            when (ty) {
                 is ITyPrimitive -> stream.writeByte(ty.primitiveKind.ordinal)
                 else -> {
                     val serializer = getSerializer(ty.kind)

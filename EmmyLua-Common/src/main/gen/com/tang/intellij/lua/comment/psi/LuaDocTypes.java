@@ -12,6 +12,7 @@ public interface LuaDocTypes {
   IElementType ACCESS_MODIFIER = LuaParserDefinitionKt.createDocType("ACCESS_MODIFIER");
   IElementType ARR_TY = LuaParserDefinitionKt.createDocType("ARR_TY");
   IElementType CLASS_NAME_REF = LuaParserDefinitionKt.createDocType("CLASS_NAME_REF");
+  IElementType CLASS_NAME_REF_LIST = LuaParserDefinitionKt.createDocType("CLASS_NAME_REF_LIST");
   IElementType COMMENT_STRING = LuaParserDefinitionKt.createDocType("COMMENT_STRING");
   IElementType FUNCTION_PARAM = LuaParserDefinitionKt.createDocType("FUNCTION_PARAM");
   IElementType FUNCTION_TY = LuaParserDefinitionKt.createDocType("FUNCTION_TY");
@@ -75,6 +76,7 @@ public interface LuaDocTypes {
   IElementType TAG_NAME_ENUM = new LuaDocTokenType("enum");
   IElementType TAG_NAME_FIELD = new LuaDocTokenType("field");
   IElementType TAG_NAME_GENERIC = new LuaDocTokenType("generic");
+  IElementType TAG_NAME_INTERFACE = new LuaDocTokenType("interface");
   IElementType TAG_NAME_LANGUAGE = new LuaDocTokenType("language");
   IElementType TAG_NAME_MODULE = new LuaDocTokenType("module");
   IElementType TAG_NAME_NAME = new LuaDocTokenType("TAG_NAME_NAME");
@@ -101,6 +103,9 @@ public interface LuaDocTypes {
       }
       else if (type == CLASS_NAME_REF) {
         return new LuaDocClassNameRefImpl(node);
+      }
+      else if (type == CLASS_NAME_REF_LIST) {
+        return new LuaDocClassNameRefListImpl(node);
       }
       else if (type == COMMENT_STRING) {
         return new LuaDocCommentStringImpl(node);

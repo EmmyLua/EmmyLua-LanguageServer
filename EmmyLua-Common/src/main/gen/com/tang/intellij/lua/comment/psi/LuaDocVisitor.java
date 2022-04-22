@@ -22,6 +22,10 @@ public class LuaDocVisitor extends PsiElementVisitor {
     visitPsiElement(o);
   }
 
+  public void visitClassNameRefList(@NotNull LuaDocClassNameRefList o) {
+    visitPsiElement(o);
+  }
+
   public void visitCommentString(@NotNull LuaDocCommentString o) {
     visitPsiElement(o);
   }

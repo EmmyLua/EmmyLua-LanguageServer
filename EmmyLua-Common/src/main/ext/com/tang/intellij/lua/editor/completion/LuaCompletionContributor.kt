@@ -91,6 +91,8 @@ class LuaCompletionContributor : CompletionContributor() {
         extend(CompletionType.BASIC, SHOW_CALLBACK, CallbackCompletionProvider())
 
         extend(CompletionType.BASIC, SHOW_STRING_INNER, StringInnerTypeCompletionProvider())
+
+        extend(CompletionType.BASIC, SHOW_CONST_EXPR, ConstExprProvider())
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
@@ -181,6 +183,12 @@ class LuaCompletionContributor : CompletionContributor() {
             ),
             psiElement(LuaTypes.ID).withParent(LuaTableField::class.java)
         )
+
+        private val SHOW_CONST_EXPR = psiElement(LuaTypes.ID)
+            .withParent(
+                psiElement(LuaNameExpr::class.java)
+                    .withParent(psiElement(LuaArgs::class.java))
+            )
 
         private val IN_TABLE_STRING_INDEX = psiElement().andOr(
 //                psiElement(LuaTypes.LITERAL_EXPR).withParent(

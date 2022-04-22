@@ -100,8 +100,8 @@ public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocTagClassSt
 
   @Override
   @Nullable
-  public LuaDocClassNameRef getSuperClassNameRef() {
-    return PsiTreeUtil.getChildOfType(this, LuaDocClassNameRef.class);
+  public LuaDocClassNameRefList getSuperClassNameRef() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocClassNameRefList.class);
   }
 
   @Override
@@ -114,6 +114,12 @@ public class LuaDocTagClassImpl extends StubBasedPsiElementBase<LuaDocTagClassSt
   @Nullable
   public PsiElement getEnum() {
     return findChildByType(TAG_NAME_ENUM);
+  }
+
+  @Override
+  @Nullable
+  public PsiElement getInterface() {
+    return findChildByType(TAG_NAME_INTERFACE);
   }
 
 }

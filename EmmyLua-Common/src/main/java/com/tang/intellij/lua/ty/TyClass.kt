@@ -37,6 +37,7 @@ interface ITyClass : ITy {
     val className: String
     val varName: String
     var superClassName: String?
+    var interfaceNames: List<String>?
     var aliasName: String?
     fun processAlias(processor: Processor<String>): Boolean
     fun lazyInit(searchContext: SearchContext)
@@ -64,9 +65,9 @@ interface ITyClass : ITy {
             }
         }
 
-        for (member in list){
+        for (member in list) {
             val name = member.name
-            if(name != null && !noVisibleSet.contains(name)){
+            if (name != null && !noVisibleSet.contains(name)) {
                 processor(this, member)
             }
         }
@@ -106,7 +107,8 @@ fun ITyClass.isVisibleInScope(project: Project, contextTy: ITy, visibility: Visi
 abstract class TyClass(
     override val className: String,
     override val varName: String = "",
-    override var superClassName: String? = null
+    override var superClassName: String? = null,
+    override var interfaceNames: List<String>? = null
 ) : Ty(TyKind.Class), ITyClass {
     final override var aliasName: String? = null
 
@@ -193,6 +195,7 @@ abstract class TyClass(
             val tyClass = classDef.type
             aliasName = tyClass.aliasName
             superClassName = tyClass.superClassName
+            interfaceNames = tyClass.interfaceNames
         }
     }
 
@@ -204,6 +207,22 @@ abstract class TyClass(
                 .findClass(clsName, context)?.type
         }
         return null
+    }
+
+    override fun getInterfaces(context: SearchContext): List<ITy>? {
+        if(interfaceNames == null) {
+            return null
+        }
+
+        val result = mutableListOf<ITy>()
+        interfaceNames!!.forEach {
+            val ty = Ty.getBuiltin(it) ?: LuaShortNamesManager.getInstance(context.project)
+                .findClass(it, context)?.type
+            if(ty != null){
+                result.add(ty)
+            }
+        }
+        return result
     }
 
     override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {
@@ -279,8 +298,14 @@ class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
 
     init {
         val supperRef = tagClass.superClassNameRef
-        if (supperRef != null)
-            superClassName = supperRef.text
+        if (supperRef != null) {
+            val classList = supperRef.classNameRefList
+            if (classList.size != 0) {
+                superClassName = classList[0].text
+                interfaceNames = classList.map { it.text }
+            }
+        }
+
         aliasName = tagClass.aliasName
     }
 
