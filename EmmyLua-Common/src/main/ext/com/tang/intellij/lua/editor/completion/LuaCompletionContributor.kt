@@ -184,11 +184,19 @@ class LuaCompletionContributor : CompletionContributor() {
             psiElement(LuaTypes.ID).withParent(LuaTableField::class.java)
         )
 
-        private val SHOW_CONST_EXPR = psiElement(LuaTypes.ID)
-            .withParent(
-                psiElement(LuaNameExpr::class.java)
+        private val SHOW_CONST_EXPR = psiElement().andOr(
+            psiElement(LuaTypes.STRING)
+                .withParent(
+                    psiElement(LuaTypes.LITERAL_EXPR).withParent(
+                        psiElement(LuaArgs::class.java)
+                    )
+                ),
+            psiElement(LuaTypes.ID).withParent(
+                psiElement(LuaTypes.NAME_EXPR)
                     .withParent(psiElement(LuaArgs::class.java))
             )
+        )
+
 
         private val IN_TABLE_STRING_INDEX = psiElement().andOr(
 //                psiElement(LuaTypes.LITERAL_EXPR).withParent(

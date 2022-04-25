@@ -39,6 +39,7 @@ interface ITyClass : ITy {
     var superClassName: String?
     var interfaceNames: List<String>?
     var aliasName: String?
+    var isInterface: Boolean
     fun processAlias(processor: Processor<String>): Boolean
     fun lazyInit(searchContext: SearchContext)
     fun processMembers(context: SearchContext, processor: (ITyClass, LuaClassMember) -> Unit, deep: Boolean = true)
@@ -108,10 +109,10 @@ abstract class TyClass(
     override val className: String,
     override val varName: String = "",
     override var superClassName: String? = null,
-    override var interfaceNames: List<String>? = null
+    override var interfaceNames: List<String>? = null,
+    override var isInterface: Boolean = false
 ) : Ty(TyKind.Class), ITyClass {
     final override var aliasName: String? = null
-
     private var _lazyInitialized: Boolean = false
 
     override fun equals(other: Any?): Boolean {
@@ -210,16 +211,18 @@ abstract class TyClass(
     }
 
     override fun getInterfaces(context: SearchContext): List<ITy>? {
-        if(interfaceNames == null) {
+        if (interfaceNames == null) {
             return null
         }
 
         val result = mutableListOf<ITy>()
         interfaceNames!!.forEach {
-            val ty = Ty.getBuiltin(it) ?: LuaShortNamesManager.getInstance(context.project)
-                .findClass(it, context)?.type
-            if(ty != null){
-                result.add(ty)
+            if (it != superClassName) {
+                val ty = Ty.getBuiltin(it) ?: LuaShortNamesManager.getInstance(context.project)
+                    .findClass(it, context)?.type
+                if (ty != null) {
+                    result.add(ty)
+                }
             }
         }
         return result
@@ -289,6 +292,43 @@ abstract class TyClass(
                 }
                 cur = cls
             }
+            return processInterface(start, searchContext, processor)
+        }
+
+        fun processInterface(
+            cls: ITyClass,
+            searchContext: SearchContext,
+            processor: (ITyClass) -> Boolean
+        ): Boolean {
+            val processedName = mutableSetOf<String>()
+            return innerProcessorInterface(cls, searchContext, processedName, processor)
+        }
+
+        private fun innerProcessorInterface(
+            cls: ITyClass,
+            searchContext: SearchContext,
+            processName: MutableSet<String>,
+            processor: (ITyClass) -> Boolean
+        ): Boolean {
+            val interfaces = cls.getInterfaces(searchContext)
+            if (interfaces != null) {
+                for (tyInterface in interfaces) {
+                    if (tyInterface is ITyClass) {
+                        if (!processName.add(tyInterface.className)) {
+                            continue
+                        }
+
+                        if (!processor(tyInterface)) {
+                            return false
+                        }
+
+                        if (!innerProcessorInterface(tyInterface, searchContext, processName, processor)) {
+                            return false
+                        }
+                    }
+                }
+            }
+
             return true
         }
     }
@@ -304,6 +344,9 @@ class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
                 superClassName = classList[0].text
                 interfaceNames = classList.map { it.text }
             }
+        }
+        if(tagClass.`interface` != null){
+            isInterface = true
         }
 
         aliasName = tagClass.aliasName

@@ -70,7 +70,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
 
                 val matcher = completionResultSet.prefixMatcher.cloneWithPrefix(prefixName)
                 LuaDeclarationTree.get(indexExpr.containingFile).walkUpLocal(indexExpr) { d ->
-                    val it = d.firstDeclaration.psi
+                    val it = d.firstDeclaration.psi0
                     val txt = it.name
                     if (it is LuaTypeGuessable && txt != null && prefixName != txt && matcher.prefixMatches(txt)) {
                         val type = it.guessType(context)

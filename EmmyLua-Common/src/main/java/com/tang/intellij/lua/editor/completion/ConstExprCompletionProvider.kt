@@ -66,37 +66,37 @@ class ConstExprProvider : LuaCompletionProvider() {
         }
     }
 
-    private fun addEnum(
-        luaType: ITyClass,
-        searchContext: SearchContext,
-        completionResultSet: CompletionResultSet
-    ) {
-        luaType.lazyInit(searchContext)
-        luaType.processMembers(searchContext) { curType, member ->
-            ProgressManager.checkCanceled()
-            member.name?.let {
-                val name = "${luaType.className}.${member.name}"
-                if (completionResultSet.prefixMatcher.prefixMatches(name)) {
-                    addEnumField(completionResultSet, member, name, curType)
-                }
-            }
-
-        }
-    }
-
-    private fun addEnumField(
-        completionResultSet: CompletionResultSet,
-        member: LuaClassMember,
-        name: String,
-        fieldType: ITyClass
-    ) {
-
-        if (member is LuaClassField) {
-            val element =
-                LookupElementFactory.createFieldLookupElement(fieldType.className, name, member, fieldType, true)
-            element.kind = CompletionItemKind.Enum
-            completionResultSet.addElement(element)
-        }
-    }
+//    private fun addEnum(
+//        luaType: ITyClass,
+//        searchContext: SearchContext,
+//        completionResultSet: CompletionResultSet
+//    ) {
+//        luaType.lazyInit(searchContext)
+//        luaType.processMembers(searchContext) { curType, member ->
+//            ProgressManager.checkCanceled()
+//            member.name?.let {
+//                val name = "${luaType.className}.${member.name}"
+//                if (completionResultSet.prefixMatcher.prefixMatches(name)) {
+//                    addEnumField(completionResultSet, member, name, curType)
+//                }
+//            }
+//
+//        }
+//    }
+//
+//    private fun addEnumField(
+//        completionResultSet: CompletionResultSet,
+//        member: LuaClassMember,
+//        name: String,
+//        fieldType: ITyClass
+//    ) {
+//
+//        if (member is LuaClassField) {
+//            val element =
+//                LookupElementFactory.createFieldLookupElement(fieldType.className, name, member, fieldType, true)
+//            element.kind = CompletionItemKind.Enum
+//            completionResultSet.addElement(element)
+//        }
+//    }
 
 }
