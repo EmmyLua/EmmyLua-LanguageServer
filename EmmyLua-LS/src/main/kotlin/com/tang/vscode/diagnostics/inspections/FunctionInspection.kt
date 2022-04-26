@@ -56,11 +56,12 @@ object FunctionInspection {
                             if (param != null) {
                                 val paramType = param.guessType(context)
                                 if (!paramTypeCheck(pi, param, context)) {
+                                    val pDeclaredType = pi.ty
                                     val diagnostic = Diagnostic()
-                                    diagnostic.message = if (paramType is TyClass && paramType.isInterface) {
-                                        "Type mismatch '${paramType.displayName}' not match interface '${paramType.displayName}'"
+                                    diagnostic.message = if (pDeclaredType is TyClass && pDeclaredType.isInterface) {
+                                        "Type mismatch '${paramType.displayName}' not match interface '${pDeclaredType.displayName}'"
                                     } else {
-                                        "Type mismatch '${paramType.displayName}' not match type '${paramType.displayName}'"
+                                        "Type mismatch '${paramType.displayName}' not match type '${pDeclaredType.displayName}'"
                                     }
                                     diagnostic.severity = Severity.makeSeverity(DiagnosticsOptions.parameterValidation)
                                     diagnostic.range = param.textRange.toRange(file)
@@ -85,7 +86,11 @@ object FunctionInspection {
         }
     }
 
-    private fun paramTypeCheck(param: LuaParamInfo, variable: LuaTypeGuessable, context: SearchContext): Boolean {
+    private fun paramTypeCheck(
+        param: LuaParamInfo,
+        variable: LuaTypeGuessable,
+        context: SearchContext
+    ): Boolean {
         val variableType = variable.guessType(context)
         val defineType = param.ty
 
@@ -105,7 +110,11 @@ object FunctionInspection {
         return typeCheck(defineType, variableType, context)
     }
 
-    private fun typeCheck(defineType: ITy, variableType: ITy, context: SearchContext): Boolean {
+    private fun typeCheck(
+        defineType: ITy,
+        variableType: ITy,
+        context: SearchContext,
+    ): Boolean {
         if (DiagnosticsOptions.anyTypeCanAssignToAnyDefineType && variableType is TyUnknown) {
             return true
         }
