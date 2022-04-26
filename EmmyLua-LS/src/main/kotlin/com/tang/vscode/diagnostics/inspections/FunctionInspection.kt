@@ -57,8 +57,11 @@ object FunctionInspection {
                                 val paramType = param.guessType(context)
                                 if (!paramTypeCheck(pi, param, context)) {
                                     val diagnostic = Diagnostic()
-                                    diagnostic.message =
-                                        "Type mismatch '${paramType.displayName}' not match type '${pi.ty.displayName}'"
+                                    diagnostic.message = if (paramType is TyClass && paramType.isInterface) {
+                                        "Type mismatch '${paramType.displayName}' not match interface '${paramType.displayName}'"
+                                    } else {
+                                        "Type mismatch '${paramType.displayName}' not match type '${paramType.displayName}'"
+                                    }
                                     diagnostic.severity = Severity.makeSeverity(DiagnosticsOptions.parameterValidation)
                                     diagnostic.range = param.textRange.toRange(file)
                                     diagnostics.add(diagnostic)
@@ -92,15 +95,6 @@ object FunctionInspection {
 
         if (!param.nullable && variableType.kind == TyKind.Nil) {
             return false
-        }
-
-        // 由于没有接口 interface
-        // 那么将匿名表传递给具有特定类型的定义类型也都被认为是合理的
-        // 暂时不做field检查
-        if (variable is LuaTableExpr &&
-            (defineType.kind == TyKind.Class || defineType.kind == TyKind.Array || defineType.kind == TyKind.Tuple)
-        ) {
-            return true
         }
 
         // 类似于回调函数的写法，不写传参是非常普遍的，所以只需要认为定义类型是个函数就通过

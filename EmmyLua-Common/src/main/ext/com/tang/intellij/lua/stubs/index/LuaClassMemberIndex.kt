@@ -72,12 +72,41 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
                         true
                     }
                     return founded
-                    // from supper
-//                        val superClassName = type.superClassName
-//                        if (superClassName != null && superClassName != className) {
-//                            return process(superClassName, fieldName, context, processor)
-//                        }
+                }
+            }
+            return true
+        }
 
+        fun processOrigin(
+            className: String,
+            fieldName: String,
+            context: SearchContext,
+            processor: Processor<LuaClassMember>,
+            deep: Boolean = true
+        ): Boolean {
+            val key = "$className*$fieldName"
+            if (!process(key, context, processor))
+                return false
+
+            if (deep) {
+                val classDef = LuaClassIndex.find(className, context)
+                if (classDef != null) {
+                    val type = classDef.type
+                    // from alias
+                    type.lazyInit(context)
+                    val notFound = type.processAlias(Processor {
+                        process(it, fieldName, context, processor, false)
+                    })
+                    if (!notFound)
+                        return false
+
+                    val superClassName = type.superClassName
+                    if(superClassName != null) {
+                        val superClass = LuaClassIndex.find(superClassName, context)
+                        if(superClass is TyClass && !superClass.isInterface){
+                            return process(superClassName, fieldName, context, processor, true)
+                        }
+                    }
                 }
             }
             return true
@@ -88,6 +117,32 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
             var docField: LuaDocTagField? = null
             var tableField: LuaTableField? = null
             processAll(type, fieldName, context, Processor {
+                when (it) {
+                    is LuaDocTagField -> {
+                        docField = it
+                        false
+                    }
+                    is LuaTableField -> {
+                        tableField = it
+                        true
+                    }
+                    else -> {
+                        if (perfect == null)
+                            perfect = it
+                        true
+                    }
+                }
+            })
+            if (docField != null) return docField
+            if (tableField != null) return tableField
+            return perfect
+        }
+
+        fun findOrigin(type: ITyClass, fieldName: String, context: SearchContext): LuaClassMember? {
+            var perfect: LuaClassMember? = null
+            var docField: LuaDocTagField? = null
+            var tableField: LuaTableField? = null
+            processOrigin(type.className, fieldName, context,  {
                 when (it) {
                     is LuaDocTagField -> {
                         docField = it

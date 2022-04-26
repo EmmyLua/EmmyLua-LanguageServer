@@ -5,6 +5,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiErrorElement
 import com.intellij.psi.util.PsiTreeUtil
 import com.tang.intellij.lua.comment.psi.LuaDocPsiElement
+import com.tang.intellij.lua.comment.psi.LuaDocTagClass
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.*
@@ -51,11 +52,13 @@ object DiagnosticsService {
                     DeprecatedInspection.nameExprDeprecatedInspections(it, file, diagnostics)
                     UndeclaredVariableInspection.undeclaredVariableInspections(it, file, diagnostics)
                 }
+                is LuaDocTagClass -> {
+                    InheritInspection.inheritInspections(it, file, diagnostics)
+                }
             }
             true
         }
     }
-
 
 
 }
