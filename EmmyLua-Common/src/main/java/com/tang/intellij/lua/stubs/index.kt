@@ -61,7 +61,10 @@ private fun index(doc: LuaDocTagClass, sink: IndexSink) {
 }
 
 private fun index(field: LuaDocTagField, sink: IndexSink) {
-    val name = field.name
+    var name = field.name
+    if(name == null && field.fieldIndex != null){
+        name =  "[${field.fieldIndex?.text}]"
+    }
     if (name != null) {
         var className: String? = null
 

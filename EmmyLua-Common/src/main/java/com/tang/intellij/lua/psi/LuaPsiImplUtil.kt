@@ -280,12 +280,15 @@ fun getPresentation(indexExpr: LuaIndexExpr): ItemPresentation {
 
 /**
  * xx['id']
+ * xx[1]
  */
 fun getIdExpr(indexExpr: LuaIndexExpr): LuaLiteralExpr? {
     val bracket = indexExpr.lbrack
     if (bracket != null) {
         val nextLeaf = PsiTreeUtil.getNextSiblingOfType(bracket, LuaExpr::class.java)
-        if (nextLeaf is LuaLiteralExpr && nextLeaf.kind == LuaLiteralKind.String)
+        if (nextLeaf is LuaLiteralExpr
+            && (nextLeaf.kind == LuaLiteralKind.String || nextLeaf.kind == LuaLiteralKind.Number)
+        )
             return nextLeaf
     }
     return null

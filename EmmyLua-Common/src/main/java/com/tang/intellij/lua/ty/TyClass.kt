@@ -75,7 +75,7 @@ interface ITyClass : ITy {
         }
     }
 
-
+    fun getIndexResultType(element: LuaLiteralExpr): ITy?
     fun findOriginMember(name: String, searchContext: SearchContext): LuaClassMember?
     fun findMember(name: String, searchContext: SearchContext): LuaClassMember?
     fun findMemberType(name: String, searchContext: SearchContext): ITy?
@@ -162,6 +162,30 @@ abstract class TyClass(
                 true
             }
         }
+    }
+
+    override fun getIndexResultType(element: LuaLiteralExpr): ITy? {
+
+        val context = SearchContext.get(element.project)
+        when (element.kind) {
+            LuaLiteralKind.Number -> {
+                var member = LuaClassMemberIndex.find(this, "[${element.text}]", context)
+                if (member == null) {
+                    member = LuaClassMemberIndex.find(this, "[number]", context)
+                }
+
+                return member?.guessType(context)
+            }
+            LuaLiteralKind.String -> {
+                var member = LuaClassMemberIndex.find(this, element.text, context)
+                if (member == null) {
+                    member = LuaClassMemberIndex.find(this, "[string]", context)
+                }
+
+                return member?.guessType(context)
+            }
+        }
+        return null
     }
 
     override fun findOriginMember(name: String, searchContext: SearchContext): LuaClassMember? {

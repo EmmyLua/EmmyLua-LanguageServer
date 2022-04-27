@@ -30,6 +30,10 @@ public class LuaDocVisitor extends PsiElementVisitor {
     visitPsiElement(o);
   }
 
+  public void visitFieldIndex(@NotNull LuaDocFieldIndex o) {
+    visitPsiElement(o);
+  }
+
   public void visitFunctionParam(@NotNull LuaDocFunctionParam o) {
     visitPsiElement(o);
   }

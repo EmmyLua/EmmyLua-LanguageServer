@@ -46,6 +46,7 @@ LINE_WS=[\ \t\f]
 WHITE_SPACE=({LINE_WS}|{EOL})+
 STRING=[^\r\n\t\f]*
 ID=[:jletter:] ([:jletterdigit:]|\.)*
+NUM=[0-9]+
 AT=@
 //三个-以上
 DOC_DASHES = --+
@@ -65,6 +66,7 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
 %state xFIELD
 %state xFIELD_ID
 %state xFIELD_ID_NULLABLE
+%state xFIELD_INDEX
 %state xGENERIC
 %state xALIAS
 %state xSUPPRESS
@@ -150,16 +152,24 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
     "private"                  { yybegin(xFIELD_ID); return PRIVATE; }
     "protected"                { yybegin(xFIELD_ID); return PROTECTED; }
     "public"                   { yybegin(xFIELD_ID); return PUBLIC; }
+    "["                        { yybegin(xFIELD_INDEX); return LBRACK; }
     {ID}                       { yybegin(xFIELD_ID_NULLABLE); return ID; }
 }
 
 <xFIELD_ID> {
+    "["                        { yybegin(xFIELD_INDEX); return LBRACK; }
     {ID}                       { yybegin(xFIELD_ID_NULLABLE); return ID; }
 }
 
 <xFIELD_ID_NULLABLE>{
     "?"                        { beginType(); return QM; }
     [^]                        { beginType(); yypushback(yylength());}
+}
+
+<xFIELD_INDEX>{
+    {NUM}                      { return NUM; }
+    {ID}                       { return ID; }
+    "]"                        { beginType(); return RBRACK; }
 }
 
 <xTYPE_REF> {

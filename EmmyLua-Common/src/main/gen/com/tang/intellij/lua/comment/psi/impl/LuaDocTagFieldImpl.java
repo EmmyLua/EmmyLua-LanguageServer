@@ -62,6 +62,12 @@ public class LuaDocTagFieldImpl extends StubBasedPsiElementBase<LuaDocTagFieldSt
 
   @Override
   @Nullable
+  public LuaDocFieldIndex getFieldIndex() {
+    return PsiTreeUtil.getChildOfType(this, LuaDocFieldIndex.class);
+  }
+
+  @Override
+  @Nullable
   public LuaDocNullable getNullable() {
     return PsiTreeUtil.getChildOfType(this, LuaDocNullable.class);
   }

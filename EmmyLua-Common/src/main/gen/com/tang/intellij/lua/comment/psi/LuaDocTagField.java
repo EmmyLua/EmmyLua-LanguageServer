@@ -25,6 +25,9 @@ public interface LuaDocTagField extends LuaClassField, LuaDocPsiElement, PsiName
   LuaDocCommentString getCommentString();
 
   @Nullable
+  LuaDocFieldIndex getFieldIndex();
+
+  @Nullable
   LuaDocNullable getNullable();
 
   @Nullable

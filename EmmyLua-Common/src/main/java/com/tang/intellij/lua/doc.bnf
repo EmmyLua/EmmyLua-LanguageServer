@@ -35,6 +35,7 @@
 
   tokens = [
         ID="regexp:[A-Za-z0-9_]+"
+        NUM="regexp:[0-9]+"
         AT = '@'
         SHARP = '#'
         EQ = '='
@@ -49,6 +50,8 @@
         RCURLY = "}"
         STRING_LITERAL = "STRING_LITERAL"
         ARR = '[]'
+        LBRACK = '['
+        RBRACK = ']'
         QM = '?'
         FUN = 'fun'
         VARARG = 'vararg'
@@ -182,7 +185,9 @@ union_ty ::= ty ('|' ty)+ {
 }
 access_modifier ::= PRIVATE | PUBLIC | PROTECTED | TAG_NAME_PRIVATE | TAG_NAME_PUBLIC | TAG_NAME_PROTECTED
 
-tag_field ::= TAG_NAME_FIELD access_modifier? ('<' class_name_ref '>')? ID nullable? ty comment_string? {
+field_index ::= ID | NUM
+
+tag_field ::= TAG_NAME_FIELD access_modifier? ((('<' class_name_ref '>')? ID nullable?)| '[' field_index ']') ty comment_string? {
     pin = 1
     implements = [
         "com.tang.intellij.lua.psi.LuaClassField"

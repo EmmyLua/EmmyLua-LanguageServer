@@ -328,6 +328,15 @@ private fun LuaIndexExpr.infer(context: SearchContext): ITy {
             // Type[]
             TyUnion.each(tySet) {
                 if (it is ITyArray) ty = ty.union(it.base)
+                else if (it is ITyClass ) {
+                    val id = indexExpr.idExpr
+                    if(id != null) {
+                        val indexTy = it.getIndexResultType(id)
+                        if(indexTy != null) {
+                            ty = ty.union(indexTy)
+                        }
+                    }
+                }
             }
             if (ty !is TyUnknown) return@Computable ty
 
