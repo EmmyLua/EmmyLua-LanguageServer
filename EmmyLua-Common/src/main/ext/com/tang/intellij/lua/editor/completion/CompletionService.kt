@@ -33,9 +33,9 @@ class CompletionResultSetImpl(private val consumer: Consumer<LookupElement>) : C
 
 object CompletionService {
     private val contributors = arrayOf(
-            LuaCompletionContributor(),
-            SmartCompletionContributor(),
-            LuaDocCompletionContributor()
+        LuaCompletionContributor(),
+        SmartCompletionContributor(),
+        LuaDocCompletionContributor()
     )
 
     fun collectCompletion(file: PsiFile, caret: Int, consumer: Consumer<LookupElement>) {
@@ -50,7 +50,10 @@ object CompletionService {
         context.startOffset = caret
         context.dummyIdentifier = CompletionInitializationContext.DUMMY_IDENTIFIER
         contributors.forEach { it.beforeCompletion(context) }
-        parameters.position = if (context.dummyIdentifier.isEmpty()) file.findElementAt(caret) ?: return else insertDummyIdentifier(context)
+        parameters.position =
+            if (context.dummyIdentifier.isEmpty()) file.findElementAt(caret) ?: return else insertDummyIdentifier(
+                context
+            )
 
         val text = file.text
         val result = CompletionResultSetImpl(consumer)

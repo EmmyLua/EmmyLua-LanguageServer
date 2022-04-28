@@ -26,7 +26,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.tree.TokenSet
 import com.intellij.util.ProcessingContext
-import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.project.LuaSettings
 import com.tang.intellij.lua.psi.*
 
@@ -92,7 +91,7 @@ class LuaCompletionContributor : CompletionContributor() {
 
         extend(CompletionType.BASIC, SHOW_STRING_INNER, StringInnerTypeCompletionProvider())
 
-        extend(CompletionType.BASIC, SHOW_CONST_EXPR, ConstExprProvider())
+        extend(CompletionType.BASIC, SHOW_CONST_EXPR, EmitterOverloadProvider())
     }
 
     /*override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {

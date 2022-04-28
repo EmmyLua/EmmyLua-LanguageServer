@@ -55,6 +55,10 @@ class TyPrimitiveClass(override val primitiveKind: TyPrimitiveKind,
             return this == other.base
         }
 
+        if(other is TyStringLiteral){
+            return true
+        }
+
         return this == other
     }
 

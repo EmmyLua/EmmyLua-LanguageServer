@@ -13,6 +13,7 @@ import com.tang.intellij.lua.Constants
 import com.tang.intellij.lua.comment.psi.*
 import com.tang.intellij.lua.comment.psi.api.LuaComment
 import com.tang.intellij.lua.editor.completion.CompletionService
+import com.tang.intellij.lua.editor.completion.LuaLookupElement
 import com.tang.intellij.lua.editor.completion.asCompletionItem
 import com.tang.intellij.lua.project.LuaSettings
 import com.tang.intellij.lua.psi.*
@@ -536,19 +537,30 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun completion(position: CompletionParams): CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
+    override fun completion(params: CompletionParams): CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
         return computeAsync { checker ->
             val list = CompletionList()
             list.items = mutableListOf()
-            val file = workspace.findFile(position.textDocument.uri)
+            val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
-                val pos = file.getPosition(position.position.line, position.position.character)
+                val pos = file.getPosition(params.position.line, params.position.character)
                 val psi = file.psi
+                val trigger = params.context.triggerCharacter
                 if (psi != null) {
-                    CompletionService.collectCompletion(psi, pos, Consumer {
-                        checker.checkCanceled()
-                        list.items.add(it.asCompletionItem)
-                    })
+                    if(trigger == "("){
+                        CompletionService.collectCompletion(psi, pos, Consumer {
+                            checker.checkCanceled()
+                            if(it is LuaLookupElement && it.isOverloadConst) {
+                                list.items.add(it.asCompletionItem)
+                            }
+                        })
+                    }
+                    else {
+                        CompletionService.collectCompletion(psi, pos, Consumer {
+                            checker.checkCanceled()
+                            list.items.add(it.asCompletionItem)
+                        })
+                    }
                 }
             }
             Either.forRight<MutableList<CompletionItem>, CompletionList>(list)
