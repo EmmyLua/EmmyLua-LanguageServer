@@ -233,43 +233,25 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     callExpr.guessParentType(SearchContext.get(callExpr.project)).let { parentType ->
                         parentType.each { ty ->
                             if (ty is ITyFunction) {
-                                val active = ty.findPerfectSignature(nCommas + 1)
-                                ty.process(Processor { sig ->
-                                    if (sig == active) {
-                                        var index = 0;
+                                val sig = ty.findPerfectSignature(callExpr)
+                                var index = 0;
 
-                                        if (sig.colonCall && callExpr.isMethodDotCall) {
-                                            literalMap[index]?.let {
-                                                paramHints[it].hint = "self"
-                                            }
-                                            index++
-                                        }
-                                        var skipSelf = false
-                                        sig.params.forEach { pi ->
-                                            if (index == 0 && !skipSelf && !sig.colonCall && callExpr.isMethodColonCall) {
-                                                skipSelf = true
-                                            } else {
-                                                literalMap[index]?.let {
-                                                    paramHints[it].hint = pi.name
-                                                }
-                                                index++
-                                            }
-                                        }
-
-                                        if (sig.hasVarargs() && LuaSettings.instance.varargHint) {
-                                            for (paramIndex in literalMap.keys) {
-                                                if (paramIndex >= index) {
-                                                    literalMap[paramIndex]?.let {
-                                                        paramHints[it].hint = "var" + (paramIndex - index).toString()
-                                                    }
-                                                }
-                                            }
-                                        }
-
+                                sig.params.forEach { pi ->
+                                    literalMap[index]?.let {
+                                        paramHints[it].hint = pi.name
                                     }
+                                    index++
+                                }
 
-                                    true
-                                })
+                                if (sig.hasVarargs() && LuaSettings.instance.varargHint) {
+                                    for (paramIndex in literalMap.keys) {
+                                        if (paramIndex >= index) {
+                                            literalMap[paramIndex]?.let {
+                                                paramHints[it].hint = "var" + (paramIndex - index).toString()
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -550,7 +532,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     if(trigger == "("){
                         CompletionService.collectCompletion(psi, pos, Consumer {
                             checker.checkCanceled()
-                            if(it is LuaLookupElement && it.isOverloadConst) {
+                            if(it is LuaLookupElement && it.isEnumMember) {
                                 list.items.add(it.asCompletionItem)
                             }
                         })
@@ -623,14 +605,21 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     callExpr?.guessParentType(SearchContext.get(psiFile.project))?.let { parentType ->
                         parentType.each { ty ->
                             if (ty is ITyFunction) {
-                                val active = ty.findPerfectSignature(nCommas + 1)
+                                val active = ty.findPerfectSignature(callExpr, nCommas + 1)
                                 var idx = 0
                                 ty.process(Processor { sig ->
                                     val information = SignatureInformation()
                                     information.parameters = mutableListOf()
                                     sig.params.forEach { pi ->
+                                        val pTy = pi.ty
+                                        val pTyDisplay: String = if(pTy is TyStringLiteral){
+                                            "\"${pTy.displayName}\""
+                                        } else{
+                                            pTy.displayName
+                                        }
+
                                         val paramInfo =
-                                            ParameterInformation("${pi.name}${if(pi.nullable) "?" else "" }:${pi.ty.displayName}")
+                                            ParameterInformation("${pi.name}${if(pi.nullable) "?" else "" }:${pTyDisplay}")
                                         information.parameters.add(paramInfo)
                                     }
 

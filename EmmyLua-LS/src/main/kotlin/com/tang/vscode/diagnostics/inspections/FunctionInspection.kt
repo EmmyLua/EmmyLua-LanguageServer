@@ -34,24 +34,10 @@ object FunctionInspection {
             callExpr.guessParentType(context).let { parentType ->
                 parentType.each { ty ->
                     if (ty is ITyFunction) {
-                        val sig = ty.findPerfectSignature(nCommas + 1)
+                        val sig = ty.findPerfectSignature(callExpr)
 
                         var index = 0;
-
-                        var skipFirstParam = false
-
-                        if (sig.colonCall && callExpr.isMethodDotCall) {
-                            index++;
-                        } else if (!sig.colonCall && callExpr.isMethodColonCall) {
-                            skipFirstParam = true
-                        }
-
                         sig.params.forEach { pi ->
-                            if (skipFirstParam) {
-                                skipFirstParam = false
-                                return@forEach
-                            }
-
                             val param = paramMap[index]
                             if (param != null) {
                                 val paramType = param.guessType(context)

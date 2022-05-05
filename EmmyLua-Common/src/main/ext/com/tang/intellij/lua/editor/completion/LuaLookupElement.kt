@@ -13,7 +13,7 @@ class LuaLookupElement(label: String) : LookupElement(label) {
     var insertText: String? = null
     var textEdit: TextEdit? = null
     var deprecated = false
-    var isOverloadConst = false
+    var isEnumMember = false
 }
 
 val LookupElement.asCompletionItem: CompletionItem get() {

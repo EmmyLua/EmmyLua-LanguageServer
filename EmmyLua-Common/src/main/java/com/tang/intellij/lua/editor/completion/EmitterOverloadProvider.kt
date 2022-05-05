@@ -1,8 +1,6 @@
 package com.tang.intellij.lua.editor.completion
 
 import com.intellij.codeInsight.completion.CompletionResultSet
-import com.intellij.codeInsight.completion.PrefixMatcher
-import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.psi.PsiElement
 import com.intellij.util.Processor
 import com.tang.intellij.lua.psi.LuaCallExpr
@@ -27,7 +25,7 @@ class EmitterOverloadProvider : LuaCompletionProvider() {
 
             callExpr.args.firstChild?.let { firstChild ->
                 var child: PsiElement? = firstChild
-                while (child != null) {
+                while (child != null && child != psi) {
                     if (child.node.elementType == LuaTypes.COMMA) {
                         activeParameter++
                     }
@@ -68,8 +66,8 @@ class EmitterOverloadProvider : LuaCompletionProvider() {
             if(psiElement.node.elementType == LuaTypes.STRING) {
                 element.textEdit = TextEdit(psiElement.textRange.toRange(file), newText)
             }
-            element.isOverloadConst = true
-            element.kind = CompletionItemKind.Constant
+            element.isEnumMember = true
+            element.kind = CompletionItemKind.EnumMember
             completionResultSet.addElement(element)
         }
     }

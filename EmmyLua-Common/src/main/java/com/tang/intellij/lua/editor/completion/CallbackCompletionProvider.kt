@@ -27,7 +27,7 @@ class CallbackCompletionProvider : LuaCompletionProvider() {
 
             callExpr.args.firstChild?.let { firstChild ->
                 var child: PsiElement? = firstChild
-                while (child != null) {
+                while (child != null && child != psi) {
                     if (child.node.elementType == LuaTypes.COMMA) {
                         activeParameter++
                         nCommas++
@@ -39,22 +39,15 @@ class CallbackCompletionProvider : LuaCompletionProvider() {
             callExpr.guessParentType(searchContext).let { parentType ->
                 parentType.each { ty ->
                     if (ty is ITyFunction) {
-                        val active = ty.findPerfectSignature(nCommas + 1)
-                        ty.process(Processor { sig ->
-                            if (sig == active) {
-                                if (activeParameter < sig.params.size) {
-                                    sig.params[activeParameter].let {
-                                        val paramType = it.ty
-                                        if (paramType is TyFunction) {
-                                            addCallback(paramType, searchContext, completionResultSet)
-                                        }
-                                    }
+                        val activeSig = ty.findPerfectSignature(callExpr, nCommas + 1)
+                        if (activeParameter < activeSig.params.size) {
+                            activeSig.params[activeParameter].let {
+                                val paramType = it.ty
+                                if (paramType is TyFunction) {
+                                    addCallback(paramType, searchContext, completionResultSet)
                                 }
-
                             }
-
-                            true
-                        })
+                        }
                     }
                 }
             }

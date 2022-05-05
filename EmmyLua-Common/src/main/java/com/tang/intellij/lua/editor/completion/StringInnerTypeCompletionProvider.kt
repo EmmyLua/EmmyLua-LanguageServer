@@ -32,7 +32,7 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
 
             callExpr.args.firstChild?.let { firstChild ->
                 var child: PsiElement? = firstChild
-                while (child != null) {
+                while (child != null && child != psi) {
                     if (child.node.elementType == LuaTypes.COMMA) {
                         activeParameter++
                         nCommas++
@@ -44,45 +44,37 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
             callExpr.guessParentType(searchContext).let { parentType ->
                 parentType.each { ty ->
                     if (ty is ITyFunction) {
-                        val active = ty.findPerfectSignature(nCommas + 1)
-                        ty.process(Processor { sig ->
-                            if (sig == active) {
-                                if (activeParameter < sig.params.size) {
-                                    sig.params[activeParameter].let {
-                                        val paramType = it.ty
-                                        if (paramType is TySerializedGeneric && paramType.base == STRING) {
-                                            val oriFile = session.parameters.originalFile.virtualFile as ILuaFile
-                                            val oriPos =
-                                                session.parameters.originalFile.findElementAt(session.parameters.offset)
+                        val activeSig = ty.findPerfectSignature(callExpr, nCommas + 1)
+                        if (activeParameter < activeSig.params.size) {
+                            activeSig.params[activeParameter].let {
+                                val paramType = it.ty
+                                if (paramType is TySerializedGeneric && paramType.base == STRING) {
+//                                    val oriFile = session.parameters.originalFile.virtualFile as ILuaFile
+                                    val oriPos =
+                                        session.parameters.originalFile.findElementAt(session.parameters.offset)
 
-                                            val innerType = paramType.params.firstOrNull()
-                                            if (oriPos != null && innerType is ITyClass) {
-                                                val content = LuaString.getContent(oriPos.text)
+                                    val innerType = paramType.params.firstOrNull()
+                                    if (oriPos != null && innerType is ITyClass) {
+                                        val content = LuaString.getContent(oriPos.text)
 
-                                                guessPrefixType(
-                                                    innerType,
-                                                    searchContext,
-                                                    content.value
-                                                ).forEach { prefixType ->
-                                                    addInnerClass(
-                                                        prefixType,
-                                                        getPrefix(content.value),
-                                                        searchContext,
-                                                        psi.project,
-                                                        completionResultSet
-                                                    )
-                                                }
-
-
-                                            }
+                                        guessPrefixType(
+                                            innerType,
+                                            searchContext,
+                                            content.value
+                                        ).forEach { prefixType ->
+                                            addInnerClass(
+                                                prefixType,
+                                                getPrefix(content.value),
+                                                searchContext,
+                                                psi.project,
+                                                completionResultSet
+                                            )
                                         }
                                     }
                                 }
-
                             }
+                        }
 
-                            true
-                        })
                     }
                 }
             }
@@ -115,7 +107,7 @@ class StringInnerTypeCompletionProvider : ClassMemberCompletionProvider() {
                             memberTy: ITy?
                         ): LookupElement {
                             element.lookupString = prefix + element.lookupString
-                            if(element.kind == CompletionItemKind.Method) {
+                            if (element.kind == CompletionItemKind.Method) {
                                 element.insertText = prefix + element.insertText
                             }
                             return PrioritizedLookupElement.withPriority(element, 10.0)

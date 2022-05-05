@@ -278,7 +278,8 @@ fun getType(luaDocParTy: LuaDocParTy): ITy {
 
 fun getType(stringLiteral: LuaDocStringLiteralTy): ITy {
     val text = stringLiteral.text
-    return TyStringLiteral(if (text.length >= 2) text.substring(1, text.length - 1) else "")
+    // 历史原因
+    return TyStringLiteral(if (text.length >= 2) text.substring(1, text.length - 1).trim('\'', '\"') else "")
 }
 
 fun getType(unionTy: LuaDocUnionTy): ITy {
@@ -312,12 +313,12 @@ fun getNameIdentifier(f: LuaDocTableField): PsiElement? {
     return f.id
 }
 
-fun getName(f:LuaDocTableField): String {
+fun getName(f: LuaDocTableField): String {
     val stub = f.stub
     return stub?.name ?: f.id.text
 }
 
-fun guessType(f:LuaDocTableField, context: SearchContext): ITy {
+fun guessType(f: LuaDocTableField, context: SearchContext): ITy {
     val stub = f.stub
     val ty = if (stub != null) stub.docTy else f.ty?.getType()
     return ty ?: Ty.UNKNOWN
@@ -341,10 +342,10 @@ fun getType(alias: LuaDocTagAlias): ITy {
     return ty ?: Ty.UNKNOWN
 }
 
-fun isNullable(param: LuaDocTagParam): Boolean{
+fun isNullable(param: LuaDocTagParam): Boolean {
     return param.nullable != null
 }
 
-fun isNullable(field: LuaDocTagField): Boolean{
+fun isNullable(field: LuaDocTagField): Boolean {
     return field.nullable != null
 }

@@ -31,7 +31,7 @@ class EnumCompletionProvider : LuaCompletionProvider() {
 
             callExpr.args.firstChild?.let { firstChild ->
                 var child: PsiElement? = firstChild
-                while (child != null) {
+                while (child != null && child != psi) {
                     if (child.node.elementType == LuaTypes.COMMA) {
                         activeParameter++
                         nCommas++
@@ -39,41 +39,31 @@ class EnumCompletionProvider : LuaCompletionProvider() {
                     child = child.nextSibling
                 }
             }
+
             val searchContext = SearchContext.get(callExpr.project)
             callExpr.guessParentType(searchContext).let { parentType ->
                 parentType.each { ty ->
                     if (ty is ITyFunction) {
-                        val active = ty.findPerfectSignature(nCommas + 1)
-                        ty.process(Processor { sig ->
-                            if (sig == active) {
-                                if (activeParameter < sig.params.size) {
-                                    sig.params[activeParameter].let {
-                                        val paramType = it.ty
-                                        if (paramType is TyClass) {
-                                            val enumClass = LuaShortNamesManager.getInstance(searchContext.project)
-                                                .findClass(paramType.className, searchContext)
-                                            if (enumClass is LuaDocTagClass && enumClass.enum != null) {
-                                                addEnum(paramType, searchContext, completionResultSet)
-                                            }
-                                        }
-                                    }
+                        val activeSig = ty.findPerfectSignature(callExpr, nCommas + 1)
+                        if (activeParameter < activeSig.params.size) {
+                            activeSig.params[activeParameter].let {
+                                val paramType = it.ty
+                                if (paramType is TyClass && paramType.isEnum(callExpr.project, searchContext)) {
+                                    addEnum(paramType, searchContext, completionResultSet)
                                 }
-
                             }
-
-                            true
-                        })
+                        }
                     }
                 }
             }
-
-
         }
     }
 
-    private fun addEnum(luaType: ITyClass,
-                        searchContext: SearchContext,
-                        completionResultSet: CompletionResultSet) {
+    private fun addEnum(
+        luaType: ITyClass,
+        searchContext: SearchContext,
+        completionResultSet: CompletionResultSet
+    ) {
         luaType.lazyInit(searchContext)
         luaType.processMembers(searchContext) { curType, member ->
             ProgressManager.checkCanceled()
@@ -87,14 +77,18 @@ class EnumCompletionProvider : LuaCompletionProvider() {
         }
     }
 
-    private fun addEnumField(completionResultSet: CompletionResultSet,
-                             member: LuaClassMember,
-                             name: String,
-                             fieldType: ITyClass) {
+    private fun addEnumField(
+        completionResultSet: CompletionResultSet,
+        member: LuaClassMember,
+        name: String,
+        fieldType: ITyClass
+    ) {
 
         if (member is LuaClassField) {
-            val element = LookupElementFactory.createFieldLookupElement(fieldType.className, name, member, fieldType, true)
-            element.kind = CompletionItemKind.Enum
+            val element =
+                LookupElementFactory.createFieldLookupElement(fieldType.className, name, member, fieldType, true)
+            element.kind = CompletionItemKind.EnumMember
+            element.isEnumMember = true
             completionResultSet.addElement(element)
         }
     }

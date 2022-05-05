@@ -309,6 +309,12 @@ abstract class TyClass(
         return substitutor.substitute(this)
     }
 
+    fun isEnum(project: Project, searchContext: SearchContext): Boolean{
+        val enumClass = LuaShortNamesManager.getInstance(project)
+            .findClass(className, searchContext)
+        return enumClass is LuaDocTagClass && enumClass.enum != null
+    }
+
     companion object {
         // for _G
         val G: TyClass = createSerializedClass(Constants.WORD_G)
