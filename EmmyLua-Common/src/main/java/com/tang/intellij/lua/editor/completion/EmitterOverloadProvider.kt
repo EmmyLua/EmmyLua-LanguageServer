@@ -37,15 +37,18 @@ class EmitterOverloadProvider : LuaCompletionProvider() {
                 callExpr.guessParentType(searchContext).let { parentType ->
                     parentType.each { ty ->
                         if (ty is ITyFunction) {
-                            ty.process(Processor { sig ->
-                                sig.params.firstOrNull()?.let {
-                                    val paramType = it.ty
-                                    if (paramType is TyStringLiteral) {
-                                        addOverload(psi, paramType, sig, completionResultSet)
+                            val firstParam = ty.mainSignature.params.firstOrNull()
+                            if(firstParam != null && firstParam.ty.subTypeOf(Ty.STRING, searchContext, true)) {
+                                ty.process(Processor { sig ->
+                                    sig.params.firstOrNull()?.let {
+                                        val paramType = it.ty
+                                        if (paramType is TyStringLiteral) {
+                                            addOverload(psi, paramType, sig, completionResultSet)
+                                        }
                                     }
-                                }
-                                true
-                            })
+                                    true
+                                })
+                            }
                         }
                     }
                 }

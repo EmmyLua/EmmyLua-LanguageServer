@@ -40,8 +40,8 @@ object FunctionInspection {
                         sig.params.forEach { pi ->
                             val param = paramMap[index]
                             if (param != null) {
-                                val paramType = param.guessType(context)
                                 if (!paramTypeCheck(pi, param, context)) {
+                                    val paramType = param.guessType(context)
                                     val pDeclaredType = pi.ty
                                     val diagnostic = Diagnostic()
                                     diagnostic.message = if (pDeclaredType is TyClass && pDeclaredType.isInterface) {
@@ -121,6 +121,16 @@ object FunctionInspection {
             if (isUnionCheckPass) {
                 return true
             }
+        } else if (defineType is TyClass && defineType.isEnum(context.project, context)) {
+            val superClass = defineType.getSuperClass(context)
+            return if (superClass != null) {
+                variableType.subTypeOf(superClass, context, true)
+            } else {
+                false
+            }
+        }
+        else if(defineType is TyStringLiteral){
+            return true
         }
 
         return variableType.subTypeOf(defineType, context, true)
