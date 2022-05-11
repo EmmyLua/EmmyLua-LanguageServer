@@ -90,7 +90,6 @@ class LuaDocumentationProvider : DocumentationProvider {
             is LuaPsiFile -> {
                 sb.append(element.virtualFile.path.substringAfter("file:/"))
             }
-
         }
         if (sb.isNotEmpty()) return sb.toString()
 

@@ -293,7 +293,23 @@ fun ITyFunction.findPerfectSignature(call: LuaCallExpr, paramSize: Int = 0): IFu
                 }
                 true
             })
-        } else if (firstParamTy is TyClass && firstParamTy.isEnum(call.project, searchContext)) {
+        }
+        else if(firstParamTy.subTypeOf(Ty.NUMBER, searchContext, true)){
+            process(Processor {
+                val params = it.params
+                if (params.isNotEmpty()) {
+                    val sigFirstParamTy = params.first().ty
+                    if (sigFirstParamTy is TyStringLiteral
+                        && (sigFirstParamTy.content == callArgs.first().text)
+                    ) {
+                        sig = it
+                        return@Processor false
+                    }
+                }
+                true
+            })
+        }
+        else if (firstParamTy is TyClass && firstParamTy.isEnum(call.project, searchContext)) {
             process(Processor {
                 val params = it.params
                 if (params.isNotEmpty()) {

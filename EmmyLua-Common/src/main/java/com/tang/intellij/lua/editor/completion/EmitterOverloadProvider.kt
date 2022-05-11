@@ -38,16 +38,29 @@ class EmitterOverloadProvider : LuaCompletionProvider() {
                     parentType.each { ty ->
                         if (ty is ITyFunction) {
                             val firstParam = ty.mainSignature.params.firstOrNull()
-                            if(firstParam != null && firstParam.ty.subTypeOf(Ty.STRING, searchContext, true)) {
-                                ty.process(Processor { sig ->
-                                    sig.params.firstOrNull()?.let {
-                                        val paramType = it.ty
-                                        if (paramType is TyStringLiteral) {
-                                            addOverload(psi, paramType, sig, completionResultSet)
+                            if(firstParam != null) {
+                                if(firstParam.ty.subTypeOf(Ty.STRING, searchContext, true)) {
+                                    ty.process(Processor { sig ->
+                                        sig.params.firstOrNull()?.let {
+                                            val paramType = it.ty
+                                            if (paramType is TyStringLiteral) {
+                                                addStringOverload(psi, paramType, sig, completionResultSet)
+                                            }
                                         }
-                                    }
-                                    true
-                                })
+                                        true
+                                    })
+                                }
+                                else if (firstParam.ty.subTypeOf(Ty.NUMBER, searchContext, true)){
+                                    ty.process(Processor { sig ->
+                                        sig.params.firstOrNull()?.let {
+                                            val paramType = it.ty
+                                            if (paramType is TyStringLiteral) {
+                                                addNumberOverload(psi, paramType, sig, completionResultSet)
+                                            }
+                                        }
+                                        true
+                                    })
+                                }
                             }
                         }
                     }
@@ -56,7 +69,7 @@ class EmitterOverloadProvider : LuaCompletionProvider() {
         }
     }
 
-    private fun addOverload(
+    private fun addStringOverload(
         psiElement: PsiElement,
         tyStringLiteral: TyStringLiteral,
         signature: IFunSignature,
@@ -74,37 +87,19 @@ class EmitterOverloadProvider : LuaCompletionProvider() {
             completionResultSet.addElement(element)
         }
     }
-//    private fun addEnum(
-//        luaType: ITyClass,
-//        searchContext: SearchContext,
-//        completionResultSet: CompletionResultSet
-//    ) {
-//        luaType.lazyInit(searchContext)
-//        luaType.processMembers(searchContext) { curType, member ->
-//            ProgressManager.checkCanceled()
-//            member.name?.let {
-//                val name = "${luaType.className}.${member.name}"
-//                if (completionResultSet.prefixMatcher.prefixMatches(name)) {
-//                    addEnumField(completionResultSet, member, name, curType)
-//                }
-//            }
-//
-//        }
-//    }
-//
-//    private fun addEnumField(
-//        completionResultSet: CompletionResultSet,
-//        member: LuaClassMember,
-//        name: String,
-//        fieldType: ITyClass
-//    ) {
-//
-//        if (member is LuaClassField) {
-//            val element =
-//                LookupElementFactory.createFieldLookupElement(fieldType.className, name, member, fieldType, true)
-//            element.kind = CompletionItemKind.Enum
-//            completionResultSet.addElement(element)
-//        }
-//    }
+
+    private fun addNumberOverload(
+        psiElement: PsiElement,
+        tyStringLiteral: TyStringLiteral,
+        signature: IFunSignature,
+        completionResultSet: CompletionResultSet
+    ) {
+        if(psiElement.node.elementType != LuaTypes.STRING) {
+            val element = LuaLookupElement(tyStringLiteral.content)
+            element.isEnumMember = true
+            element.kind = CompletionItemKind.EnumMember
+            completionResultSet.addElement(element)
+        }
+    }
 
 }
