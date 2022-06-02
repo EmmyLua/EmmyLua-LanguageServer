@@ -16,9 +16,10 @@ sourceSets {
 dependencies {
     compile project(":IntelliJ-Core")
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+//    compile fileTree(dir: "libs", include: "*.jar")
 }
 buildscript {
-    ext.kotlin_version = '1.6.0'
+    ext.kotlin_version = '1.6.10'
     repositories {
         mavenCentral()
     }

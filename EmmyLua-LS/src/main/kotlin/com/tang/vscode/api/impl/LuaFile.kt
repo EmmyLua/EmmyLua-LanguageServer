@@ -5,6 +5,7 @@ import com.intellij.lang.cacheBuilder.DefaultWordsScanner
 import com.intellij.lexer.FlexAdapter
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.TokenSet
 import com.tang.intellij.lua.lang.LuaLanguageLevel
@@ -12,14 +13,23 @@ import com.tang.intellij.lua.lang.LuaParserDefinition
 import com.tang.intellij.lua.lexer.LuaLexer
 import com.tang.intellij.lua.lexer._LuaLexer
 import com.tang.intellij.lua.parser.LuaParser
-import com.tang.intellij.lua.psi.LuaPsiFile
+import com.tang.intellij.lua.project.LuaSettings
+import com.tang.intellij.lua.psi.*
+import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.IndexSink
-import com.tang.lsp.FileURI
-import com.tang.lsp.ILuaFile
-import com.tang.lsp.Word
+import com.tang.intellij.lua.ty.ITyFunction
+import com.tang.intellij.lua.ty.TyClass
+import com.tang.intellij.lua.ty.findPerfectSignature
+import com.tang.intellij.lua.ty.hasVarargs
+import com.tang.lsp.*
+import com.tang.vscode.RenderRange
 import com.tang.vscode.diagnostics.DiagnosticsService
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
+import org.eclipse.lsp4j.InlayHint
+import org.eclipse.lsp4j.InlayHintKind
+import org.eclipse.lsp4j.jsonrpc.CancelChecker
+import org.eclipse.lsp4j.jsonrpc.messages.Either
 
 internal data class Line(val line: Int, val startOffset: Int, val stopOffset: Int)
 
@@ -28,15 +38,10 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
     private var _words: List<Word>? = null
-    private val _diagnostics = mutableListOf<Diagnostic>()
-    private var _completeDiagnostic = false
+    private var _inlayHints = mutableListOf<InlayHint>()
+    private var _version: Int = 0
 
-    override val diagnostics: List<Diagnostic>
-        get() {
-            synchronized(_diagnostics) {
-                return _diagnostics.toList()
-            }
-        }
+    var workspaceDiagnosticResultId: String? = null
 
     @Synchronized
     override fun didChange(params: DidChangeTextDocumentParams) {
@@ -83,15 +88,6 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         onChanged()
     }
 
-    override fun diagnose() {
-        synchronized(_diagnostics) {
-            if(!_completeDiagnostic) {
-                DiagnosticsService.diagnosticFile(this, _diagnostics)
-                _completeDiagnostic = true
-            }
-        }
-    }
-
     @Synchronized
     private fun updateLines() {
         _lines.clear()
@@ -120,16 +116,13 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     }
 
     private fun onChanged() {
+        ++_version
         updateLines()
         doParser()
     }
 
     private fun doParser() {
         _words = null
-        synchronized(_diagnostics) {
-            _diagnostics.clear()
-            _completeDiagnostic = false
-        }
         unindex()
         val parser = LuaParser()
         val builder = PsiBuilderFactory.getInstance().createBuilder(
@@ -184,7 +177,26 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     @Synchronized
     override fun getPosition(line: Int, char: Int): Int {
         val lineData = _lines.firstOrNull { it.line == line }
-        return if (lineData != null) lineData.startOffset + char else char
+        var pos = if (lineData != null) lineData.startOffset + char else char
+        if(pos >= _text.length){
+            pos = _text.length
+        }
+        return pos
+    }
+
+    @Synchronized
+    override fun getVersion(): Int{
+        return _version
+    }
+
+    @Synchronized
+    override fun lock(code: () -> Unit) {
+        code()
+    }
+
+    @Synchronized
+    fun diagnostic(diagnostics: MutableList<Diagnostic>, checker: CancelChecker?){
+        DiagnosticsService.diagnosticFile(this, diagnostics, checker)
     }
 
     override val psi: PsiFile?
@@ -219,6 +231,164 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         _words?.let { words ->
             for (word in words) {
                 if (!processor(word)) break
+            }
+        }
+    }
+
+    fun getInlayHint(): MutableList<InlayHint> {
+        return _inlayHints
+    }
+
+    private fun calculateInlayHint() {
+        val paramHints = mutableListOf<RenderRange>()
+        val localHints = mutableListOf<RenderRange>()
+        val overrideHints = mutableListOf<RenderRange>()
+        val file = this
+
+        psi?.acceptChildren(object : LuaRecursiveVisitor() {
+            override fun visitClassMethodDef(o: LuaClassMethodDef) {
+                if (LuaSettings.instance.overrideHint) {
+                    val context = SearchContext.get(o.project)
+                    val classType = o.guessClassType(context)
+                    if (classType != null) {
+                        TyClass.processSuperClass(classType, context) { sup ->
+                            val id = o.classMethodName.id
+                            if (id != null) {
+                                val member = sup.findMember(id.text, context)
+                                if (member != null) {
+                                    val funcBody = o.children.find { it is LuaFuncBody }
+                                    if (funcBody is LuaFuncBody) {
+                                        var fchild = funcBody.firstChild
+                                        while (fchild != funcBody.lastChild) {
+                                            if (fchild.text == ")") {
+                                                overrideHints.add(RenderRange(fchild.textRange.toRange(file), null))
+                                                return@processSuperClass true
+                                            }
+
+                                            fchild = fchild.nextSibling
+                                        }
+                                    }
+                                }
+                            }
+                            true
+                        }
+                    }
+                }
+                o.acceptChildren(this)
+            }
+
+            override fun visitLocalDef(o: LuaLocalDef) {
+                if (o.parent is LuaExprStat) // non-complete stat
+                    return
+                if (LuaSettings.instance.localHint) {
+                    val nameList = o.nameList
+                    o.exprList?.exprList.let { _ ->
+                        nameList?.nameDefList?.forEach {
+                            it.nameRange?.let { nameRange ->
+                                // 这个类型联合的名字太长对大多数情况都不是必要的，将进行必要的裁剪
+                                val gussType = it.guessType(SearchContext.get(o.project))
+                                val displayName = gussType.displayName
+                                when {
+                                    displayName.startsWith("fun") -> {
+                                        localHints.add(RenderRange(nameRange.toRange(file), "function"))
+                                    }
+                                    displayName.startsWith('[') -> {
+                                        // ignore
+                                    }
+                                    else -> {
+                                        val unexpectedNameIndex = displayName.indexOf("|[")
+                                        when (unexpectedNameIndex) {
+                                            -1 -> {
+                                                localHints.add(RenderRange(nameRange.toRange(file), displayName))
+                                            }
+                                            else -> {
+                                                localHints.add(
+                                                    RenderRange(
+                                                        nameRange.toRange(file),
+                                                        displayName.substring(0, unexpectedNameIndex)
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                o.acceptChildren(this)
+            }
+
+            override fun visitCallExpr(callExpr: LuaCallExpr) {
+                if (LuaSettings.instance.paramHint) {
+                    var activeParameter = 0
+                    var nCommas = 0
+                    val literalMap = mutableMapOf<Int, Int>()
+                    callExpr.args.firstChild?.let { firstChild ->
+                        var child: PsiElement? = firstChild
+                        while (child != null) {
+                            if (child.node.elementType == LuaTypes.COMMA) {
+                                activeParameter++
+                                nCommas++
+                            } else if (child.node.elementType == LuaTypes.LITERAL_EXPR
+                                || child.node.elementType == LuaTypes.TABLE_EXPR
+                                || child.node.elementType == LuaTypes.CLOSURE_EXPR
+                                || child.node.elementType == LuaTypes.BINARY_EXPR
+                            ) {
+                                paramHints.add(RenderRange(child.textRange.toRange(file), null))
+                                literalMap[activeParameter] = paramHints.size - 1;
+                            }
+
+                            child = child.nextSibling
+                        }
+                    }
+
+                    callExpr.guessParentType(SearchContext.get(callExpr.project)).let { parentType ->
+                        parentType.each { ty ->
+                            if (ty is ITyFunction) {
+                                val sig = ty.findPerfectSignature(callExpr)
+                                var index = 0;
+
+                                sig.params.forEach { pi ->
+                                    literalMap[index]?.let {
+                                        paramHints[it].hint = pi.name
+                                    }
+                                    index++
+                                }
+
+                                if (sig.hasVarargs() && LuaSettings.instance.varargHint) {
+                                    for (paramIndex in literalMap.keys) {
+                                        if (paramIndex >= index) {
+                                            literalMap[paramIndex]?.let {
+                                                paramHints[it].hint = "var:" + (paramIndex - index).toString()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        _inlayHints = mutableListOf<InlayHint>()
+
+        if (paramHints.isNotEmpty()) {
+            for (paramHint in paramHints) {
+                val hint = InlayHint(paramHint.range.start, Either.forLeft(" ${paramHint.hint}: "))
+                hint.kind = InlayHintKind.Parameter
+                hint.paddingRight = true
+                _inlayHints.add(hint)
+            }
+        }
+        if (localHints.isNotEmpty()) {
+            for (localHint in localHints) {
+                _inlayHints.add(InlayHint(localHint.range.end, Either.forLeft(localHint.hint)))
+            }
+        }
+        if (overrideHints.isNotEmpty()) {
+            for (overrideHint in overrideHints) {
+                _inlayHints.add(InlayHint(overrideHint.range.end, Either.forLeft(overrideHint.hint)))
             }
         }
     }

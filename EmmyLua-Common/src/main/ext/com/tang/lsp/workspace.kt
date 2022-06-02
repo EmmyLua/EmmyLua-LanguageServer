@@ -3,7 +3,6 @@ package com.tang.lsp
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiFile
-import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import java.io.File
 import java.net.URI
@@ -48,12 +47,12 @@ data class Word(val hashCode: Int, val start: Int, val end: Int)
 
 interface ILuaFile : IVirtualFile {
     fun getText(): CharSequence
-    val diagnostics: List<Diagnostic>
     val psi: PsiFile?
     fun unindex()
     fun getLine(offset: Int): Pair<Int, Int>
     fun didChange(params: DidChangeTextDocumentParams)
-    fun diagnose();
     fun getPosition(line:Int, char: Int): Int
     fun processWords(processor: (w: Word) -> Boolean)
+    fun getVersion(): Int
+    fun lock(code: () -> Unit)
 }

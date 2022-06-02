@@ -102,6 +102,11 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         capabilities.foldingRangeProvider = Either.forLeft(true)
 
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Full)
+
+        capabilities.inlayHintProvider = Either.forLeft(true)
+
+        capabilities.diagnosticProvider = DiagnosticRegistrationOptions(false, true)
+
 //        capabilities.semanticTokensProvider = SemanticTokensWithRegistrationOptions(
 //            SemanticTokensLegend(
 //                listOf(),
@@ -121,8 +126,6 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         client?.registerCapability(RegistrationParams(listOf(didChangeWorkspaceFolders)))
 
         workspaceService.loadWorkspace()
-
-        workspaceService.diagnoseWorkspace()
     }
 
     override fun getWorkspaceService(): WorkspaceService {
