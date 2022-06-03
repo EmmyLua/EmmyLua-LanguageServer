@@ -30,6 +30,9 @@ import org.eclipse.lsp4j.InlayHint
 import org.eclipse.lsp4j.InlayHintKind
 import org.eclipse.lsp4j.jsonrpc.CancelChecker
 import org.eclipse.lsp4j.jsonrpc.messages.Either
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 internal data class Line(val line: Int, val startOffset: Int, val stopOffset: Int)
 
@@ -38,41 +41,42 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
     private var _words: List<Word>? = null
-    private var _inlayHints = mutableListOf<InlayHint>()
     private var _version: Int = 0
+    private var _rwl = ReentrantReadWriteLock()
 
     var workspaceDiagnosticResultId: String? = null
 
-    @Synchronized
     override fun didChange(params: DidChangeTextDocumentParams) {
-        if (params.contentChanges.isEmpty())
-            return
+        _rwl.write {
+            if (params.contentChanges.isEmpty())
+                return
 
-        var sb = _text.toString()
-        var offset = 0
-        params.contentChanges.forEach {
-            when {
-                // for TextDocumentSyncKind.Full
-                it.range == null -> sb = it.text
-                // incremental updating
-                it.range.start.line >= _lines.size -> {
-                    sb += it.text
-                    _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character))
-                }
-                else -> {
-                    val sline = _lines[it.range.start.line]
-                    val eline = _lines[it.range.end.line]
-                    val spos = sline.startOffset + it.range.start.character
-                    val epos = eline.startOffset + it.range.end.character
-                    sb = sb.replaceRange(spos, epos, it.text)
+            var sb = _text.toString()
+            var offset = 0
+            params.contentChanges.forEach {
+                when {
+                    // for TextDocumentSyncKind.Full
+                    it.range == null -> sb = it.text
+                    // incremental updating
+                    it.range.start.line >= _lines.size -> {
+                        sb += it.text
+                        _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character))
+                    }
+                    else -> {
+                        val sline = _lines[it.range.start.line]
+                        val eline = _lines[it.range.end.line]
+                        val spos = sline.startOffset + it.range.start.character
+                        val epos = eline.startOffset + it.range.end.character
+                        sb = sb.replaceRange(spos, epos, it.text)
 
-                    val textSize = it.text.length
-                    offset += textSize - it.rangeLength
+                        val textSize = it.text.length
+                        offset += textSize - it.rangeLength
+                    }
                 }
             }
+            _text = sb
+            onChanged()
         }
-        _text = sb
-        onChanged()
     }
 
     override fun getText(): CharSequence {
@@ -84,11 +88,12 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     }
 
     fun setText(str: CharSequence) {
-        _text = str
-        onChanged()
+        _rwl.write {
+            _text = str
+            onChanged()
+        }
     }
 
-    @Synchronized
     private fun updateLines() {
         _lines.clear()
         var pos = 0
@@ -143,7 +148,6 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         return _lines.firstOrNull { it.line == line } ?.startOffset ?: 0
     }*/
 
-    @Synchronized
     override fun getLine(offset: Int): Pair<Int, Int> {
         if (_lines.size <= 1) {
             return Pair(0, offset)
@@ -174,28 +178,26 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         }
     }
 
-    @Synchronized
     override fun getPosition(line: Int, char: Int): Int {
         val lineData = _lines.firstOrNull { it.line == line }
         var pos = if (lineData != null) lineData.startOffset + char else char
-        if(pos >= _text.length){
+        if (pos >= _text.length) {
             pos = _text.length
         }
         return pos
     }
 
-    @Synchronized
-    override fun getVersion(): Int{
+    override fun getVersion(): Int {
         return _version
     }
 
-    @Synchronized
     override fun lock(code: () -> Unit) {
-        code()
+        _rwl.read {
+            code()
+        }
     }
 
-    @Synchronized
-    fun diagnostic(diagnostics: MutableList<Diagnostic>, checker: CancelChecker?){
+    fun diagnostic(diagnostics: MutableList<Diagnostic>, checker: CancelChecker?) {
         DiagnosticsService.diagnosticFile(this, diagnostics, checker)
     }
 
@@ -236,10 +238,6 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     }
 
     fun getInlayHint(): MutableList<InlayHint> {
-        return _inlayHints
-    }
-
-    private fun calculateInlayHint() {
         val paramHints = mutableListOf<RenderRange>()
         val localHints = mutableListOf<RenderRange>()
         val overrideHints = mutableListOf<RenderRange>()
@@ -360,7 +358,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
                                     for (paramIndex in literalMap.keys) {
                                         if (paramIndex >= index) {
                                             literalMap[paramIndex]?.let {
-                                                paramHints[it].hint = "var:" + (paramIndex - index).toString()
+                                                paramHints[it].hint = "var" + (paramIndex - index).toString()
                                             }
                                         }
                                     }
@@ -371,25 +369,28 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
                 }
             }
         })
-        _inlayHints = mutableListOf<InlayHint>()
+        val inlayHints = mutableListOf<InlayHint>()
 
         if (paramHints.isNotEmpty()) {
             for (paramHint in paramHints) {
-                val hint = InlayHint(paramHint.range.start, Either.forLeft(" ${paramHint.hint}: "))
+                val hint = InlayHint(paramHint.range.start, Either.forLeft("${paramHint.hint}:"))
                 hint.kind = InlayHintKind.Parameter
                 hint.paddingRight = true
-                _inlayHints.add(hint)
+                inlayHints.add(hint)
             }
         }
         if (localHints.isNotEmpty()) {
             for (localHint in localHints) {
-                _inlayHints.add(InlayHint(localHint.range.end, Either.forLeft(localHint.hint)))
+                val hint = InlayHint(localHint.range.end, Either.forLeft(":${localHint.hint}"))
+                hint.kind = InlayHintKind.Type
+                inlayHints.add(hint)
             }
         }
         if (overrideHints.isNotEmpty()) {
             for (overrideHint in overrideHints) {
-                _inlayHints.add(InlayHint(overrideHint.range.end, Either.forLeft(overrideHint.hint)))
+                inlayHints.add(InlayHint(overrideHint.range.end, Either.forLeft(" override ")))
             }
         }
+        return inlayHints
     }
 }

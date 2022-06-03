@@ -146,9 +146,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     override fun diagnostic(params: WorkspaceDiagnosticParams): CompletableFuture<WorkspaceDiagnosticReport> {
-        for(prev in params.previousResultIds){
+        for (prev in params.previousResultIds) {
             val file = findFile(prev.uri)
-            if(file is LuaFile){
+            if (file is LuaFile) {
                 file.workspaceDiagnosticResultId = prev.value
             }
         }
@@ -163,31 +163,32 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
 
         return computeAsync { checker ->
-            for(luaFile in files){
-                Thread.sleep(200)
-                val documentReport = diagnoseFile(luaFile, luaFile.workspaceDiagnosticResultId, checker)
-                if (documentReport.isRelatedFullDocumentDiagnosticReport) {
-                    val workspaceItemReport = WorkspaceFullDocumentDiagnosticReport(
-                        documentReport.relatedFullDocumentDiagnosticReport.items,
-                        luaFile.uri.toString(),
-                        luaFile.getVersion()
-                    )
-                    workspaceItemReport.resultId = documentReport.relatedFullDocumentDiagnosticReport.resultId
-                    val report = WorkspaceDiagnosticReportPartialResult(
-                        listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
-                    )
-                    client?.notifyProgress(ProgressParams(params.partialResultToken, Either.forRight(report)))
-                }
-                else if(documentReport.isRelatedUnchangedDocumentDiagnosticReport){
-                    val workspaceItemReport = WorkspaceUnchangedDocumentDiagnosticReport(
-                        documentReport.relatedUnchangedDocumentDiagnosticReport.resultId,
-                        luaFile.uri.toString(),
-                        luaFile.getVersion()
-                    )
-                    val report = WorkspaceDiagnosticReportPartialResult(
-                        listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
-                    )
-                    client?.notifyProgress(ProgressParams(params.partialResultToken, Either.forRight(report)))
+            for (luaFile in files) {
+//                Thread.sleep(200)
+                luaFile.lock {
+                    val documentReport = diagnoseFile(luaFile, luaFile.workspaceDiagnosticResultId, checker)
+                    if (documentReport.isRelatedFullDocumentDiagnosticReport) {
+                        val workspaceItemReport = WorkspaceFullDocumentDiagnosticReport(
+                            documentReport.relatedFullDocumentDiagnosticReport.items,
+                            luaFile.uri.toString(),
+                            luaFile.getVersion()
+                        )
+                        workspaceItemReport.resultId = documentReport.relatedFullDocumentDiagnosticReport.resultId
+                        val report = WorkspaceDiagnosticReportPartialResult(
+                            listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
+                        )
+                        client?.notifyProgress(ProgressParams(params.partialResultToken, Either.forRight(report)))
+                    } else if (documentReport.isRelatedUnchangedDocumentDiagnosticReport) {
+                        val workspaceItemReport = WorkspaceUnchangedDocumentDiagnosticReport(
+                            documentReport.relatedUnchangedDocumentDiagnosticReport.resultId,
+                            luaFile.uri.toString(),
+                            luaFile.getVersion()
+                        )
+                        val report = WorkspaceDiagnosticReportPartialResult(
+                            listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
+                        )
+                        client?.notifyProgress(ProgressParams(params.partialResultToken, Either.forRight(report)))
+                    }
                 }
             }
             val empty = WorkspaceDiagnosticReport(emptyList())
@@ -300,7 +301,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
         val diagnostics = mutableListOf<Diagnostic>()
 //        DiagnosticsService.diagnosticFile(file, diagnostics, checker)
-        if(file is LuaFile){
+        if (file is LuaFile) {
             file.diagnostic(diagnostics, checker)
         }
 
