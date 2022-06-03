@@ -139,4 +139,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
 
         this.client = luaClient
     }
+
+    override fun setTrace(params: SetTraceParams) {
+    }
 }

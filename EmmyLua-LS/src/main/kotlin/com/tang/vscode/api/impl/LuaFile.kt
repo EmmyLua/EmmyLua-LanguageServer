@@ -24,10 +24,7 @@ import com.tang.intellij.lua.ty.hasVarargs
 import com.tang.lsp.*
 import com.tang.vscode.RenderRange
 import com.tang.vscode.diagnostics.DiagnosticsService
-import org.eclipse.lsp4j.Diagnostic
-import org.eclipse.lsp4j.DidChangeTextDocumentParams
-import org.eclipse.lsp4j.InlayHint
-import org.eclipse.lsp4j.InlayHintKind
+import org.eclipse.lsp4j.*
 import org.eclipse.lsp4j.jsonrpc.CancelChecker
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -259,7 +256,25 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
                                         var fchild = funcBody.firstChild
                                         while (fchild != funcBody.lastChild) {
                                             if (fchild.text == ")") {
-                                                overrideHints.add(RenderRange(fchild.textRange.toRange(file), null))
+//                                                var location: Location? = null
+//                                                val resolve = member.reference?.resolve()
+//                                                if (resolve != null) {
+//                                                    val sourceFile = resolve.containingFile?.virtualFile as? LuaFile
+//                                                    val range = resolve.nameRange
+//                                                    if (range != null && sourceFile != null)
+//                                                        location = Location(
+//                                                            sourceFile.uri.toString(),
+//                                                            range.toRange(sourceFile)
+//                                                        )
+//
+//                                                }
+                                                overrideHints.add(
+                                                    RenderRange(
+                                                        fchild.textRange.toRange(file),
+                                                        " override "
+                                                    )
+                                                )
+
                                                 return@processSuperClass true
                                             }
 
@@ -383,12 +398,24 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
             for (localHint in localHints) {
                 val hint = InlayHint(localHint.range.end, Either.forLeft(":${localHint.hint}"))
                 hint.kind = InlayHintKind.Type
+                hint.paddingLeft = true
                 inlayHints.add(hint)
             }
         }
         if (overrideHints.isNotEmpty()) {
             for (overrideHint in overrideHints) {
-                inlayHints.add(InlayHint(overrideHint.range.end, Either.forLeft(" override ")))
+                if(overrideHint.location == null) {
+                    val hint = InlayHint(overrideHint.range.end, Either.forLeft(overrideHint.hint))
+                    hint.paddingLeft = true
+                    inlayHints.add(hint)
+                }
+                else{
+                    val hintPart = InlayHintLabelPart(overrideHint.hint)
+                    hintPart.location = overrideHint.location
+                    val hint = InlayHint(overrideHint.range.end, Either.forRight(listOf(hintPart)))
+                    hint.paddingLeft = true
+                    inlayHints.add(hint)
+                }
             }
         }
         return inlayHints
