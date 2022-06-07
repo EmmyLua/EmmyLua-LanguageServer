@@ -103,7 +103,9 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
 
         capabilities.textDocumentSync = Either.forLeft(TextDocumentSyncKind.Full)
 
-        capabilities.inlayHintProvider = Either.forLeft(true)
+        val inlayHintOptions = InlayHintRegistrationOptions()
+        inlayHintOptions.resolveProvider = true
+        capabilities.inlayHintProvider = Either.forRight(inlayHintOptions)
 
         capabilities.diagnosticProvider = DiagnosticRegistrationOptions(false, true)
 

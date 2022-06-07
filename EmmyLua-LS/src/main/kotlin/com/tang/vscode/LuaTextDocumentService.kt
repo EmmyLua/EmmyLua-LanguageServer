@@ -2,9 +2,7 @@ package com.tang.vscode
 
 import com.google.gson.JsonPrimitive
 import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiComment
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiErrorElement
+import com.intellij.psi.*
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Consumer
@@ -18,6 +16,7 @@ import com.tang.intellij.lua.editor.completion.asCompletionItem
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
+import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.ty.*
 import com.tang.lsp.ILuaFile
 import com.tang.lsp.getRangeInFile
@@ -440,8 +439,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         if (file == null) {
             val u = URI(uri)
             workspace.addFile(File(u.path), params.textDocument.text, true)
-        }
-        else if(file is LuaFile){
+        } else if (file is LuaFile) {
             file.text = params.textDocument.text
         }
     }
@@ -1029,6 +1027,41 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 val report = DocumentDiagnosticReport(RelatedUnchangedDocumentDiagnosticReport())
                 report
             }
+        }
+    }
+
+    override fun resolveInlayHint(unresolved: InlayHint): CompletableFuture<InlayHint> {
+        return computeAsync {
+            if (unresolved.data != null && unresolved.data is JsonPrimitive) {
+                val data = (unresolved.data as JsonPrimitive).asString
+                val texts = data.split("#")
+                val labelParts = mutableListOf<InlayHintLabelPart>()
+                if (texts.size == 2) {
+                    val className = texts[0]
+                    val fieldName = texts[1]
+                    val context = SearchContext.get(workspace.getProject())
+                    val resolveList = mutableListOf<ResolveResult>()
+                    LuaClassMemberIndex.process(className, fieldName, context, Processor {
+                        resolveList.add(PsiElementResolveResult(it))
+                        false
+                    })
+
+                    val resolve = resolveList.firstOrNull()?.element
+                    if (resolve != null) {
+                        val sourceFile = resolve.containingFile?.virtualFile as? LuaFile
+                        val range = resolve.nameRange
+                        if (range != null && sourceFile != null) {
+                            val labelPart = InlayHintLabelPart(unresolved.label.left)
+                            labelPart.location = Location(sourceFile.uri.toString(), range.toRange(sourceFile))
+                            labelParts.add(labelPart)
+                        }
+                    }
+
+                }
+
+                unresolved.label = Either.forRight(labelParts)
+            }
+            unresolved
         }
     }
 

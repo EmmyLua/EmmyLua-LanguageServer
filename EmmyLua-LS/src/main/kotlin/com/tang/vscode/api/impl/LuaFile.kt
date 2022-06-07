@@ -256,26 +256,15 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
                                         var fchild = funcBody.firstChild
                                         while (fchild != funcBody.lastChild) {
                                             if (fchild.text == ")") {
-//                                                var location: Location? = null
-//                                                val resolve = member.reference?.resolve()
-//                                                if (resolve != null) {
-//                                                    val sourceFile = resolve.containingFile?.virtualFile as? LuaFile
-//                                                    val range = resolve.nameRange
-//                                                    if (range != null && sourceFile != null)
-//                                                        location = Location(
-//                                                            sourceFile.uri.toString(),
-//                                                            range.toRange(sourceFile)
-//                                                        )
-//
-//                                                }
                                                 overrideHints.add(
                                                     RenderRange(
                                                         fchild.textRange.toRange(file),
-                                                        " override "
+                                                        "override",
+                                                        "${sup.className}#${member.name}"
                                                     )
                                                 )
 
-                                                return@processSuperClass true
+                                                return@processSuperClass false
                                             }
 
                                             fchild = fchild.nextSibling
@@ -384,8 +373,8 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
                 }
             }
         })
-        val inlayHints = mutableListOf<InlayHint>()
 
+        val inlayHints = mutableListOf<InlayHint>()
         if (paramHints.isNotEmpty()) {
             for (paramHint in paramHints) {
                 val hint = InlayHint(paramHint.range.start, Either.forLeft("${paramHint.hint}:"))
@@ -404,18 +393,13 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         }
         if (overrideHints.isNotEmpty()) {
             for (overrideHint in overrideHints) {
-                if(overrideHint.location == null) {
-                    val hint = InlayHint(overrideHint.range.end, Either.forLeft(overrideHint.hint))
-                    hint.paddingLeft = true
-                    inlayHints.add(hint)
+                val hint = InlayHint(overrideHint.range.end, Either.forLeft(overrideHint.hint))
+                hint.paddingLeft = true
+                if(overrideHint.data != null){
+                    hint.data = overrideHint.data
                 }
-                else{
-                    val hintPart = InlayHintLabelPart(overrideHint.hint)
-                    hintPart.location = overrideHint.location
-                    val hint = InlayHint(overrideHint.range.end, Either.forRight(listOf(hintPart)))
-                    hint.paddingLeft = true
-                    inlayHints.add(hint)
-                }
+
+                inlayHints.add(hint)
             }
         }
         return inlayHints

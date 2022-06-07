@@ -96,6 +96,15 @@ class LuaDocumentationProvider : DocumentationProvider {
         return null
     }
 
+    fun generateCommentDoc(element: PsiElement): String {
+        val sb = StringBuilder()
+        if (element is LuaCommentOwner) {
+            renderComment(sb, element.comment)
+        }
+        if (sb.isNotEmpty()) return sb.toString()
+        return ""
+    }
+
     private fun renderClassMember(sb: StringBuilder, classMember: LuaClassMember) {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
@@ -179,16 +188,17 @@ class LuaDocumentationProvider : DocumentationProvider {
                     sb.append("global ")
                     with(sb) {
                         append(nameExpr.name)
-                        if(LuaConst.isConstGlobal(nameExpr.name, context)
-                            && (Ty.STRING.subTypeOf(ty, context, true) || Ty.NUMBER.subTypeOf(ty, context, true)) ){
+                        if (LuaConst.isConstGlobal(nameExpr.name, context)
+                            && (Ty.STRING.subTypeOf(ty, context, true) || Ty.NUMBER.subTypeOf(ty, context, true))
+                        ) {
                             val assignStat = nameExpr.assignStat
 
-                            if(assignStat != null) {
+                            if (assignStat != null) {
                                 val assignees = assignStat.varExprList.exprList
                                 val values = assignStat.valueExprList?.exprList ?: listOf()
 
                                 for (i in 0 until assignees.size) {
-                                    if (assignees[i] == nameExpr && i < values.size && isConstLiteral(values[i]))  {
+                                    if (assignees[i] == nameExpr && i < values.size && isConstLiteral(values[i])) {
                                         sb.append(" = ${values[i].text}")
                                         sb.append("\n")
                                         return@wrapLanguage
@@ -254,7 +264,7 @@ class LuaDocumentationProvider : DocumentationProvider {
                         if (nameList != null && exprList != null) {
                             val index = localDef.getIndexFor(element)
                             val expr = exprList.getExprAt(index)
-                            if (expr != null && isConstLiteral(expr) ) {
+                            if (expr != null && isConstLiteral(expr)) {
                                 sb.append("local ${element.name} = ${expr.text}")
                                 sb.append("\n")
                                 return@wrapLanguage
@@ -272,7 +282,7 @@ class LuaDocumentationProvider : DocumentationProvider {
         owner?.let { renderComment(sb, owner.comment) }
     }
 
-    private fun isConstLiteral(element: PsiElement): Boolean{
+    private fun isConstLiteral(element: PsiElement): Boolean {
         return element.node.elementType == LuaTypes.LITERAL_EXPR
     }
 

@@ -2,6 +2,7 @@ package com.tang.vscode
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.intellij.psi.PsiElement
 import com.tang.lsp.FileURI
 import org.eclipse.lsp4j.Location
 import org.eclipse.lsp4j.Range
@@ -12,14 +13,11 @@ enum class AnnotatorType {
     DocName,
     Upvalue,
     NotUse,
-    ParamHint,
-    LocalHint,
-    OverrideHint
 }
 
 data class AnnotatorParams(val uri: String)
 
-data class RenderRange(val range: Range, var hint: String?, val location: Location? = null)
+data class RenderRange(val range: Range, var hint: String?, val data: String? = null)
 
 data class Annotator(val uri: String, val ranges: List<RenderRange>, val type: AnnotatorType)
 

@@ -430,4 +430,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         project.putUserData(IConfigurationManager.KEY, configurationManager)
         project.putUserData(IFileManager.KEY, fileManager)
     }
+
+    fun getProject(): Project {
+        return project
+    }
 }
