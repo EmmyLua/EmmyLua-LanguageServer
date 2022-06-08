@@ -28,6 +28,10 @@ import com.tang.intellij.lua.lang.LuaIcons
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.*
+import com.tang.lsp.ILuaFile
+import com.tang.lsp.toRange
+import org.eclipse.lsp4j.CompletionItemKind
+import org.eclipse.lsp4j.TextEdit
 
 enum class MemberCompletionMode {
     Dot,    // self.xxx
@@ -43,8 +47,9 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
     protected abstract class HandlerProcessor {
         open fun processLookupString(lookupString: String, member: LuaClassMember, memberTy: ITy?): String =
             lookupString
+        open fun processCorrectElement(element: LuaLookupElement) : LookupElement = element
 
-        abstract fun process(element: LuaLookupElement, member: LuaClassMember, memberTy: ITy?): LookupElement
+        open fun process(element: LuaLookupElement, member: LuaClassMember, memberTy: ITy?): LookupElement = element
     }
 
     override fun addCompletions(session: CompletionSession) {
@@ -60,6 +65,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
             val contextTy = LuaPsiTreeUtil.findContextClass(indexExpr)
             val context = SearchContext.get(project)
             val prefixType = indexExpr.guessParentType(context)
+            val file = psi.containingFile.virtualFile
             if (!Ty.isInvalid(prefixType)) {
                 complete(
                     isColon,
@@ -68,7 +74,14 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                     prefixType,
                     completionResultSet,
                     completionResultSet.prefixMatcher,
-                    null
+                    object : HandlerProcessor() {
+                        override fun processCorrectElement(element: LuaLookupElement): LookupElement {
+                            if(element.lookupString.startsWith(":") && indexExpr.dot != null && file is ILuaFile) {
+                                element.textEdit = TextEdit(indexExpr.dot!!.textRange.toRange(file), ":")
+                            }
+                            return element
+                        }
+                    }
                 )
             }
             //smart
@@ -128,7 +141,6 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
         handlerProcessor: HandlerProcessor?
     ) {
         val context = SearchContext.get(project)
-        luaType.lazyInit(context)
         luaType.processVisibleMembers(context, contextTy) { curType, member ->
             ProgressManager.checkCanceled()
             member.name?.let {
@@ -193,8 +205,9 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                     return
                 }
             }
-            if (completionMode != MemberCompletionMode.Colon)
+            if (completionMode != MemberCompletionMode.Colon) {
                 addField(completionResultSet, bold, className, member, type, handlerProcessor)
+            }
         }
     }
 
@@ -229,16 +242,19 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
         val name = classMember.name
         if (name != null) {
             fnTy.process(Processor {
-
                 val firstParam = it.getFirstParam(thisType, isColonStyle)
-                if (isColonStyle) {
-                    if (firstParam == null) return@Processor true
-                    if (!callType.subTypeOf(firstParam.ty, SearchContext.get(classMember.project), true))
-                        return@Processor true
+                val firstParamIsSelf = if (firstParam != null) {
+                    callType.subTypeOf(firstParam.ty, SearchContext.get(classMember.project), true)
+                } else {
+                    false
+                }
+
+                if (isColonStyle && !firstParamIsSelf) {
+                    return@Processor true
                 }
 
                 val lookupString = handlerProcessor?.processLookupString(name, classMember, fnTy) ?: name
-
+                // basic
                 val element = LookupElementFactory.createMethodLookupElement(
                     clazzName,
                     lookupString,
@@ -251,6 +267,20 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                 )
                 val ele = handlerProcessor?.process(element, classMember, fnTy) ?: element
                 completionResultSet.addElement(ele)
+                // correction completion
+                if (!isColonStyle && firstParamIsSelf) {
+                    val colonElement = LookupElementFactory.createShouldBeMethodLookupElement(
+                        clazzName,
+                        lookupString,
+                        classMember,
+                        it,
+                        bold,
+                        fnTy,
+                        LuaIcons.CLASS_METHOD
+                    )
+                    val colonEle = handlerProcessor?.processCorrectElement(colonElement) ?: colonElement
+                    completionResultSet.addElement(colonEle)
+                }
                 true
             })
         }

@@ -82,6 +82,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         val completionOptions = CompletionOptions()
         completionOptions.triggerCharacters = listOf(".", ":", "@", "(")
         completionOptions.resolveProvider = true
+        completionOptions.completionItem = CompletionItemOptions(true)
         capabilities.completionProvider = completionOptions
 
         capabilities.definitionProvider = Either.forLeft(true)

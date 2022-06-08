@@ -377,10 +377,12 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         val inlayHints = mutableListOf<InlayHint>()
         if (paramHints.isNotEmpty()) {
             for (paramHint in paramHints) {
-                val hint = InlayHint(paramHint.range.start, Either.forLeft("${paramHint.hint}:"))
-                hint.kind = InlayHintKind.Parameter
-                hint.paddingRight = true
-                inlayHints.add(hint)
+                if(paramHint.hint != null) {
+                    val hint = InlayHint(paramHint.range.start, Either.forLeft("${paramHint.hint}:"))
+                    hint.kind = InlayHintKind.Parameter
+                    hint.paddingRight = true
+                    inlayHints.add(hint)
+                }
             }
         }
         if (localHints.isNotEmpty()) {

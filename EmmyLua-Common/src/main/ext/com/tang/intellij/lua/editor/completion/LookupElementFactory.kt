@@ -58,6 +58,28 @@ object LookupElementFactory {
         return item
     }
 
+    fun createShouldBeMethodLookupElement(clazzName: String,
+                                  lookupString: String,
+                                  classMember: LuaClassMember,
+                                  signature: IFunSignature,
+                                  bold: Boolean,
+                                  fnTy: ITyFunction,
+                                  icon: Icon?): LuaLookupElement {
+        val item = buildSignatureCompletionItem(lookupString, signature, true)
+        item.lookupString = ":${item.lookupString}"
+        item.kind = CompletionItemKind.Method
+        item.itemText = "[$clazzName]"
+        val file = classMember.containingFile?.virtualFile as? ILuaFile
+        if (file != null) {
+            item.data = "${file.uri}|${classMember.textOffset}"
+        }
+        if(classMember.isDeprecated){
+            item.deprecated = true
+        }
+
+        return item
+    }
+
     fun createFieldLookupElement(clazzName: String,
                                  name: String,
                                  field: LuaClassField,
