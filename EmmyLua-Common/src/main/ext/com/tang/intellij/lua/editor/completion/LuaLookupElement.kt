@@ -11,6 +11,7 @@ class LuaLookupElement(label: String) : LookupElement(label) {
     var textEdit: TextEdit? = null
     var deprecated = false
     var isEnumMember = false
+    var additionDetailDescription: String? = null
     var additionDetail: String? = null
 }
 
@@ -34,9 +35,10 @@ val LookupElement.asCompletionItem: CompletionItem
                 if (deprecated) {
                     completionItem.tags = listOf(CompletionItemTag.Deprecated)
                 }
-                if(additionDetail != null){
+                if(additionDetailDescription != null || additionDetail != null){
                     val labelDetail = CompletionItemLabelDetails()
-                    labelDetail.description = additionDetail
+                    labelDetail.description = additionDetailDescription
+                    labelDetail.detail = additionDetail
                     completionItem.labelDetails = labelDetail
                 }
 

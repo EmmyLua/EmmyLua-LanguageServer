@@ -242,9 +242,10 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
         val name = classMember.name
         if (name != null) {
             fnTy.process(Processor {
+                val context = SearchContext.get(classMember.project)
                 val firstParam = it.getFirstParam(thisType, isColonStyle)
                 val firstParamIsSelf = if (firstParam != null) {
-                    callType.subTypeOf(firstParam.ty, SearchContext.get(classMember.project), true)
+                    callType.subTypeOf(firstParam.ty, context, true)
                 } else {
                     false
                 }
@@ -268,7 +269,13 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                 val ele = handlerProcessor?.process(element, classMember, fnTy) ?: element
                 completionResultSet.addElement(ele)
                 // correction completion
-                if (!isColonStyle && firstParamIsSelf) {
+                if (!isColonStyle && firstParamIsSelf
+                    && callType != Ty.STRING
+                    // workaround now
+                    && callType is TyClass
+                    && callType !is TySerializedClass
+                    && callType !is TyTable
+                ) {
                     val colonElement = LookupElementFactory.createShouldBeMethodLookupElement(
                         clazzName,
                         lookupString,
