@@ -177,7 +177,7 @@ internal fun renderDocParam(sb: StringBuilder, child: LuaDocTagParam) {
     val paramNameRef = child.paramNameRef
     val commentString = child.commentString
     if (paramNameRef != null && commentString != null && commentString.text.isNotEmpty()) {
-        sb.appendLine("@_param_ `${paramNameRef.text}${if (child.isNullable) "?" else ""}`: ")
+        sb.appendLine("(parameter) `${paramNameRef.text}${if (child.isNullable) "?" else ""}`: ")
         renderTypeUnion(null, null, sb, child.ty)
         renderCommentString("  ", null, sb, commentString)
     }

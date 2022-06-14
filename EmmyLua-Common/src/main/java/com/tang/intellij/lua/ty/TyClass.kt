@@ -16,7 +16,6 @@
 
 package com.tang.intellij.lua.ty
 
-import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubInputStream
@@ -32,7 +31,6 @@ import com.tang.intellij.lua.psi.search.LuaClassInheritorsSearch
 import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
-import com.tang.lsp.nameRange
 
 interface ITyClass : ITy {
     val className: String
@@ -41,6 +39,7 @@ interface ITyClass : ITy {
     var interfaceNames: List<String>?
     var aliasName: String?
     var isInterface: Boolean
+    var isEnum: Boolean
     fun processAlias(processor: Processor<String>): Boolean
     fun lazyInit(searchContext: SearchContext)
     fun processMembers(context: SearchContext, processor: (ITyClass, LuaClassMember) -> Unit, deep: Boolean = true)
@@ -113,7 +112,8 @@ abstract class TyClass(
     override val varName: String = "",
     override var superClassName: String? = null,
     override var interfaceNames: List<String>? = null,
-    override var isInterface: Boolean = false
+    override var isInterface: Boolean = false,
+    override var isEnum: Boolean = false
 ) : Ty(TyKind.Class), ITyClass {
     final override var aliasName: String? = null
     private var _lazyInitialized: Boolean = false
@@ -165,7 +165,6 @@ abstract class TyClass(
     }
 
     override fun getIndexResultType(element: LuaLiteralExpr): ITy? {
-
         val context = SearchContext.get(element.project)
         when (element.kind) {
             LuaLiteralKind.Number -> {
@@ -229,6 +228,7 @@ abstract class TyClass(
             superClassName = tyClass.superClassName
             interfaceNames = tyClass.interfaceNames
             isInterface = tyClass.isInterface
+            isEnum = tyClass.isEnum
         }
     }
 
@@ -307,12 +307,6 @@ abstract class TyClass(
 
     override fun substitute(substitutor: ITySubstitutor): ITy {
         return substitutor.substitute(this)
-    }
-
-    fun isEnum(project: Project, searchContext: SearchContext): Boolean{
-        val enumClass = LuaShortNamesManager.getInstance(project)
-            .findClass(className, searchContext)
-        return enumClass is LuaDocTagClass && enumClass.enum != null
     }
 
     companion object {
@@ -417,6 +411,9 @@ class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
         }
         if (tagClass.`interface` != null) {
             isInterface = true
+        }
+        else if(tagClass.enum != null){
+            isEnum = true
         }
 
         aliasName = tagClass.aliasName

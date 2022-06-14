@@ -28,11 +28,12 @@ import com.tang.intellij.lua.psi.LuaTableExpr
 import com.tang.intellij.lua.psi.shouldBe
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.ty.ITy
+import org.eclipse.lsp4j.CompletionItemKind
 
 class TableCompletionProvider : ClassMemberCompletionProvider() {
 
     companion object {
-        private val metaMethodNames = mapOf(
+        public val metaMethodNames = mapOf(
                 "__add" to "a + b",
                 "__sub" to "a - b",
                 "__mul" to "a * b",
@@ -56,9 +57,9 @@ class TableCompletionProvider : ClassMemberCompletionProvider() {
         val completionParameters = session.parameters
         val completionResultSet = session.resultSet
         metaMethodNames.forEach {
-            val b = LookupElementBuilder.create(it.key)
-                    //.withTypeText(it.value)
-                    .withIcon(LuaIcons.META_METHOD)
+            val b = LuaLookupElement(it.key)
+            b.kind = CompletionItemKind.Method
+            b.additionDetailDescription = "[${it.value}]"
             completionResultSet.addElement(b)
         }
 
@@ -77,9 +78,10 @@ class TableCompletionProvider : ClassMemberCompletionProvider() {
                             if (member is LuaClassField) {
                                 addField(completionResultSet, curType === luaType, className, member, null, object : HandlerProcessor() {
                                     override fun process(element: LuaLookupElement, member: LuaClassMember, memberTy: ITy?): LookupElement {
-                                        element.itemText = "$className = "
+                                        element.itemText = "[$className]"
                                         element.lookupString = element.lookupString + " = "
-
+                                        element.additionDetailDescription = memberTy?.displayName
+                                        element.kind = CompletionItemKind.Property
                                         return PrioritizedLookupElement.withPriority(element, 10.0)
                                     }
                                 })

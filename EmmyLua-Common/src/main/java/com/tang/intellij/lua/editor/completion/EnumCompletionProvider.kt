@@ -48,7 +48,7 @@ class EnumCompletionProvider : LuaCompletionProvider() {
                         if (activeParameter < activeSig.params.size) {
                             activeSig.params[activeParameter].let {
                                 val paramType = it.ty
-                                if (paramType is TyClass && paramType.isEnum(callExpr.project, searchContext)) {
+                                if (paramType is TyClass && paramType.isEnum) {
                                     addEnum(paramType, searchContext, completionResultSet)
                                 }
                             }

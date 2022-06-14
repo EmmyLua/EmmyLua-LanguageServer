@@ -222,7 +222,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
         val name = field.name
         if (name != null) {
             val element = LookupElementFactory.createFieldLookupElement(clazzName, name, field, ty, bold)
-            val ele = handlerProcessor?.process(element, field, null) ?: element
+            val ele = handlerProcessor?.process(element, field, ty) ?: element
             completionResultSet.addElement(ele)
             return
         }
@@ -275,6 +275,7 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                     && callType is TyClass
                     && callType !is TySerializedClass
                     && callType !is TyTable
+                    && callType != TyClass.G
                 ) {
                     val colonElement = LookupElementFactory.createShouldBeMethodLookupElement(
                         clazzName,

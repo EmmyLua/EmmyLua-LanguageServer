@@ -246,7 +246,7 @@ class LuaDocumentationProvider : DocumentationProvider {
             renderDocParam(sb, docParamDef)
         } else {
             val ty = infer(paramNameDef, SearchContext.get(paramNameDef.project))
-            sb.appendLine("@param `${paramNameDef.name}`:")
+            sb.appendLine("(parameter) `${paramNameDef.name}`:")
             renderTy(sb, ty)
         }
     }

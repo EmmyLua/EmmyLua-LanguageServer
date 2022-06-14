@@ -293,8 +293,7 @@ fun ITyFunction.findPerfectSignature(call: LuaCallExpr, paramSize: Int = 0): IFu
                 }
                 true
             })
-        }
-        else if(firstParamTy.subTypeOf(Ty.NUMBER, searchContext, true)){
+        } else if (firstParamTy.subTypeOf(Ty.NUMBER, searchContext, true)) {
             process(Processor {
                 val params = it.params
                 if (params.isNotEmpty()) {
@@ -308,8 +307,7 @@ fun ITyFunction.findPerfectSignature(call: LuaCallExpr, paramSize: Int = 0): IFu
                 }
                 true
             })
-        }
-        else if (firstParamTy is TyClass && firstParamTy.isEnum(call.project, searchContext)) {
+        } else if (firstParamTy is TyClass && firstParamTy.isEnum) {
             process(Processor {
                 val params = it.params
                 if (params.isNotEmpty()) {
@@ -348,7 +346,7 @@ fun ITyFunction.findPerfectSignature(call: LuaCallExpr, paramSize: Int = 0): IFu
         else if (!isColonCall && call.isMethodColonCall) {
             val originSig = findPerfectSignature(nArgs + 1)
 
-            if(originSig.params.isNotEmpty()) {
+            if (originSig.params.isNotEmpty()) {
                 val luaParamInfoList = originSig.params.toMutableList()
                 luaParamInfoList.removeAt(0)
                 val luaParamInfoArray = luaParamInfoList.toTypedArray()
@@ -358,8 +356,7 @@ fun ITyFunction.findPerfectSignature(call: LuaCallExpr, paramSize: Int = 0): IFu
                     originSig.varargTy,
                     luaParamInfoArray
                 )
-            }
-            else{
+            } else {
                 sig = FunSignature(
                     true,
                     originSig.returnTy,

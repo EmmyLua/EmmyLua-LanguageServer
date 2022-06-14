@@ -44,7 +44,7 @@ enum class TyPrimitiveKind {
     Number,
     Boolean,
     Table,
-    Function
+    Function,
 }
 
 class TyFlags {

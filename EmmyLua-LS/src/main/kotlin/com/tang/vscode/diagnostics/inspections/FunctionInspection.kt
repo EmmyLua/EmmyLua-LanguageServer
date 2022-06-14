@@ -121,15 +121,14 @@ object FunctionInspection {
             if (isUnionCheckPass) {
                 return true
             }
-        } else if (defineType is TyClass && defineType.isEnum(context.project, context)) {
+        } else if (defineType is TyClass && defineType.isEnum) {
             val superClass = defineType.getSuperClass(context)
             return if (superClass != null) {
                 variableType.subTypeOf(superClass, context, true)
             } else {
                 false
             }
-        }
-        else if(defineType is TyStringLiteral){
+        } else if (defineType is TyStringLiteral) {
             return true
         }
 
