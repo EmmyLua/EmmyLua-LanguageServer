@@ -26,6 +26,7 @@ import com.tang.vscode.api.impl.LuaFile
 import com.tang.vscode.documentation.LuaDocumentationProvider
 import com.tang.vscode.formatter.FormattingFormatter
 import com.tang.vscode.formatter.FormattingType
+import com.tang.vscode.inlayHint.InlayHintService
 import com.tang.vscode.utils.TargetElementUtil
 import com.tang.vscode.utils.computeAsync
 import com.tang.vscode.utils.getDocumentSymbols
@@ -960,7 +961,6 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                 })
                             }
 
-
                             if (callExpr is LuaCallExpr) {
                                 if (callExpr.firstChild.text == "require") {
                                     val lines = file.getLine(callExpr.textOffset)
@@ -1009,7 +1009,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             if (file is LuaFile) {
                 file.lock {
                     // 认为所有local名称定义一开始都是未使用的
-                    list = file.getInlayHint()
+                    list = InlayHintService.getInlayHint(file)
                 }
             }
             list

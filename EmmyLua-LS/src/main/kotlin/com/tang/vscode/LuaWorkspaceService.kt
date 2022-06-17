@@ -162,9 +162,10 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             true
         }
 
+        val workspaceConfigVersion = configVersion
+
         return computeAsync { checker ->
             for (luaFile in files) {
-//                Thread.sleep(200)
                 luaFile.lock {
                     val documentReport = diagnoseFile(luaFile, luaFile.workspaceDiagnosticResultId, checker)
                     if (documentReport.isRelatedFullDocumentDiagnosticReport) {
@@ -191,6 +192,12 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                     }
                 }
             }
+
+            // 如果配置版本发生变更则中断无限循环
+            while (workspaceConfigVersion == configVersion) {
+                Thread.sleep(1000)
+            }
+
             val empty = WorkspaceDiagnosticReport(emptyList())
             empty
         }
