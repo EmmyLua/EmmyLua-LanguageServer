@@ -114,7 +114,12 @@ object InlayHintService {
                             if (child.node.elementType == LuaTypes.COMMA) {
                                 activeParameter++
                                 nCommas++
-                            } else {
+                            } else if (child.node.elementType == LuaTypes.LITERAL_EXPR
+                                || child.node.elementType == LuaTypes.TABLE_EXPR
+                                || child.node.elementType == LuaTypes.CLOSURE_EXPR
+                                || child.node.elementType == LuaTypes.BINARY_EXPR
+                                || child.node.elementType == LuaTypes.NAME_EXPR
+                            ) {
                                 paramHints.add(RenderRange(child.textRange.toRange(file), null))
                                 literalMap[activeParameter] = paramHints.size - 1;
                             }
@@ -155,7 +160,7 @@ object InlayHintService {
         val inlayHints = mutableListOf<InlayHint>()
         if (paramHints.isNotEmpty()) {
             for (paramHint in paramHints) {
-                if(paramHint.hint != null) {
+                if (paramHint.hint != null) {
                     val hint = InlayHint(paramHint.range.start, Either.forLeft("${paramHint.hint}:"))
                     hint.kind = InlayHintKind.Parameter
                     hint.paddingRight = true
@@ -175,7 +180,7 @@ object InlayHintService {
             for (overrideHint in overrideHints) {
                 val hint = InlayHint(overrideHint.range.end, Either.forLeft(overrideHint.hint))
                 hint.paddingLeft = true
-                if(overrideHint.data != null){
+                if (overrideHint.data != null) {
                     hint.data = overrideHint.data
                 }
 
