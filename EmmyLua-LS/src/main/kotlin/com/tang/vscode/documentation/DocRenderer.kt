@@ -176,10 +176,12 @@ internal fun renderFieldDef(sb: StringBuilder, def: LuaDocTagField) {
 internal fun renderDocParam(sb: StringBuilder, child: LuaDocTagParam) {
     val paramNameRef = child.paramNameRef
     val commentString = child.commentString
-    if (paramNameRef != null && commentString != null && commentString.text.isNotEmpty()) {
+    if (paramNameRef != null && commentString != null) {
         sb.appendLine("(parameter) `${paramNameRef.text}${if (child.isNullable) "?" else ""}`: ")
         renderTypeUnion(null, null, sb, child.ty)
-        renderCommentString("  ", null, sb, commentString)
+        if(commentString.text.isNotEmpty()) {
+            renderCommentString("  ", null, sb, commentString)
+        }
     }
 }
 

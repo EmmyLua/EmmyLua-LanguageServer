@@ -276,11 +276,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         if (range != null && sourceFile != null)
                             list.add(Location(sourceFile.uri.toString(), range.toRange(sourceFile)))
                     } else if (target != null) {
-                        val query = ReferencesSearch.search(target)
-                        query.forEach { ref ->
-                            val luaFile = ref.element.containingFile.virtualFile as LuaFile
-                            list.add(Location(luaFile.uri.toString(), ref.getRangeInFile(luaFile)))
-                        }
+                        val luaFile = psiFile.virtualFile as LuaFile
+                        list.add(Location(luaFile.uri.toString(), target.textRange.toRange(luaFile)))
                     }
                 }
             }
