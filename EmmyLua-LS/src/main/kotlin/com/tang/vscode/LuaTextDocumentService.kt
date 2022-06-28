@@ -355,12 +355,13 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                 val map = mutableMapOf<String, MutableList<TextEdit>>()
                 val def = target.reference?.resolve() ?: target
-
+                var refRange: Range? = null
                 def.nameRange?.let { range ->
                     val refFile = def.containingFile.virtualFile as LuaFile
                     val uri = refFile.uri.toString()
                     val list = map.getOrPut(uri) { mutableListOf() }
-                    list.add(TextEdit(range.toRange(refFile), params.newName))
+                    refRange = range.toRange(refFile)
+                    list.add(TextEdit(refRange, params.newName))
                 }
 
                 // references
@@ -369,7 +370,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val refFile = reference.element.containingFile.virtualFile as LuaFile
                     val uri = refFile.uri.toString()
                     val list = map.getOrPut(uri) { mutableListOf() }
-                    list.add(TextEdit(reference.getRangeInFile(refFile), params.newName))
+                    val range = reference.getRangeInFile(refFile);
+                    if(range != refRange) {
+                        list.add(TextEdit(range, params.newName))
+                    }
                 }
 
                 map.forEach { (t, u) ->
