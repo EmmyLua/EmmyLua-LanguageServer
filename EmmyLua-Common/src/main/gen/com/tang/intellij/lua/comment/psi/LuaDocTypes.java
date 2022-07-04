@@ -20,6 +20,7 @@ public interface LuaDocTypes {
   IElementType GENERAL_TY = LuaParserDefinitionKt.createDocType("GENERAL_TY");
   IElementType GENERIC_DEF = LuaParserDefinitionKt.createDocType("GENERIC_DEF");
   IElementType GENERIC_TY = LuaParserDefinitionKt.createDocType("GENERIC_TY");
+  IElementType ID_FIELD = LuaParserDefinitionKt.createDocType("ID_FIELD");
   IElementType NULLABLE = LuaParserDefinitionKt.createDocType("NULLABLE");
   IElementType PARAM_NAME_REF = LuaParserDefinitionKt.createDocType("PARAM_NAME_REF");
   IElementType PAR_TY = LuaParserDefinitionKt.createDocType("PAR_TY");
@@ -131,6 +132,9 @@ public interface LuaDocTypes {
       }
       else if (type == GENERIC_TY) {
         return new LuaDocGenericTyImpl(node);
+      }
+      else if (type == ID_FIELD) {
+        return new LuaDocIdFieldImpl(node);
       }
       else if (type == NULLABLE) {
         return new LuaDocNullableImpl(node);

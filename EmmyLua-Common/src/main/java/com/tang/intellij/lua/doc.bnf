@@ -89,7 +89,7 @@
 
 doc ::= (DASHES after_dash?)*
 
-private after_dash ::= doc_item | STRING { recoverWhile=after_dash_recover }
+private after_dash ::= doc_item | doc_field_item | STRING { recoverWhile=after_dash_recover }
 private after_dash_recover ::= !(DASHES)
 private doc_item ::= '@' (tag_param
     | tag_alias
@@ -108,6 +108,7 @@ private doc_item ::= '@' (tag_param
     | tag_def
     | tag_other
     )
+private doc_field_item ::= '|' id_field
 
 ty ::= union_ty | function_ty | table_ty | generic_ty | arr_ty | general_ty | par_ty | string_literal_ty {
     implements = ['com.tang.intellij.lua.comment.psi.LuaDocType']
@@ -208,6 +209,16 @@ tag_field ::= TAG_NAME_FIELD access_modifier? ((('<' class_name_ref '>')? ID nul
         isDeprecated
         isNullable
     ]
+}
+
+id_field ::= ID comment_string? {
+    implements = [
+        "com.tang.intellij.lua.comment.psi.LuaDocPsiElement"
+        "com.tang.intellij.lua.psi.LuaClassField"
+        "com.intellij.psi.PsiNameIdentifierOwner"
+    ]
+
+
 }
 
 //--- tag

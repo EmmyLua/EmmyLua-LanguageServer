@@ -40,6 +40,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _words: List<Word>? = null
     private var _version: Int = 0
     private var _rwl = ReentrantReadWriteLock()
+    private var _isOpen = false
 
     var workspaceDiagnosticResultId: String? = null
 
@@ -87,6 +88,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     fun setText(str: CharSequence) {
         _rwl.write {
             _text = str
+            _isOpen = true
             onChanged()
         }
     }
@@ -200,6 +202,18 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
     override val psi: PsiFile?
         get() = _myPsi
+
+    var opened: Boolean
+        get() {
+            _rwl.read {
+                return _isOpen
+            }
+        }
+        set(value) {
+            _rwl.write {
+                _isOpen = value
+            }
+        }
 
     override fun getPsiFile() = _myPsi
 

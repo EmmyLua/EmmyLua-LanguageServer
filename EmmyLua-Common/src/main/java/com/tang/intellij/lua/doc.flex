@@ -48,6 +48,7 @@ STRING=[^\r\n\t\f]*
 ID=[:jletter:] ([:jletterdigit:]|\.)*
 NUM=[0-9]+
 AT=@
+SIMPLE_FIELD=\|
 //三个-以上
 DOC_DASHES = --+
 //Strings
@@ -72,7 +73,6 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
 %state xSUPPRESS
 %state xDOUBLE_QUOTED_STRING
 %state xSINGLE_QUOTED_STRING
-
 %%
 
 <YYINITIAL> {
@@ -80,6 +80,7 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
     {LINE_WS}+                 { return com.intellij.psi.TokenType.WHITE_SPACE; }
     {DOC_DASHES}               { return DASHES; }
     "@"                        { yybegin(xTAG_NAME); return AT; }
+    "|"                        { yybegin(xTAG_WITH_ID); return OR; }
     .                          { yybegin(xCOMMENT_STRING); yypushback(yylength()); }
 }
 

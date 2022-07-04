@@ -9,6 +9,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 // 弃了，建议使用EmmyLuaCodeStyle
+// @deprecated
 class FormattingFormatter(val file: ILuaFile, val psi: PsiFile) {
     private var fileElement: FormattingElement =
         FormattingElement(psi, FormattingType.Block, psi.textRange, mutableListOf());

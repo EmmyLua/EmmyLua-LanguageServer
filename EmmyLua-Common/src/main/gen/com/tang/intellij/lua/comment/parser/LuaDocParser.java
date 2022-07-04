@@ -58,12 +58,13 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
   }
 
   /* ********************************************************** */
-  // doc_item | STRING
+  // doc_item | doc_field_item | STRING
   static boolean after_dash(PsiBuilder b, int l) {
     if (!recursion_guard_(b, l, "after_dash")) return false;
     boolean r;
     Marker m = enter_section_(b, l, _NONE_);
     r = doc_item(b, l + 1);
+    if (!r) r = doc_field_item(b, l + 1);
     if (!r) r = consumeToken(b, STRING);
     exit_section_(b, l, m, r, false, LuaDocParser::after_dash_recover);
     return r;
@@ -182,6 +183,19 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     if (!recursion_guard_(b, l, "doc_0_1")) return false;
     after_dash(b, l + 1);
     return true;
+  }
+
+  /* ********************************************************** */
+  // '|' id_field
+  static boolean doc_field_item(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "doc_field_item")) return false;
+    if (!nextTokenIs(b, OR)) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeToken(b, OR);
+    r = r && id_field(b, l + 1);
+    exit_section_(b, m, null, r);
+    return r;
   }
 
   /* ********************************************************** */
@@ -511,6 +525,26 @@ public class LuaDocParser implements PsiParser, LightPsiParser {
     r = r && consumeToken(b, COMMA);
     exit_section_(b, m, null, r);
     return r;
+  }
+
+  /* ********************************************************** */
+  // ID comment_string?
+  public static boolean id_field(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "id_field")) return false;
+    if (!nextTokenIs(b, ID)) return false;
+    boolean r;
+    Marker m = enter_section_(b);
+    r = consumeToken(b, ID);
+    r = r && id_field_1(b, l + 1);
+    exit_section_(b, m, ID_FIELD, r);
+    return r;
+  }
+
+  // comment_string?
+  private static boolean id_field_1(PsiBuilder b, int l) {
+    if (!recursion_guard_(b, l, "id_field_1")) return false;
+    comment_string(b, l + 1);
+    return true;
   }
 
   /* ********************************************************** */

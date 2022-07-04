@@ -23,7 +23,11 @@ import com.tang.lsp.getRangeInFile
 import com.tang.lsp.nameRange
 import com.tang.lsp.toRange
 import com.tang.vscode.api.impl.LuaFile
+//import com.tang.vscode.color.ColorService
 import com.tang.vscode.documentation.LuaDocumentationProvider
+import com.tang.vscode.extendApi.ExtendApiService
+import com.tang.vscode.extendApi.LuaApiClass
+import com.tang.vscode.extendApi.LuaReportApiParams
 import com.tang.vscode.formatter.FormattingFormatter
 import com.tang.vscode.formatter.FormattingType
 import com.tang.vscode.inlayHint.InlayHintService
@@ -59,6 +63,15 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                 findAnnotators(file)
             else
                 emptyList()
+        }
+    }
+
+    @Suppress("unused")
+    @JsonRequest("emmy/reportAPI")
+    fun reportAPI(params: LuaReportApiParams): CompletableFuture<Boolean> {
+        return computeAsync { checker->
+            ExtendApiService.loadApi(params)
+            true
         }
     }
 
@@ -237,31 +250,44 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun documentHighlight(params: DocumentHighlightParams?): CompletableFuture<MutableList<out DocumentHighlight>?> {
+    override fun documentHighlight(params: DocumentHighlightParams): CompletableFuture<MutableList<out DocumentHighlight>?> {
         return computeAsync {
             val list = mutableListOf<DocumentHighlight>()
-            if (params != null) {
-                withPsiFile(params.textDocument, params.position) { file, psiFile, i ->
-                    val target = TargetElementUtil.findTarget(psiFile, i)
-                    if (target != null) {
-                        val def = target.reference?.resolve() ?: target
 
-                        // self highlight
-                        if (def.containingFile == psiFile) {
-                            def.nameRange?.let { range -> list.add(DocumentHighlight(range.toRange(file))) }
-                        }
+            withPsiFile(params.textDocument, params.position) { file, psiFile, i ->
+                val target = TargetElementUtil.findTarget(psiFile, i)
+                if (target != null) {
+                    val def = target.reference?.resolve() ?: target
 
-                        // references highlight
-                        val search = ReferencesSearch.search(def, GlobalSearchScope.fileScope(psiFile))
-                        search.forEach { reference ->
-                            list.add(DocumentHighlight(reference.getRangeInFile(file)))
-                        }
+                    // self highlight
+                    if (def.containingFile == psiFile) {
+                        def.nameRange?.let { range -> list.add(DocumentHighlight(range.toRange(file))) }
+                    }
+
+                    // references highlight
+                    val search = ReferencesSearch.search(def, GlobalSearchScope.fileScope(psiFile))
+                    search.forEach { reference ->
+                        list.add(DocumentHighlight(reference.getRangeInFile(file)))
                     }
                 }
             }
+
             list
         }
     }
+
+//    override fun documentColor(params: DocumentColorParams): CompletableFuture<MutableList<ColorInformation>> {
+//        return computeAsync { checker ->
+//            val file = workspace.findFile(params.textDocument.uri)
+//            val list = mutableListOf<ColorInformation>()
+//            if (file is ILuaFile) {
+//                file.lock {
+//                    list.addAll(ColorService.renderColor(file, checker))
+//                }
+//            }
+//            list
+//        }
+//    }
 
     override fun definition(params: DefinitionParams?): CompletableFuture<Either<MutableList<out Location>, MutableList<out LocationLink>>?> {
         return computeAsync {
@@ -371,7 +397,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val uri = refFile.uri.toString()
                     val list = map.getOrPut(uri) { mutableListOf() }
                     val range = reference.getRangeInFile(refFile);
-                    if(range != refRange) {
+                    if (range != refRange) {
                         list.add(TextEdit(range, params.newName))
                     }
                 }
@@ -417,6 +443,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             Either.forRight<MutableList<CompletionItem>, CompletionList>(list)
         }
     }
+
+//    override fun colorPresentation(params: ColorPresentationParams): CompletableFuture<MutableList<ColorPresentation>> {
+//        return super.colorPresentation(params)
+//    }
 
     override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> {
         return computeAsync {
@@ -524,6 +554,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         workspace.removeFileIfNeeded(params.textDocument.uri)
     }
 
+    // @deprecated please use emmyluaCodeStyle plugin
     override fun formatting(params: DocumentFormattingParams?): CompletableFuture<MutableList<out TextEdit>> {
         return computeAsync {
             val list = mutableListOf<TextEdit>()

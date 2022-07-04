@@ -117,6 +117,8 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
 //            ),
 //            true
 //        )
+//        capabilities.colorProvider = Either.forLeft(true)
+
         res.capabilities = capabilities
         return CompletableFuture.completedFuture(res)
     }

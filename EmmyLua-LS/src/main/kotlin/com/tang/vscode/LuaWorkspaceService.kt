@@ -172,8 +172,9 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                         val workspaceItemReport = WorkspaceFullDocumentDiagnosticReport(
                             documentReport.relatedFullDocumentDiagnosticReport.items,
                             luaFile.uri.toString(),
-                            luaFile.getVersion()
+                            null
                         )
+
                         workspaceItemReport.resultId = documentReport.relatedFullDocumentDiagnosticReport.resultId
                         val report = WorkspaceDiagnosticReportPartialResult(
                             listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
@@ -183,7 +184,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                         val workspaceItemReport = WorkspaceUnchangedDocumentDiagnosticReport(
                             documentReport.relatedUnchangedDocumentDiagnosticReport.resultId,
                             luaFile.uri.toString(),
-                            luaFile.getVersion()
+                            null
                         )
                         val report = WorkspaceDiagnosticReportPartialResult(
                             listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
@@ -307,7 +308,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
 
         val diagnostics = mutableListOf<Diagnostic>()
-//        DiagnosticsService.diagnosticFile(file, diagnostics, checker)
+
         if (file is LuaFile) {
             file.diagnostic(diagnostics, checker)
         }
@@ -323,19 +324,23 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         var totalFileCount = 0f
         var processedCount = 0f
         collections.forEach { totalFileCount += it.files.size }
-        for (collection in collections) {
-            addRoot(collection.root)
-            for (uri in collection.files) {
-                processedCount++
-                val file = uri.toFile()
-                if (file != null) {
-                    monitor.setProgress(
-                        "Emmy parse file[${(processedCount / totalFileCount * 100).toInt()}%]: ${file.canonicalPath}",
-                        processedCount / totalFileCount
-                    )
+        try {
+            for (collection in collections) {
+                addRoot(collection.root)
+                for (uri in collection.files) {
+                    processedCount++
+                    val file = uri.toFile()
+                    if (file != null) {
+                        monitor.setProgress(
+                            "Emmy parse file[${(processedCount / totalFileCount * 100).toInt()}%]: ${file.name}",
+                            processedCount / totalFileCount
+                        )
+                    }
+                    addFile(uri, null)
                 }
-                addFile(uri, null)
             }
+        } catch (e: Exception) {
+            System.err.println("workspace parse error: ${e.toString()}")
         }
         monitor.done()
     }

@@ -54,6 +54,10 @@ public class LuaDocVisitor extends PsiElementVisitor {
     visitTy(o);
   }
 
+  public void visitIdField(@NotNull LuaDocIdField o) {
+    visitPsiElement(o);
+  }
+
   public void visitNullable(@NotNull LuaDocNullable o) {
     visitPsiElement(o);
   }
