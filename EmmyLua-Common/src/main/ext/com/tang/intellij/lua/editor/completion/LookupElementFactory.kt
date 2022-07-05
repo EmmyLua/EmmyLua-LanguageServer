@@ -13,6 +13,7 @@ import com.tang.intellij.lua.ty.IFunSignature
 import com.tang.intellij.lua.ty.ITy
 import com.tang.intellij.lua.ty.ITyFunction
 import com.tang.intellij.lua.ty.hasVarargs
+import com.tang.lsp.ExtendApiBase
 import com.tang.lsp.ILuaFile
 import org.eclipse.lsp4j.CompletionItemKind
 import javax.swing.Icon
@@ -66,7 +67,10 @@ object LookupElementFactory {
         val file = classMember.containingFile?.virtualFile as? ILuaFile
         if (file != null) {
             item.data = "${file.uri}|${classMember.textOffset}"
+        } else if (classMember is ExtendApiBase) {
+            item.data = "extendApi|${clazzName}|${classMember.name}"
         }
+
         if (classMember.isDeprecated) {
             item.deprecated = true
         }
@@ -90,6 +94,8 @@ object LookupElementFactory {
         val file = classMember.containingFile?.virtualFile as? ILuaFile
         if (file != null) {
             item.data = "${file.uri}|${classMember.textOffset}"
+        } else if (classMember is ExtendApiBase) {
+            item.data = "extendApi|${clazzName}|${classMember.name}"
         }
         if (classMember.isDeprecated) {
             item.deprecated = true
@@ -111,6 +117,8 @@ object LookupElementFactory {
         val file = field.containingFile?.virtualFile as? ILuaFile
         if (file != null) {
             element.data = "${file.uri}|${field.textOffset}"
+        } else if (field is ExtendApiBase) {
+            element.data = "extendApi|${clazzName}|${name}"
         }
         if (field.isDeprecated) {
             element.deprecated = true

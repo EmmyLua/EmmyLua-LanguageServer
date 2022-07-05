@@ -38,7 +38,7 @@ inline fun StringBuilder.wrapTag(tag: String, crossinline body: () -> Unit) {
 }
 
 inline fun StringBuilder.wrapLanguage(language: String, crossinline body: () -> Unit) {
-    wrap("```${language}\n", "\n```\n***\n", body)
+    wrap("```${language}\n", "\n```\n\n", body)
 }
 
 internal fun StringBuilder.appendClassLink(clazz: String) {

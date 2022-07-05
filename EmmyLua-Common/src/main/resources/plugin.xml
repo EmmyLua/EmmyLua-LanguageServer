@@ -9,6 +9,7 @@
     <extensions defaultExtensionNs="com.tang.intellij.lua">
         <luaTypeInfer implementation="com.tang.intellij.lua.ty.LuaTypeInfer" id="base"/>
         <luaShortNamesManager implementation="com.tang.intellij.lua.psi.search.LuaShortNamesManagerImpl" id="base"/>
+        <luaShortNamesManager implementation="com.tang.vscode.extendApi.ExtendShortNameManager" id="base2"/>
         <luaFileResolver implementation="com.tang.vscode.LuaFileResolver" id="base"/>
     </extensions>
 </plugin>

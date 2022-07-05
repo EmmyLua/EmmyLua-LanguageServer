@@ -18,10 +18,7 @@ import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.ty.*
-import com.tang.lsp.ILuaFile
-import com.tang.lsp.getRangeInFile
-import com.tang.lsp.nameRange
-import com.tang.lsp.toRange
+import com.tang.lsp.*
 import com.tang.vscode.api.impl.LuaFile
 //import com.tang.vscode.color.ColorService
 import com.tang.vscode.documentation.LuaDocumentationProvider
@@ -69,8 +66,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     @Suppress("unused")
     @JsonRequest("emmy/reportAPI")
     fun reportAPI(params: LuaReportApiParams): CompletableFuture<Boolean> {
-        return computeAsync { checker->
-            ExtendApiService.loadApi(params)
+        return computeAsync { checker ->
+            ExtendApiService.loadApi(workspace.getProject(), params)
             true
         }
     }
@@ -206,7 +203,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
             val data = item.data
             if (data is JsonPrimitive) {
                 val arr = data.asString.split("|")
-                if (arr.size >= 2) {
+                if (arr.size == 2) {
                     val file = workspace.findLuaFile(arr[0])
                     if (file is ILuaFile) {
                         file.lock {
@@ -221,6 +218,14 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                 }
                             }
                         }
+                    }
+                } else if (arr.size == 3 && arr[0] == "extendApi") {
+                    val doc = documentProvider.generateExtendDoc(arr[1], arr[2])
+                    if(doc != null) {
+                        val content = MarkupContent()
+                        content.kind = "markdown"
+                        content.value = doc
+                        item.documentation = Either.forRight(content)
                     }
                 }
             }

@@ -27,6 +27,9 @@ import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassIndex
 import com.tang.intellij.lua.ty.*
+import com.tang.lsp.ExtendApiBase
+import com.tang.vscode.extendApi.ExtendApiService
+
 
 /**
  * Documentation support
@@ -105,6 +108,17 @@ class LuaDocumentationProvider : DocumentationProvider {
         return ""
     }
 
+    fun generateExtendDoc(clazzName: String, memberName: String): String? {
+        val clazz = ExtendApiService.getNsMember(clazzName)
+        if (clazz != null) {
+            val member = clazz.findMember(memberName)
+            if (member != null) {
+                return generateDoc(member)
+            }
+        }
+        return null
+    }
+
     private fun renderClassMember(sb: StringBuilder, classMember: LuaClassMember) {
         val context = SearchContext.get(classMember.project)
         val parentType = classMember.guessClassType(context)
@@ -114,29 +128,23 @@ class LuaDocumentationProvider : DocumentationProvider {
             sb.wrapLanguage("lua") {
                 when (classMember.visibility) {
                     Visibility.PUBLIC -> {
-                        sb.append("(public) ")
+                        sb.append("public ")
                     }
                     Visibility.PRIVATE -> {
-                        sb.append("(private) ")
+                        sb.append("private ")
                     }
                     Visibility.PROTECTED -> {
-                        sb.append("(protected) ")
+                        sb.append("protected ")
                     }
                 }
                 when (ty) {
                     is TyFunction -> {
-                        sb.append("function ")
-                        if (parentType.displayName != "_G") {
-                            renderTy(sb, parentType)
-                            sb.append(if (ty.isColonCall) ":" else ".")
-                        }
                         sb.append(classMember.name)
                         renderSignature(sb, ty.mainSignature)
 
                         return@wrapLanguage
                     }
                     else -> {
-                        sb.append("field ")
                         if (classMember.name != null && LuaConst.isConstField(
                                 parentType.className,
                                 classMember.name!!,
@@ -146,8 +154,7 @@ class LuaDocumentationProvider : DocumentationProvider {
                             when (classMember) {
                                 is LuaTableField -> {
                                     if (classMember.exprList.isNotEmpty()) {
-                                        renderTy(sb, parentType)
-                                        sb.append(".${classMember.name} = ")
+                                        sb.append("${classMember.name} = ")
                                         sb.append(classMember.exprList.first().text)
                                         return@wrapLanguage
                                     }
@@ -160,7 +167,10 @@ class LuaDocumentationProvider : DocumentationProvider {
                                         val values = assignStat.valueExprList?.exprList ?: listOf()
 
                                         for (i in 0 until assignees.size) {
-                                            if (assignees[i] == classMember && i < values.size && isConstLiteral(values[i])) {
+                                            if (assignees[i] == classMember && i < values.size && isConstLiteral(
+                                                    values[i]
+                                                )
+                                            ) {
                                                 renderTy(sb, parentType)
                                                 sb.append(".${classMember.name} = ${values[i].text}")
                                                 sb.append("\n")
@@ -226,7 +236,9 @@ class LuaDocumentationProvider : DocumentationProvider {
         //comment content
         if (classMember is LuaCommentOwner)
             renderComment(sb, classMember.comment)
-        else {
+        else if (classMember is ExtendApiBase) {
+            sb.append(classMember.getComment())
+        } else {
             if (classMember is LuaDocTagField)
                 renderCommentString("  ", null, sb, classMember.commentString)
             else if (classMember is LuaIndexExpr) {

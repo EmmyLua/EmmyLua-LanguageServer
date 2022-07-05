@@ -1,23 +1,23 @@
 package com.tang.vscode.extendApi
 
-open class LuaApiBase(val Name: String = "", val Comment: String = "", val Location: String = "")
+open class LuaApiBase(val name: String = "", val comment: String = "", val location: String = "")
 
-data class LuaApiField(val TypeName: String = "") : LuaApiBase()
+data class LuaApiField(val typeName: String) : LuaApiBase()
 
 data class LuaApiMethod(
-    val ReturnTypeName: String = "",
-    val TypeName: String = "",
-    val IsStatic: Boolean = false,
-    val Params: Array<String> = arrayOf()
+    val returnTypeName: String,
+    val typeName: String,
+    val isStatic: Boolean,
+    val params: List<String>
 ) : LuaApiBase()
 
 data class LuaApiClass(
-    val namespace: String = "",
-    val BaseClass: String = "",
-    val Fields: Array<LuaApiField> = arrayOf(),
-    val Methods: Array<LuaApiMethod> = arrayOf()
+    val namespace: String,
+    val baseClass: String,
+    val fields: List<LuaApiField>,
+    val methods: List<LuaApiMethod>
 ) : LuaApiBase()
 
-class LuaReportApiParams{
-    val classes: Array<LuaApiClass> = arrayOf()
-}
+data class LuaReportApiParams(
+    val classes: List<LuaApiClass>
+)
