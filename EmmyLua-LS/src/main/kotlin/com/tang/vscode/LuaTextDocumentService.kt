@@ -14,6 +14,7 @@ import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.editor.completion.LuaLookupElement
 import com.tang.intellij.lua.editor.completion.asCompletionItem
 import com.tang.intellij.lua.psi.*
+import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
@@ -210,7 +211,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                             val position = arr[1].toInt()
                             file.psi?.findElementAt(position)?.let { psi ->
                                 PsiTreeUtil.getParentOfType(psi, LuaClassMember::class.java)?.let { member ->
-                                    val doc = documentProvider.generateDoc(member)
+                                    val doc = documentProvider.generateDoc(member, true)
                                     val content = MarkupContent()
                                     content.kind = "markdown"
                                     content.value = doc
@@ -244,7 +245,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         val element = TargetElementUtil.findTarget(file.psi, pos)
                         if (element != null) {
                             val ref = element.reference?.resolve() ?: element
-                            val doc = documentProvider.generateDoc(ref)
+                            val doc = documentProvider.generateDoc(ref, false)
                             if (doc != null)
                                 hover = Hover(listOf(Either.forLeft(doc)))
                         }

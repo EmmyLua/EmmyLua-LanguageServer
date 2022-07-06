@@ -45,6 +45,10 @@ internal fun StringBuilder.appendClassLink(clazz: String) {
     append(clazz)
 }
 
+internal fun StringBuilder.withIndent(indent: Int){
+
+}
+
 internal fun renderTy(sb: StringBuilder, ty: ITy) {
     when (ty) {
         is ITyClass -> {
@@ -52,7 +56,7 @@ internal fun renderTy(sb: StringBuilder, ty: ITy) {
         }
         is ITyFunction -> {
             sb.append("fun")
-            renderSignature(sb, ty.mainSignature)
+            renderSignature(sb, ty.mainSignature, false)
         }
         is ITyArray -> {
             renderTy(sb, ty.base)
@@ -84,23 +88,42 @@ internal fun renderTy(sb: StringBuilder, ty: ITy) {
     }
 }
 
-internal fun renderSignature(sb: StringBuilder, sig: IFunSignature) {
-    sb.wrap("(", ") -> ") {
-        var idx = 0
-        sig.params.forEach {
-            if (idx++ != 0) sb.append(", ")
-            sb.append("${it.name}${if (it.nullable) "?" else ""}: ")
-            renderTy(sb, it.ty)
-        }
-        if (sig.hasVarargs()) {
-            sig.varargTy?.let {
-                if (idx++ != 0) sb.append(", ")
-                sb.append("...: ")
-                renderTy(sb, it)
+internal fun renderSignature(sb: StringBuilder, sig: IFunSignature, inComplete: Boolean) {
+    if (inComplete && sig.params.size > 1) {
+        sb.wrap("(\n", "\n)\n-> ") {
+            var idx = 0
+            sig.params.forEach {
+                if (idx++ != 0) sb.append(",\n")
+                sb.append("\t${it.name}${if (it.nullable) "?" else ""}: ")
+                renderTy(sb, it.ty)
+            }
+            if (sig.hasVarargs()) {
+                sig.varargTy?.let {
+                    if (idx++ != 0) sb.append(",\n")
+                    sb.append("\t...: ")
+                    renderTy(sb, it)
+                }
             }
         }
+        renderTy(sb, sig.returnTy)
+    } else {
+        sb.wrap("(", ") -> ") {
+            var idx = 0
+            sig.params.forEach {
+                if (idx++ != 0) sb.append(", ")
+                sb.append("${it.name}${if (it.nullable) "?" else ""}: ")
+                renderTy(sb, it.ty)
+            }
+            if (sig.hasVarargs()) {
+                sig.varargTy?.let {
+                    if (idx++ != 0) sb.append(", ")
+                    sb.append("...: ")
+                    renderTy(sb, it)
+                }
+            }
+        }
+        renderTy(sb, sig.returnTy)
     }
-    renderTy(sb, sig.returnTy)
 }
 
 internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
@@ -108,6 +131,9 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
         sb.append("\n\n")
         var child: PsiElement? = comment.firstChild
         var seenString = false
+        val paramList = mutableListOf<LuaDocTagParam>()
+        val returnList = mutableListOf<LuaDocTagReturn>()
+        val fieldList = mutableListOf<LuaDocTagField>()
         while (child != null) {
             val elementType = child.node.elementType
             if (elementType == LuaDocTypes.STRING) {
@@ -121,25 +147,17 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
                 seenString = false
                 when (child) {
                     is LuaDocTagParam -> {
-                        renderDocParam(sb, child)
-                        sb.append("\n")
+                        if(child.commentString != null && child.commentString!!.text.isNotEmpty()) {
+                            paramList.add(child)
+                        }
                     }
                     is LuaDocTagReturn -> {
-                        val typeList = child.typeList
-                        if (typeList != null) {
-                            sb.appendLine("@_return_ : (")
-                            val list = typeList.tyList
-                            list.forEachIndexed { index, luaDocTy ->
-                                renderTypeUnion(if (index != 0) ", " else null, null, sb, luaDocTy)
-                                sb.append(" ")
-                            }
-                            sb.append(")")
-                            renderCommentString(null, null, sb, child.commentString)
-                            sb.append("\n")
+                        if(child.commentString != null && child.commentString!!.text.isNotEmpty()) {
+                            returnList.add(child)
                         }
                     }
                     is LuaDocTagClass -> renderClassDef(sb, child)
-                    is LuaDocTagField -> renderFieldDef(sb, child)
+                    is LuaDocTagField -> fieldList.add(child)
                     is LuaDocTagOverload -> renderOverload(sb, child)
                     is LuaDocTagType -> renderTypeDef(sb, child)
                     is LuaDocTagSee -> renderSee(sb, child)
@@ -147,6 +165,58 @@ internal fun renderComment(sb: StringBuilder, comment: LuaComment?) {
             }
             child = child.nextSibling
         }
+
+        if(paramList.isNotEmpty()){
+            sb.appendLine()
+            sb.wrapLanguage("plaintext"){
+                val paramsDescription = "Params: "
+                val doc = FormatDoc(sb, paramsDescription.length)
+                doc.write(paramsDescription)
+                for(param in paramList){
+                    val paramNameRef = param.paramNameRef
+                    val commentString = param.commentString
+                    if (paramNameRef != null && commentString != null && commentString.text.isNotEmpty()) {
+                        doc.writeLine("${paramNameRef.text} - ${commentString.text}")
+                    }
+                }
+            }
+        }
+
+        if(fieldList.isNotEmpty()){
+            sb.appendLine()
+            sb.wrapLanguage("plaintext") {
+                val fieldsDescription = "Fields: "
+                val doc = FormatDoc(sb, fieldsDescription.length)
+                doc.write(fieldsDescription)
+                for (field in fieldList) {
+                    val fieldNameRef = field.fieldName
+                    val commentString = field.commentString
+                    if(fieldNameRef != null) {
+                        if (commentString != null && commentString.text.isNotEmpty()) {
+                            doc.writeLine("${fieldNameRef} - ${commentString.text}")
+                        } else {
+                            doc.writeLine(fieldNameRef)
+                        }
+                    }
+                }
+            }
+        }
+
+        if(returnList.isNotEmpty()){
+            sb.appendLine()
+            sb.wrapLanguage("plaintext") {
+                val returnsDescription = "Return: "
+                val doc = FormatDoc(sb, returnsDescription.length)
+                doc.write(returnsDescription)
+                for (rt in returnList) {
+                    val commentString = rt.commentString
+                    if (commentString != null) {
+                        doc.writeLine(commentString.text)
+                    }
+                }
+            }
+        }
+
     }
 }
 
@@ -179,7 +249,7 @@ internal fun renderDocParam(sb: StringBuilder, child: LuaDocTagParam) {
     if (paramNameRef != null && commentString != null) {
         sb.appendLine("(parameter) `${paramNameRef.text}${if (child.isNullable) "?" else ""}`: ")
         renderTypeUnion(null, null, sb, child.ty)
-        if(commentString.text.isNotEmpty()) {
+        if (commentString.text.isNotEmpty()) {
             renderCommentString("  ", null, sb, commentString)
         }
     }

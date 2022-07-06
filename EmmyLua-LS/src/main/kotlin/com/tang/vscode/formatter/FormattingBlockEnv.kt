@@ -5,7 +5,7 @@ class FormattingBlockEnv(val ctx: FormattingContext, val indent: Int) {
     var equipOperatorAlignment = false
     var equipOperatorAlignmentIndent = 0
 
-    public fun print(text: String, autoAlignment: Boolean = true) {
+    fun print(text: String, autoAlignment: Boolean = true) {
         val alignmentCharacter = ctx.currentLineWidth
         if (alignmentCharacter < indent) {
             ctx.sb.append(FormattingOptions.emptyWhite.repeat(indent - alignmentCharacter))

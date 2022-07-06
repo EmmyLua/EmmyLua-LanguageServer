@@ -2,6 +2,7 @@ package com.tang.vscode.extendApi
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiManager
+import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaParamInfo
 import com.tang.intellij.lua.ty.FunSignature
 import com.tang.intellij.lua.ty.Ty
@@ -104,6 +105,23 @@ object ExtendApiService {
         }
 
         return prevNs
+    }
+
+    fun findMember(clazz: String, fieldName: String, deep: Boolean): LuaClassMember? {
+        val nsMember = getNsMember(clazz)
+        if (nsMember != null) {
+            val member = nsMember.findMember(fieldName);
+            if (member != null) {
+                return member
+            }
+            if (nsMember is ExtendClass && deep) {
+                val superClass = nsMember.baseClassName
+                if (superClass != null) {
+                    return findMember(superClass, fieldName, deep)
+                }
+            }
+        }
+        return null
     }
 
 }
