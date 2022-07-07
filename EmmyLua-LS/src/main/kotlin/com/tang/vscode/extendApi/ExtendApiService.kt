@@ -15,9 +15,9 @@ object ExtendApiService {
 
     fun loadApi(project: Project, api: LuaReportApiParams) {
         val mgr = PsiManager.getInstance(project)
-        if (rootNamespace == null) {
-            rootNamespace = Namespace("CS", null, mgr, false)
-        }
+        rootNamespace = Namespace("CS", null, mgr, false)
+        namespaceMap.clear()
+        classMap.clear()
 
         for (luaClass in api.classes) {
             val classNs = getNamespace(luaClass.namespace)
