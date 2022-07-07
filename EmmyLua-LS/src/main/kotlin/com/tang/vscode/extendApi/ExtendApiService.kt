@@ -46,7 +46,7 @@ object ExtendApiService {
                 for (luaMethod in luaClass.methods) {
                     val paramList = mutableListOf<LuaParamInfo>()
                     for (param in luaMethod.params) {
-                        paramList.add(LuaParamInfo(param, Ty.create("any")))
+                        paramList.add(LuaParamInfo(param.name, Ty.create(param.typeName)))
                     }
 
                     val retType = Ty.create(luaMethod.returnTypeName)

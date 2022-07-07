@@ -222,7 +222,7 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     }
                 } else if (arr.size == 3 && arr[0] == "extendApi") {
                     val doc = documentProvider.generateExtendDoc(arr[1], arr[2])
-                    if(doc != null) {
+                    if (doc != null) {
                         val content = MarkupContent()
                         content.kind = "markdown"
                         content.value = doc
@@ -303,6 +303,16 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                     val target = TargetElementUtil.findTarget(psiFile, i)
                     val resolve = target?.reference?.resolve()
                     if (resolve != null) {
+                        if (resolve is ExtendApiBase) {
+                            val locationText = resolve.getLocation();
+                            val locationList = locationText.split('#')
+                            if (locationList.size == 2) {
+                                val line = locationList[1].toInt()
+                                list.add(Location(locationList[0], Range(Position(line - 1, 0), Position(line, 0))))
+                            }
+
+                            return@withPsiFile
+                        }
                         val sourceFile = resolve.containingFile?.virtualFile as? LuaFile
                         val range = resolve.nameRange
                         if (range != null && sourceFile != null)

@@ -4,11 +4,13 @@ open class LuaApiBase(val name: String = "", val comment: String = "", val locat
 
 data class LuaApiField(val typeName: String) : LuaApiBase()
 
+data class LuaParam(val name: String, val typeName: String)
+
 data class LuaApiMethod(
     val returnTypeName: String,
     val typeName: String,
     val isStatic: Boolean,
-    val params: List<String>
+    val params: List<LuaParam>
 ) : LuaApiBase()
 
 data class LuaApiClass(
