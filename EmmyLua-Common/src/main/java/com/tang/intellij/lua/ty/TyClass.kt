@@ -83,6 +83,8 @@ interface ITyClass : ITy {
     fun recoverAlias(context: SearchContext, aliasSubstitutor: TyAliasSubstitutor): ITy {
         return this
     }
+
+    fun getClassCallType(context: SearchContext): ITyFunction?
 }
 
 fun ITyClass.isVisibleInScope(project: Project, contextTy: ITy, visibility: Visibility): Boolean {
@@ -259,6 +261,14 @@ abstract class TyClass(
             }
         }
         return result
+    }
+
+    override fun getClassCallType(context: SearchContext): ITyFunction? {
+        val ty = findMemberType("ctor", context)
+        if(ty is ITyFunction){
+            return ty
+        }
+        return null
     }
 
     override fun subTypeOf(other: ITy, context: SearchContext, strict: Boolean): Boolean {

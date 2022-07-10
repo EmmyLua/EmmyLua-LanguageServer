@@ -66,6 +66,17 @@ class TyExtendClass(val clazz: ExtendClass) : TyClass(
     override fun findMember(name: String, searchContext: SearchContext): LuaClassMember? {
         return clazz.findMember(name)
     }
+
+    override fun getClassCallType(context: SearchContext): ITyFunction? {
+        val ty = clazz.findMember(".ctor")
+        if(ty is ExtendClassMember){
+            val funTy = ty.type
+            if(funTy is ITyFunction){
+                return funTy
+            }
+        }
+        return null
+    }
 }
 
 class ExtendClass(
@@ -94,7 +105,7 @@ class ExtendClass(
         members.add(member)
     }
 
-    fun addMethod(name: String, signature: FunSignature) {
+    fun addMethod(name: String, signature: FunSignature, comment: String, location: String) {
         if (!methods.containsKey(name)) {
             val ty = TyExtendFunction(this, name)
             methods[name] = mutableListOf(signature)

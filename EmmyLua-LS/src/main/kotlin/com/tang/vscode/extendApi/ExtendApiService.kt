@@ -9,12 +9,14 @@ import com.tang.intellij.lua.ty.Ty
 import com.tang.intellij.lua.ty.TySerializedFunction
 
 object ExtendApiService {
+    private var rootNamespaceName = "_G"
     private var rootNamespace: Namespace? = null
     private var namespaceMap: MutableMap<String, Namespace> = mutableMapOf()
     private var classMap: MutableMap<String, ExtendClass> = mutableMapOf()
 
     fun loadApi(project: Project, api: LuaReportApiParams) {
         val mgr = PsiManager.getInstance(project)
+        rootNamespaceName = api.root
         rootNamespace = Namespace(api.root, null, mgr, false)
         namespaceMap.clear()
         classMap.clear()
@@ -59,7 +61,7 @@ object ExtendApiService {
                         emptyArray(),
                         luaMethod.comment
                     )
-                    extendClass.addMethod(luaMethod.name, signature)
+                    extendClass.addMethod(luaMethod.name, signature, luaMethod.comment, luaMethod.location)
                 }
             }
         }
@@ -70,7 +72,7 @@ object ExtendApiService {
     }
 
     fun getNsMember(name: String): NsMember? {
-        if (name == "_G" || name == "CS") {
+        if (name == rootNamespaceName) {
             return rootNamespace
         }
 
@@ -83,6 +85,14 @@ object ExtendApiService {
         if (member != null) {
             return member
         }
+        // generic workaround
+        val genericIndex = name.indexOf('<')
+        if(genericIndex != -1)
+        {
+            val baseTypeName = name.substring(0, genericIndex)
+            return classMap[baseTypeName]
+        }
+
         return null
     }
 
