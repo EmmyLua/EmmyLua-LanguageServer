@@ -140,7 +140,13 @@ class LuaDocumentationProvider : DocumentationProvider {
                     is TyFunction -> {
                         sb.append(classMember.name)
                         renderSignature(sb, ty.mainSignature, inComplete)
-
+                        return@wrapLanguage
+                    }
+                    is TyUnion -> {
+                        sb.append(classMember.name).appendLine()
+                        ty.each {
+                            sb.appendLine("| ${ty.displayName}")
+                        }
                         return@wrapLanguage
                     }
                     else -> {

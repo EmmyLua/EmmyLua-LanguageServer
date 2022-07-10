@@ -34,6 +34,7 @@ interface IFunSignature {
     val paramSignature: String
     val tyParameters: Array<TyParameter>
     val varargTy: ITy?
+    val document: String?
     fun substitute(substitutor: ITySubstitutor): IFunSignature
     fun subTypeOf(other: IFunSignature, context: SearchContext, strict: Boolean): Boolean
 }
@@ -183,7 +184,8 @@ class FunSignature(
     override val returnTy: ITy,
     override val varargTy: ITy?,
     params: Array<LuaParamInfo>,
-    tyParameters: Array<TyParameter> = emptyArray()
+    tyParameters: Array<TyParameter> = emptyArray(),
+    override val document: String = ""
 ) : FunSignatureBase(colonCall, params, tyParameters) {
 
     companion object {
@@ -446,6 +448,8 @@ class TyPsiFunction(private val colonCall: Boolean, val psi: LuaFuncBodyOwner, f
 
             override val varargTy: ITy?
                 get() = psi.varargType
+            override val document: String?
+                get() = null
         }
     }
 

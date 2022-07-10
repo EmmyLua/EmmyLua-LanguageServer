@@ -268,8 +268,11 @@ open class ClassMemberCompletionProvider : LuaCompletionProvider() {
                 )
                 val ele = handlerProcessor?.process(element, classMember, fnTy) ?: element
                 completionResultSet.addElement(ele)
+
                 // correction completion
                 if (!isColonStyle && firstParamIsSelf
+                    // 前缀长度大于等于3才显示纠正
+                    && completionResultSet.prefixMatcher.prefix.length >= 3
                     && callType != Ty.STRING
                     // workaround now
                     && callType is TyClass

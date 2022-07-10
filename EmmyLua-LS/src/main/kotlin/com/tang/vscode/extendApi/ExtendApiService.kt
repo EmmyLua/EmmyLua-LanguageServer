@@ -15,7 +15,7 @@ object ExtendApiService {
 
     fun loadApi(project: Project, api: LuaReportApiParams) {
         val mgr = PsiManager.getInstance(project)
-        rootNamespace = Namespace("CS", null, mgr, false)
+        rootNamespace = Namespace(api.root, null, mgr, false)
         namespaceMap.clear()
         classMap.clear()
 
@@ -34,6 +34,7 @@ object ExtendApiService {
                     classNs,
                     luaClass.comment,
                     luaClass.location,
+                    luaClass.attribute,
                     mgr
                 )
                 classMap[classFullName] = extendClass
@@ -50,16 +51,15 @@ object ExtendApiService {
                     }
 
                     val retType = Ty.create(luaMethod.returnTypeName)
-                    val ty = TySerializedFunction(
-                        FunSignature(
-                            !luaMethod.isStatic,
-                            retType,
-                            null,
-                            paramList.toTypedArray()
-                        ),
-                        emptyArray()
+                    val signature = FunSignature(
+                        !luaMethod.isStatic,
+                        retType,
+                        null,
+                        paramList.toTypedArray(),
+                        emptyArray(),
+                        luaMethod.comment
                     )
-                    extendClass.addMember(luaMethod.name, ty, luaMethod.comment, luaMethod.location)
+                    extendClass.addMethod(luaMethod.name, signature)
                 }
             }
         }

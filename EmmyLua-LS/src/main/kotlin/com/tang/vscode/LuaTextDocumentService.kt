@@ -543,6 +543,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                             ParameterInformation("...:${sig.varargTy?.displayName}")
                                         information.parameters.add(paramInfo)
                                     }
+                                    if(sig.document != null){
+                                        information.documentation = Either.forRight(MarkupContent(MarkupKind.MARKDOWN, sig.document))
+                                    }
 
                                     information.label = sig.displayName
                                     list.add(information)
