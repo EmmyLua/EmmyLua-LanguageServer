@@ -7,13 +7,9 @@ import com.intellij.psi.impl.light.LightElement
 import com.tang.intellij.lua.lang.LuaLanguage
 import com.tang.intellij.lua.psi.*
 import com.tang.intellij.lua.search.SearchContext
-import com.tang.intellij.lua.ty.ITy
-import com.tang.intellij.lua.ty.ITyClass
-import com.tang.intellij.lua.ty.Ty
-import com.tang.intellij.lua.ty.TyClass
+import com.tang.intellij.lua.ty.*
 import com.tang.lsp.ExtendApiBase
 
-// intellij-EmmyLua-Unity 抄下来的
 
 class ExtendClassMember(
     val fieldName: String,
@@ -55,13 +51,31 @@ class ExtendClassMember(
         get() = false
 }
 
-class TyExtendClass(val clazz: ExtendClass) : TyClass(clazz.fullName, clazz.name, clazz.baseClassName) {
+class TyExtendClass(val clazz: ExtendClass) : TyClass(
+    clazz.fullName,
+    clazz.name,
+    clazz.baseClassName,
+    listOf(),
+    clazz.isInterface,
+    clazz.isEnum
+) {
     override fun findMemberType(name: String, searchContext: SearchContext): ITy? {
         return clazz.findMember(name)?.guessType(searchContext)
     }
 
     override fun findMember(name: String, searchContext: SearchContext): LuaClassMember? {
         return clazz.findMember(name)
+    }
+
+    override fun getClassCallType(context: SearchContext): ITyFunction? {
+        val ty = clazz.findMember(".ctor")
+        if(ty is ExtendClassMember){
+            val funTy = ty.type
+            if(funTy is ITyFunction){
+                return funTy
+            }
+        }
+        return null
     }
 }
 
@@ -72,10 +86,12 @@ class ExtendClass(
     parent: Namespace?,
     private val comment: String,
     private val location: String,
+    private val attribute: String,
     mg: PsiManager
 ) : NsMember(className, parent, mg) {
 
     private val ty: ITyClass by lazy { TyExtendClass(this) }
+    private val methods = mutableMapOf<String, MutableList<IFunSignature>>()
 
     override val type: ITyClass
         get() = ty
@@ -84,10 +100,33 @@ class ExtendClass(
         return fullName
     }
 
-    fun addMember(name: String, type: ITy, comment: String = "", location: String) {
+    fun addMember(name: String, type: ITy, comment: String, location: String) {
         val member = ExtendClassMember(name, type, this, comment, location, manager)
         members.add(member)
     }
+
+    fun addMethod(name: String, signature: FunSignature, comment: String, location: String) {
+        if (!methods.containsKey(name)) {
+            val ty = TyExtendFunction(this, name)
+            methods[name] = mutableListOf(signature)
+            addMember(name, ty, comment, location)
+        } else {
+            methods[name]?.add(signature)
+        }
+    }
+
+    fun getMethods(name: String): MutableList<IFunSignature>? {
+        return methods[name]
+    }
+
+    val isEnum: Boolean
+        get() = attribute == "enum"
+
+    val isInterface: Boolean
+        get() = attribute == "interface"
+
+    val isDelegate: Boolean
+        get() = attribute == "delegate"
 
     override fun getComment(): String {
         return comment
@@ -96,6 +135,7 @@ class ExtendClass(
     override fun getLocation(): String {
         return location
     }
+
 }
 
 abstract class NsMember(
@@ -197,4 +237,27 @@ class Namespace(
     override fun getLocation(): String {
         return ""
     }
+}
+
+class TyExtendFunction(
+    private val clazz: ExtendClass,
+    val name: String
+) : TyFunction() {
+    override val mainSignature: IFunSignature
+        get() {
+            val methods = clazz.getMethods(name)
+            if (methods != null && methods.size >= 1) {
+                return methods.first()
+            }
+            return FunSignature(true, Ty.create("void"), null, emptyArray())
+        }
+
+    override val signatures: Array<IFunSignature>
+        get() {
+            val methods = clazz.getMethods(name)
+            if (methods != null) {
+                return methods.toTypedArray()
+            }
+            return emptyArray()
+        }
 }

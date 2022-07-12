@@ -135,7 +135,11 @@ SINGLE_QUOTED_STRING='([^\\\']|\\\S|\\[\r\n])*'?    //'([^\\'\r\n]|\\[^\r\n])*'?
     {ID}                       { yybegin(xCLASS_EXTEND); return ID; }
 }
 <xCLASS_EXTEND> {
-    ":"                        { beginType(); return EXTENDS;}
+    "<"                        { _typeLevel++; return LT; }
+    ","                        {  return COMMA; }
+    ">"                        { _typeLevel--; return GT; }
+    {ID}                       { if (_typeLevel > 0) { _typeReq = false; return ID; } else { yybegin(xCOMMENT_STRING); yypushback(yylength()); } }
+    ":"                        { if (_typeLevel == 0) {beginType(); return EXTENDS;} else { return EXTENDS; } }
     [^]                        { yybegin(xCOMMENT_STRING); yypushback(yylength()); }
 }
 

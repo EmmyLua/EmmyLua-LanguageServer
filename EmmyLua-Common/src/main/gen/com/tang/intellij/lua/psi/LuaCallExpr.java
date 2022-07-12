@@ -9,7 +9,8 @@ import com.tang.intellij.lua.stubs.LuaExprStub;
 import com.tang.intellij.lua.search.SearchContext;
 import com.tang.intellij.lua.ty.ITy;
 
-public interface LuaCallExpr extends LuaExpr, StubBasedPsiElement<LuaExprStub> {
+public interface
+LuaCallExpr extends LuaExpr, StubBasedPsiElement<LuaExprStub> {
 
   @NotNull
   LuaArgs getArgs();

@@ -14,7 +14,6 @@ import com.tang.intellij.lua.editor.completion.CompletionService
 import com.tang.intellij.lua.editor.completion.LuaLookupElement
 import com.tang.intellij.lua.editor.completion.asCompletionItem
 import com.tang.intellij.lua.psi.*
-import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.reference.ReferencesSearch
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
@@ -24,7 +23,6 @@ import com.tang.vscode.api.impl.LuaFile
 //import com.tang.vscode.color.ColorService
 import com.tang.vscode.documentation.LuaDocumentationProvider
 import com.tang.vscode.extendApi.ExtendApiService
-import com.tang.vscode.extendApi.LuaApiClass
 import com.tang.vscode.extendApi.LuaReportApiParams
 import com.tang.vscode.formatter.FormattingFormatter
 import com.tang.vscode.formatter.FormattingType
@@ -519,10 +517,16 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
                     callExpr?.guessParentType(SearchContext.get(psiFile.project))?.let { parentType ->
                         parentType.each { ty ->
-                            if (ty is ITyFunction) {
-                                val active = ty.findPerfectSignature(callExpr, nCommas + 1)
+                            var tyFunction: ITy? = ty
+                            if(tyFunction is ITyClass){
+                                val context = SearchContext.get(workspace.getProject())
+                                tyFunction = tyFunction.getClassCallType(context)
+                            }
+
+                            if (tyFunction is ITyFunction) {
+                                val active = tyFunction.findPerfectSignature(callExpr, nCommas + 1)
                                 var idx = 0
-                                ty.process(Processor { sig ->
+                                tyFunction.process(Processor { sig ->
                                     val information = SignatureInformation()
                                     information.parameters = mutableListOf()
                                     sig.params.forEach { pi ->
@@ -542,6 +546,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                                         val paramInfo =
                                             ParameterInformation("...:${sig.varargTy?.displayName}")
                                         information.parameters.add(paramInfo)
+                                    }
+                                    if(sig.document != null){
+                                        information.documentation = Either.forRight(MarkupContent(MarkupKind.MARKDOWN, sig.document))
                                     }
 
                                     information.label = sig.displayName

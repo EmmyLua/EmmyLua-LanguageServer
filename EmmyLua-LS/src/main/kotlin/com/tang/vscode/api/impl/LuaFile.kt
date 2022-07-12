@@ -171,9 +171,11 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         if (currentLine != null) {
             //如果找到了
             return Pair(currentLine.line, offset - currentLine.startOffset)
-        } else {
+        } else if (lowIndex < _lines.size) {
             // 没找到那么就认为是lowIndex所在行第0个字符,也可以是currentLine所在行最后一个+1字符
             return Pair(_lines[lowIndex].line, 0)
+        } else {
+            return Pair(_lines.lastOrNull()?.line ?: 0, 0)
         }
     }
 

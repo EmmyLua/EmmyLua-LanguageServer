@@ -1,6 +1,6 @@
 package com.tang.vscode.extendApi
 
-open class LuaApiBase(val name: String = "", val comment: String = "", val location: String = "")
+open class LuaApiBase(val name: String = "", open val comment: String = "", open val location: String = "")
 
 data class LuaApiField(val typeName: String) : LuaApiBase()
 
@@ -16,10 +16,12 @@ data class LuaApiMethod(
 data class LuaApiClass(
     val namespace: String,
     val baseClass: String,
+    val attribute: String,
     val fields: List<LuaApiField>,
     val methods: List<LuaApiMethod>
 ) : LuaApiBase()
 
 data class LuaReportApiParams(
-    val classes: List<LuaApiClass>
+    val classes: List<LuaApiClass>,
+    val root: String
 )

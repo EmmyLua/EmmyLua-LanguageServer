@@ -17,6 +17,9 @@ public interface LuaDocTagClass extends LuaDocPsiElement, PsiNameIdentifierOwner
   LuaDocCommentString getCommentString();
 
   @NotNull
+  List<LuaDocGenericDef> getGenericDefList();
+
+  @NotNull
   PsiElement getId();
 
   @NotNull
