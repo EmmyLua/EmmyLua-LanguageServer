@@ -13,6 +13,7 @@ import com.tang.lsp.FileURI
 class WorkspaceRootFileScopeProvider : IFileScopeProvider {
 
     private val roots = mutableSetOf<WorkspaceRoot>()
+    var configManager: IConfigurationManager? = null
 
     fun addRoot(uri: FileURI) {
         roots.add(WorkspaceRoot(uri))
@@ -26,7 +27,7 @@ class WorkspaceRootFileScopeProvider : IFileScopeProvider {
         if (!VSCodeSettings.matchFile(uri.name)) {
             return ThreeState.YES
         }
-        return ThreeState.UNSURE
+        return configManager?.isExclude(uri) ?: ThreeState.UNSURE
     }
 
     override fun isInclude(uri: FileURI): ThreeState {
@@ -35,10 +36,16 @@ class WorkspaceRootFileScopeProvider : IFileScopeProvider {
         }
         for (root in roots) {
             if (root.isInclude(uri) === ThreeState.YES) {
-                return ThreeState.YES
+                return configManager?.isInclude(uri) ?: ThreeState.YES
             }
         }
         return ThreeState.UNSURE
+    }
+
+    fun getRootIncludeConfigFiles(uri: FileURI): List<FileURI> {
+        return roots.filter { it.isInclude(uri) == ThreeState.YES }
+            .map { it.absoluteDir }
+            .toList()
     }
 
     override fun findAllFiles(manager: FileManager): List<IFileCollection> {
@@ -66,7 +73,7 @@ class WorkspaceRootFileScopeProvider : IFileScopeProvider {
 }
 
 class WorkspaceRoot(
-        override val absoluteDir: FileURI
+    override val absoluteDir: FileURI
 ) : ISourceRoot {
     override fun relative(path: String): String? {
         val f = FileURI(path, false)

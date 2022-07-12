@@ -31,9 +31,10 @@ class ConfigurationManager : IConfigurationManager {
 
     private val list = mutableListOf<ConfigurationStructure>()
 
-    private val main: ConfigurationStructure? get() {
-        return list.firstOrNull()
-    }
+    private val main: ConfigurationStructure?
+        get() {
+            return list.firstOrNull()
+        }
 
     fun init(configurationSourceList: Array<EmmyConfigurationSource>) {
         configurationSourceList.forEach {
@@ -49,11 +50,12 @@ class ConfigurationManager : IConfigurationManager {
         list.remove(configuration)
     }
 
-    override val sourceRoots: Array<ISourceRoot> get() {
-        val sources = mutableListOf<ISourceRoot>()
-        list.forEach { sources.addAll(it.sourceRoots) }
-        return sources.toTypedArray()
-    }
+    override val sourceRoots: Array<ISourceRoot>
+        get() {
+            val sources = mutableListOf<ISourceRoot>()
+            list.forEach { sources.addAll(it.sourceRoots) }
+            return sources.toTypedArray()
+        }
 
     override val completionCaseSensitive: Boolean
         get() = main?.editor?.completionCaseSensitive ?: false
@@ -64,23 +66,31 @@ class ConfigurationManager : IConfigurationManager {
 
     override fun isInclude(uri: FileURI): ThreeState {
         for (structure in list) {
-            for (root in structure.sourceRoots) {
-                if (root.isInclude(uri) == ThreeState.YES) {
-                    return ThreeState.YES
+            if (structure.source.workspaceURI.contains(uri)) {
+                for (root in structure.sourceRoots) {
+                    if (root.isInclude(uri) == ThreeState.YES) {
+                        return ThreeState.YES
+                    }
                 }
+                return ThreeState.UNSURE
             }
         }
-        return ThreeState.UNSURE
+
+        return ThreeState.YES
     }
 
     override fun isExclude(uri: FileURI): ThreeState {
         for (structure in list) {
-            for (root in structure.sourceRoots) {
-                if (root.isExclude(uri) == ThreeState.YES) {
-                    return ThreeState.YES
+            if (structure.source.workspaceURI.contains(uri)) {
+                for (root in structure.sourceRoots) {
+                    if (root.isExclude(uri) == ThreeState.YES) {
+                        return ThreeState.YES
+                    }
                 }
+                return ThreeState.UNSURE
             }
         }
+
         return ThreeState.UNSURE
     }
 

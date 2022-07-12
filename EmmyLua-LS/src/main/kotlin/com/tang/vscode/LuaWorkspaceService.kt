@@ -95,7 +95,23 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     fun initConfigFiles(files: Array<EmmyConfigurationSource>) {
-        configurationManager.init(files)
+        if (files.isNotEmpty()) {
+            configurationManager.init(files)
+            fileScopeProvider.configManager = configurationManager
+            for (source in configurationManager.sourceRoots) {
+                if (source.absoluteDir != null) {
+                    val rootList = fileScopeProvider.getRootIncludeConfigFiles(source.absoluteDir!!)
+                    for (root in rootList) {
+                        fileScopeProvider.removeRoot(root)
+                    }
+                }
+            }
+            for (source in configurationManager.sourceRoots) {
+                if (source.absoluteDir != null) {
+                    fileScopeProvider.addRoot(source.absoluteDir!!)
+                }
+            }
+        }
     }
 
     @JsonRequest("emmy/updateConfig")
@@ -319,12 +335,12 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun loadWorkspace(monitor: IProgressMonitor) {
-        monitor.setProgress("load workspace folders", 0f)
-        val collections = fileManager.findAllFiles()
-        var totalFileCount = 0f
-        var processedCount = 0f
-        collections.forEach { totalFileCount += it.files.size }
         try {
+            monitor.setProgress("load workspace folders", 0f)
+            val collections = fileManager.findAllFiles()
+            var totalFileCount = 0f
+            var processedCount = 0f
+            collections.forEach { totalFileCount += it.files.size }
             for (collection in collections) {
                 addRoot(collection.root)
                 for (uri in collection.files) {

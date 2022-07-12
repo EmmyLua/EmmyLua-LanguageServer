@@ -97,7 +97,7 @@ data class Editor(val completionCaseSensitive: Boolean = false) {
 }
 
 class ConfigurationStructure(val source: EmmyConfigurationSource) : IConfigurationStructure {
-    var luaVersion = "lua5.3"
+    var luaVersion = "lua5.4"
     override val sourceRoots = mutableListOf<SourceRoot>()
     var editor: Editor? = null
 

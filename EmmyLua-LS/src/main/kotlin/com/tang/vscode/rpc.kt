@@ -53,6 +53,10 @@ data class EmmyConfigurationSource(val uri: String, val workspace: String) {
         return FileURI.uri(uri, false)
     }
 
+    val workspaceURI: FileURI get() {
+        return FileURI.uri(workspace, true)
+    }
+
     override fun equals(other: Any?): Boolean {
         return other is EmmyConfigurationSource && other.uri == uri
     }

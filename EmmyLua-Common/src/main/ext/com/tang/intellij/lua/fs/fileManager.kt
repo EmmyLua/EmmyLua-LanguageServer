@@ -43,10 +43,6 @@ interface IFileManager {
 class FileManager(project: Project) : IFileManager {
     private val providers = mutableListOf<IFileScopeProvider>()
 
-    init {
-        addProvider(ConfigurationFileScopeProvider(project))
-    }
-
     override fun addProvider(provider: IFileScopeProvider) {
         providers.add(provider)
     }
@@ -79,40 +75,45 @@ class FileManager(project: Project) : IFileManager {
     }
 
     fun collectFiles(file: File, list: MutableList<FileURI>) {
-        if (file.isFile && isInclude(file)) {
-            list.add(FileURI.file(file))
+        val fileUri = FileURI.file(file)
+        if (file.isFile && isInclude(fileUri)) {
+            list.add(fileUri)
         } else if (file.isDirectory) {
             file.listFiles()?.forEach { collectFiles(it, list) }
         }
     }
 }
 
-class ConfigurationFileScopeProvider(private val project: Project) : IFileScopeProvider {
-    override fun isInclude(uri: FileURI): ThreeState {
-        val configurationManager = IConfigurationManager.get(project)
-        return configurationManager.isInclude(uri)
-    }
-
-    override fun isExclude(uri: FileURI): ThreeState {
-        val configurationManager = IConfigurationManager.get(project)
-        return configurationManager.isExclude(uri)
-    }
-
-    override fun findAllFiles(manager: FileManager): List<IFileCollection> {
-        val configurationManager = IConfigurationManager.get(project)
-        val collections = mutableListOf<IFileCollection>()
-        for (source in configurationManager.sourceRoots) {
-            val dir = source.absoluteDir ?: continue
-            dir.toFile()?.let { file ->
-                val files = mutableListOf<FileURI>()
-                manager.collectFiles(file, files)
-                collections.add(FileCollection(dir, files))
-            }
-        }
-        return collections
-    }
-
-    override fun getSourceRoots(project: Project): Array<ISourceRoot> {
-        return IConfigurationManager.get(project).sourceRoots
-    }
-}
+//class ConfigurationFileScopeProvider(private val project: Project) : IFileScopeProvider {
+//    override fun isInclude(uri: FileURI): ThreeState {
+//        val configurationManager = IConfigurationManager.get(project)
+//        return configurationManager.isInclude(uri)
+//    }
+//
+//    override fun isExclude(uri: FileURI): ThreeState {
+//        val configurationManager = IConfigurationManager.get(project)
+//        return configurationManager.isExclude(uri)
+//    }
+//
+//    override fun isIncludeDirectory(uri: FileURI): ThreeState {
+//        TODO("Not yet implemented")
+//    }
+//
+//    override fun findAllFiles(manager: FileManager): List<IFileCollection> {
+//        val configurationManager = IConfigurationManager.get(project)
+//        val collections = mutableListOf<IFileCollection>()
+//        for (source in configurationManager.sourceRoots) {
+//            val dir = source.absoluteDir ?: continue
+//            dir.toFile()?.let { file ->
+//                val files = mutableListOf<FileURI>()
+//                manager.collectFiles(file, files)
+//                collections.add(FileCollection(dir, files))
+//            }
+//        }
+//        return collections
+//    }
+//
+//    override fun getSourceRoots(project: Project): Array<ISourceRoot> {
+//        return IConfigurationManager.get(project).sourceRoots
+//    }
+//}
