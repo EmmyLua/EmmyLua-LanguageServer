@@ -61,12 +61,12 @@ class WorkspaceRootFileScopeProvider : IFileScopeProvider {
     }
 
     override fun getSourceRoots(project: Project): Array<ISourceRoot> {
-        val cm = IConfigurationManager.get(project)
+//        val cm = IConfigurationManager.get(project)
         val list = mutableListOf<ISourceRoot>()
         for (root in roots) {
-            val cfg = cm.getConfigurationFor(root.absoluteDir)
-            if (cfg == null || cfg.sourceRoots.isEmpty())
-                list.add(root)
+//            val cfg = cm.getConfigurationFor(root.absoluteDir)
+//            if (cfg == null || cfg.sourceRoots.isEmpty())
+            list.add(root)
         }
         return list.toTypedArray()
     }
