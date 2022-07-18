@@ -64,11 +64,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     @Suppress("unused")
     @JsonRequest("emmy/reportAPI")
-    fun reportAPI(params: LuaReportApiParams): CompletableFuture<Boolean> {
-        return computeAsync { checker ->
-            ExtendApiService.loadApi(workspace.getProject(), params)
-            true
-        }
+    fun reportAPI(params: LuaReportApiParams): CompletableFuture<Void> {
+        ExtendApiService.loadApi(workspace.getProject(), params)
+        return CompletableFuture()
     }
 
     private fun findAnnotators(file: ILuaFile): List<Annotator> {

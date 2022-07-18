@@ -16,7 +16,9 @@ object ExtendApiService {
 
     fun loadApi(project: Project, api: LuaReportApiParams) {
         val mgr = PsiManager.getInstance(project)
-        rootNamespaceName = api.root
+        rootNamespaceName = api.root.ifEmpty {
+            "_G"
+        }
         rootNamespace = Namespace(api.root, null, mgr, false)
         namespaceMap.clear()
         classMap.clear()
@@ -87,8 +89,7 @@ object ExtendApiService {
         }
         // generic workaround
         val genericIndex = name.indexOf('<')
-        if(genericIndex != -1)
-        {
+        if (genericIndex != -1) {
             val baseTypeName = name.substring(0, genericIndex)
             return classMap[baseTypeName]
         }

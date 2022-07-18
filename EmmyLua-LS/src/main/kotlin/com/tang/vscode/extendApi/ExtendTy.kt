@@ -227,7 +227,7 @@ class Namespace(
         get() = myType
 
     override fun toString(): String {
-        return "namespace: $fullName"
+        return "namespace $fullName"
     }
 
     override fun getComment(): String {

@@ -30,6 +30,7 @@ import org.eclipse.lsp4j.services.WorkspaceService
 import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 /**
  * tangzx
@@ -41,6 +42,10 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val configurationManager = ConfigurationManager()
     private var client: LuaLanguageClient? = null
     private var configVersion = 0
+    private val project: Project = WProject()
+    private val fileManager = FileManager(project)
+    private val fileScopeProvider = WorkspaceRootFileScopeProvider()
+    private var initWorkspace = true
 
     inner class WProject : UserDataHolderBase(), Project {
         override fun process(processor: Processor<PsiFile>) {
@@ -55,11 +60,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
             }
         }
     }
-
-    private val project: Project = WProject()
-
-    private val fileManager = FileManager(project)
-    private val fileScopeProvider = WorkspaceRootFileScopeProvider()
 
     init {
         project.putUserData(IWorkspace.KEY, this)
@@ -87,11 +87,11 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         val settings = params.settings as? JsonObject ?: return
         val ret = VSCodeSettings.update(settings)
         ++configVersion
-        if (ret.associationChanged) {
+        if (ret.associationChanged || initWorkspace) {
+            initWorkspace = false
             loadWorkspace()
             refreshWorkspace()
         }
-
     }
 
     fun initConfigFiles(files: Array<EmmyConfigurationSource>) {
@@ -356,7 +356,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                 }
             }
         } catch (e: Exception) {
-            System.err.println("workspace parse error: ${e.toString()}")
+            System.err.println("workspace parse error: $e")
         }
         monitor.done()
     }
