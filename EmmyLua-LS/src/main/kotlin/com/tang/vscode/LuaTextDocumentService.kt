@@ -230,24 +230,23 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         }
     }
 
-    override fun hover(params: HoverParams?): CompletableFuture<Hover?> {
+    override fun hover(params: HoverParams): CompletableFuture<Hover?> {
+        val file = workspace.findFile(params.textDocument.uri)
         return computeAsync {
             var hover: Hover? = null
-            if (params != null) {
-                val file = workspace.findFile(params.textDocument.uri)
-                if (file is ILuaFile) {
-                    file.lock {
-                        val pos = file.getPosition(params.position.line, params.position.character)
-                        val element = TargetElementUtil.findTarget(file.psi, pos)
-                        if (element != null) {
-                            val ref = element.reference?.resolve() ?: element
-                            val doc = documentProvider.generateDoc(ref, false)
-                            if (doc != null)
-                                hover = Hover(listOf(Either.forLeft(doc)))
-                        }
+            if (file is ILuaFile) {
+                file.lock {
+                    val pos = file.getPosition(params.position.line, params.position.character)
+                    val element = TargetElementUtil.findTarget(file.psi, pos)
+                    if (element != null) {
+                        val ref = element.reference?.resolve() ?: element
+                        val doc = documentProvider.generateDoc(ref, false)
+                        if (doc != null)
+                            hover = Hover(listOf(Either.forLeft(doc)))
                     }
                 }
             }
+
             hover
         }
     }
@@ -324,10 +323,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun codeLens(params: CodeLensParams): CompletableFuture<MutableList<out CodeLens>> {
+        val file = workspace.findFile(params.textDocument.uri)
         return computeAsync { cc ->
             val list = mutableListOf<CodeLens>()
             if (VSCodeSettings.showCodeLens) {
-                val file = workspace.findFile(params.textDocument.uri)
                 if (file is ILuaFile) {
                     file.lock {
                         file.psi?.acceptChildren(object : LuaVisitor() {
@@ -426,10 +425,10 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun completion(params: CompletionParams): CompletableFuture<Either<MutableList<CompletionItem>, CompletionList>> {
+        val file = workspace.findFile(params.textDocument.uri)
         return computeAsync { checker ->
             val list = CompletionList()
             list.items = mutableListOf()
-            val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
                 file.lock {
                     val psi = file.psi
@@ -461,9 +460,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 //    }
 
     override fun documentSymbol(params: DocumentSymbolParams): CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> {
+        val file = workspace.findFile(params.textDocument.uri)
         return computeAsync {
             val list = mutableListOf<Either<SymbolInformation, DocumentSymbol>>()
-            val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
                 file.lock {
                     val psi = file.psi
@@ -1056,8 +1055,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 //    }
 
     override fun inlayHint(params: InlayHintParams): CompletableFuture<MutableList<InlayHint>> {
+        val file = workspace.findFile(params.textDocument.uri)
         return computeAsync {
-            val file = workspace.findFile(params.textDocument.uri)
             var list: MutableList<InlayHint> = mutableListOf()
             if (file is LuaFile) {
                 file.lock {
@@ -1071,8 +1070,8 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
     }
 
     override fun diagnostic(params: DocumentDiagnosticParams): CompletableFuture<DocumentDiagnosticReport> {
+        val file = workspace.findFile(params.textDocument.uri)
         return computeAsync { checker ->
-            val file = workspace.findFile(params.textDocument.uri)
             if (file is ILuaFile) {
                 val report = workspace.diagnoseFile(file, params.previousResultId, checker)
                 report

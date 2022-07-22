@@ -44,7 +44,7 @@ open class Folder(fileURI: FileURI, private val myName: String? = null)
     }
 
     override fun findFile(name: String): IVirtualFile? {
-        return children.find { it.getName().toLowerCase() == name.toLowerCase() }
+        return children.find { it.getName().equals(name, ignoreCase = true) }
     }
 
     override fun findFile(vararg names: String): IVirtualFile? {
