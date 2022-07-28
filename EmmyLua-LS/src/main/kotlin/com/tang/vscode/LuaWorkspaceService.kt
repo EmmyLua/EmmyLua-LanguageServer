@@ -252,8 +252,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
         val pair = findOrCreate(fileURI, true)
         val folder = pair.first!!
-        if (pair.second)
-            rootList.add(folder)
+//        if (pair.second)
+        rootList.add(folder)
         return folder
     }
 
@@ -358,6 +358,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         } catch (e: Exception) {
             System.err.println("workspace parse error: $e")
         }
+
         monitor.done()
     }
 
