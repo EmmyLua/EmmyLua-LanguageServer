@@ -1071,14 +1071,12 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
 
     override fun diagnostic(params: DocumentDiagnosticParams): CompletableFuture<DocumentDiagnosticReport> {
         val file = workspace.findFile(params.textDocument.uri)
-        return computeAsync { checker ->
-            if (file is ILuaFile) {
-                val report = workspace.diagnoseFile(file, params.previousResultId, checker)
-                report
-            } else {
-                val report = DocumentDiagnosticReport(RelatedUnchangedDocumentDiagnosticReport())
-                report
-            }
+        return if (file is ILuaFile) {
+            val report = workspace.diagnoseFile(file, params.previousResultId, null)
+            CompletableFuture.completedFuture(report)
+        } else {
+            val report = DocumentDiagnosticReport(RelatedUnchangedDocumentDiagnosticReport())
+            CompletableFuture.completedFuture(report)
         }
     }
 
