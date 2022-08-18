@@ -107,7 +107,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         inlayHintOptions.resolveProvider = true
         capabilities.inlayHintProvider = Either.forRight(inlayHintOptions)
 
-        capabilities.diagnosticProvider = DiagnosticRegistrationOptions(false, true)
+        capabilities.diagnosticProvider = DiagnosticRegistrationOptions(false, false)
 
 //        capabilities.semanticTokensProvider = SemanticTokensWithRegistrationOptions(
 //            SemanticTokensLegend(
