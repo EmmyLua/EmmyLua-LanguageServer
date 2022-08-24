@@ -68,7 +68,8 @@ Example: adding EmmyLua to [SublimeText](https://www.sublimetext.com/) with [Sub
 ```
 
 ## Adding to Emacs
-you can use [lsp-lua-emmy](https://github.com/phenix3443/lsp-lua-emmy) as lsp client.
+
+you can use emmylua with [lsp mode](https://github.com/emacs-lsp/lsp-mode/).
 
 add following code to your `~/.emacs` or `.emacs.d/init.el` .
 
@@ -78,31 +79,14 @@ add following code to your `~/.emacs` or `.emacs.d/init.el` .
   :commands lsp
   :hook ((lua-mode) . lsp)
   :config
-  )
-
-(use-package company-lsp
-  :ensure t
-  :after lsp-mode
-  :config
-  (setq company-lsp-enable-recompletion t)
-  (setq lsp-auto-configure nil)         ;该功能会自动执行(push company-lsp company-backends)
-  )
-
-(use-package lsp-lua-emmy
-  :demand
-  :ensure nil
-  :load-path "~/github/lsp-lua-emmy"
-  :hook (lua-mode . lsp)
-  :config
-  (setq lsp-lua-emmy-jar-path (expand-file-name "EmmyLua-LS-all.jar" user-emacs-directory))
+  (setq lsp-clients-emmy-lua-jar-path
+	  (expand-file-name "emmylua/EmmyLua-LS-all.jar" user-emacs-directory))
   )
 
 (defun set-company-backends-for-lua()
   "Set lua company backend."
   (setq-local company-backends '(
                                  (
-                                  company-lsp
-                                  company-lua
                                   company-keywords
                                   company-gtags
                                   company-yasnippet
