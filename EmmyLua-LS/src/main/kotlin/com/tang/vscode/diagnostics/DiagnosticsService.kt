@@ -36,32 +36,34 @@ object DiagnosticsService {
                         diagnostics.add(diagnostic)
                     }
                 }
+            }
+            true
+        }
+    }
+
+    fun inspectFile(file: ILuaFile, diagnostics: MutableList<Diagnostic>) {
+        PsiTreeUtil.processElements(file.psi) {
+            when (it) {
                 is LuaIndexExpr -> {
-                    checker?.checkCanceled()
                     DeprecatedInspection.indexDeprecatedInspections(it, file, diagnostics)
                     FieldValidInspection.fieldValidationInspections(it, file, diagnostics)
                 }
                 is LuaCallExpr -> {
-                    checker?.checkCanceled()
                     FunctionInspection.callExprInspections(it, file, diagnostics)
                 }
                 is LuaAssignStat -> {
-                    checker?.checkCanceled()
                     AssignInspection.assignInspections(it, file, diagnostics)
                 }
                 is LuaNameExpr -> {
-                    checker?.checkCanceled()
                     DeprecatedInspection.nameExprDeprecatedInspections(it, file, diagnostics)
                     UndeclaredVariableInspection.undeclaredVariableInspections(it, file, diagnostics)
                 }
                 is LuaDocTagClass -> {
-                    checker?.checkCanceled()
                     InheritInspection.inheritInspections(it, file, diagnostics)
                 }
             }
             true
         }
     }
-
 
 }

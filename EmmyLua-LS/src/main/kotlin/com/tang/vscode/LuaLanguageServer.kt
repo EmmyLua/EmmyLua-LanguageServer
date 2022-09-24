@@ -53,8 +53,10 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
     }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
-        for (workspace in params.workspaceFolders) {
-            workspaceService.addRoot(workspace.uri)
+        if (params.workspaceFolders != null) {
+            for (workspace in params.workspaceFolders) {
+                workspaceService.addRoot(workspace.uri)
+            }
         }
         initIntellijEnv()
 
@@ -107,7 +109,7 @@ class LuaLanguageServer : LanguageServer, LanguageClientAware {
         inlayHintOptions.resolveProvider = true
         capabilities.inlayHintProvider = Either.forRight(inlayHintOptions)
 
-        capabilities.diagnosticProvider = DiagnosticRegistrationOptions(false, true)
+        capabilities.diagnosticProvider = DiagnosticRegistrationOptions(false, false)
 
 //        capabilities.semanticTokensProvider = SemanticTokensWithRegistrationOptions(
 //            SemanticTokensLegend(

@@ -20,6 +20,7 @@ import com.tang.intellij.lua.stubs.index.LuaClassMemberIndex
 import com.tang.intellij.lua.ty.*
 import com.tang.lsp.*
 import com.tang.vscode.api.impl.LuaFile
+import com.tang.vscode.diagnostics.DiagnosticsService
 //import com.tang.vscode.color.ColorService
 import com.tang.vscode.documentation.LuaDocumentationProvider
 import com.tang.vscode.extendApi.ExtendApiService
@@ -485,10 +486,27 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
         } else if (file is LuaFile) {
             file.text = params.textDocument.text
         }
+        if (file is ILuaFile) {
+            val diagnosticList = mutableListOf<Diagnostic>()
+            DiagnosticsService.inspectFile(file, diagnosticList)
+            this.client?.publishDiagnostics(PublishDiagnosticsParams(
+                uri, diagnosticList
+            ))
+        }
     }
 
     override fun didSave(params: DidSaveTextDocumentParams) {
-
+        val uri = params.textDocument.uri
+        val file = workspace.findFile(uri)
+        if (file is ILuaFile) {
+            val diagnosticList = mutableListOf<Diagnostic>()
+            DiagnosticsService.inspectFile(file, diagnosticList)
+            this.client?.publishDiagnostics(
+                PublishDiagnosticsParams(
+                uri, diagnosticList
+            )
+            )
+        }
     }
 
     override fun signatureHelp(params: SignatureHelpParams?): CompletableFuture<SignatureHelp?> {
