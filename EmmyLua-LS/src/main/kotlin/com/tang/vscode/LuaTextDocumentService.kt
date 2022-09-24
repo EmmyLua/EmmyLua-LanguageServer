@@ -564,7 +564,9 @@ class LuaTextDocumentService(private val workspace: LuaWorkspaceService) : TextD
                         }
                     }
                 }
-                signatureHelp = SignatureHelp(list, activeSig, activeParameter)
+                if (list.size > 0) {
+                    signatureHelp = SignatureHelp(list, activeSig, activeParameter)
+                }
             }
             signatureHelp
         }
