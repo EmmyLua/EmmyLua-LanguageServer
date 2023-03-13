@@ -7,7 +7,8 @@ import java.net.URLEncoder
 
 private fun decodeURL(s: String): String {
     //return s.replace("+", " ").replace("%3A", ":")
-    return URLDecoder.decode(s, "UTF-8")
+    val rename = s.replace(Regex("%(?![0-9a-fA-F]{2})"), "%25").replace(Regex("\\+"), "%2B"); // 防止特殊符号抛错
+    return URLDecoder.decode(rename, "UTF-8")
 }
 
 private fun encodeURL(src: String): String {
