@@ -19,9 +19,10 @@ object ExtendApiService {
         rootNamespaceName = api.root.ifEmpty {
             "_G"
         }
-        rootNamespace = Namespace(api.root, null, mgr, false)
         namespaceMap.clear()
         classMap.clear()
+
+        rootNamespace = Namespace(api.root, null, mgr, false)
 
         for (luaClass in api.classes) {
             val classNs = getNamespace(luaClass.namespace)

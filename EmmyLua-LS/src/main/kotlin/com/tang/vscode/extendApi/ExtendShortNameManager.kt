@@ -11,7 +11,7 @@ import com.tang.intellij.lua.ty.ITyClass
 
 class ExtendShortNameManager : LuaShortNamesManager() {
     private fun findClass(name: String): NsMember? {
-        return ExtendApiService.getExtendClasses()[name]
+        return ExtendApiService.getNsMember(name)
     }
 
     override fun findClass(name: String, context: SearchContext): LuaClass? {

@@ -20,12 +20,12 @@ repositories {
     mavenCentral()
 }
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    compile 'org.eclipse.lsp4j:org.eclipse.lsp4j:0.13.0'
-    compile group: 'org.picocontainer', name: 'picocontainer', version: '2.15'
-    compile project(":EmmyLua-Common")
-    compile 'com.yevdo:jwildcard:1.4'
-//    compile fileTree(dir: "libs", include: "*.jar")
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation 'org.eclipse.lsp4j:org.eclipse.lsp4j:0.20.0'
+    implementation group: 'org.picocontainer', name: 'picocontainer', version: '2.15'
+    implementation project(":EmmyLua-Common")
+    implementation 'com.yevdo:jwildcard:1.4'
+    implementation fileTree(dir: "libs", include: "*.jar")
 }
 
 sourceSets {

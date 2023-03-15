@@ -14,8 +14,8 @@ sourceSets {
 }
 
 dependencies {
-    compile project(":IntelliJ-Core")
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    api project(":IntelliJ-Core")
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 //    compile fileTree(dir: "libs", include: "*.jar")
 }
 buildscript {
