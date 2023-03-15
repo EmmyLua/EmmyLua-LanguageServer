@@ -6,5 +6,5 @@ repositories {
 
 dependencies {
     implementation fileTree(dir: "libs", include: "*.jar")
-    implementation group: 'org.eclipse.lsp4j', name: 'org.eclipse.lsp4j', version: '0.20.0'
+    api group: 'org.eclipse.lsp4j', name: 'org.eclipse.lsp4j', version: '0.20.0'
 }
