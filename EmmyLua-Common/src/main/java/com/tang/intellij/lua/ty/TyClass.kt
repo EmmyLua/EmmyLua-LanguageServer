@@ -177,6 +177,7 @@ abstract class TyClass(
 
                 return member?.guessType(context)
             }
+
             LuaLiteralKind.String -> {
                 var member = LuaClassMemberIndex.find(this, element.text, context)
                 if (member == null) {
@@ -265,7 +266,7 @@ abstract class TyClass(
 
     override fun getClassCallType(context: SearchContext): ITyFunction? {
         val ty = findMemberType("ctor", context)
-        if(ty is ITyFunction){
+        if (ty is ITyFunction) {
             return ty
         }
         return null
@@ -421,8 +422,7 @@ class TyPsiDocClass(tagClass: LuaDocTagClass) : TyClass(tagClass.name) {
         }
         if (tagClass.`interface` != null) {
             isInterface = true
-        }
-        else if(tagClass.enum != null){
+        } else if (tagClass.enum != null) {
             isEnum = true
         }
 

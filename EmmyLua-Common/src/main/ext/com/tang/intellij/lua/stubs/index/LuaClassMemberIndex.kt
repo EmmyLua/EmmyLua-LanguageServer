@@ -22,6 +22,7 @@ import com.tang.intellij.lua.comment.psi.LuaDocTagField
 import com.tang.intellij.lua.psi.LuaClassMember
 import com.tang.intellij.lua.psi.LuaClassMethod
 import com.tang.intellij.lua.psi.LuaTableField
+import com.tang.intellij.lua.psi.search.LuaShortNamesManager
 import com.tang.intellij.lua.search.SearchContext
 import com.tang.intellij.lua.stubs.StubKeys
 import com.tang.intellij.lua.ty.ITyClass
@@ -40,6 +41,25 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
             val all = LuaClassMemberIndex.instance.get(key.hashCode(), context.project, context.scope)
             return ContainerUtil.process(all, processor)
         }
+
+//        fun processNonIndex(
+//            className: String,
+//            fieldName: String,
+//            context: SearchContext,
+//            processor: Processor<LuaClassMember>
+//        ) {
+//            val classDef = LuaShortNamesManager.getInstance(context.project).findClass(className, context)
+//            if (classDef != null) {
+//                val type = classDef.type
+//                if (type is)
+//                // from alias
+//                type.lazyInit(context)
+//                val member = LuaShortNamesManager.getInstance(context.project).findMember(type, fieldName, context)
+//                if (member != null) {
+//                    processor.process(member)
+//                }
+//            }
+//        }
 
         fun process(
             className: String,
@@ -66,9 +86,12 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
 
                     var founded = false
                     TyClass.processSuperClass(type, context) { superType ->
-                        if(process(superType.className, fieldName, context, processor, false)){
-                            founded = true
-                        }
+                        LuaShortNamesManager.getInstance(context.project)
+                            .processAllMembers(superType, fieldName, context, Processor {
+                                processor.process(it)
+                                founded = true
+                                true
+                            })
                         true
                     }
                     return founded
@@ -101,9 +124,9 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
                         return false
 
                     val superClassName = type.superClassName
-                    if(superClassName != null) {
+                    if (superClassName != null) {
                         val superClass = LuaClassIndex.find(superClassName, context)
-                        if(superClass is TyClass && !superClass.isInterface){
+                        if (superClass is TyClass && !superClass.isInterface) {
                             return process(superClassName, fieldName, context, processor, true)
                         }
                     }
@@ -122,10 +145,12 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
                         docField = it
                         false
                     }
+
                     is LuaTableField -> {
                         tableField = it
                         true
                     }
+
                     else -> {
                         if (perfect == null)
                             perfect = it
@@ -142,16 +167,18 @@ class LuaClassMemberIndex : StubIndex<Int, LuaClassMember>() {
             var perfect: LuaClassMember? = null
             var docField: LuaDocTagField? = null
             var tableField: LuaTableField? = null
-            processOrigin(type.className, fieldName, context,  {
+            processOrigin(type.className, fieldName, context, {
                 when (it) {
                     is LuaDocTagField -> {
                         docField = it
                         false
                     }
+
                     is LuaTableField -> {
                         tableField = it
                         true
                     }
+
                     else -> {
                         if (perfect == null)
                             perfect = it
