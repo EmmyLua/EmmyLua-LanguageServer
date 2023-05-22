@@ -16,6 +16,9 @@ interface LuaLanguageClient : LanguageClient {
     @JsonNotification("emmy/progressReport")
     fun progressReport(report: ProgressReport)
 
+    @JsonNotification("emmy/setServerStatus")
+    fun setServerStatus(status: ServerStatusParams)
+
     @JsonNotification("emmy/reportAPI")
     fun reportAPI(params: LuaReportApiParams)
 }

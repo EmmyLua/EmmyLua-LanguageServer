@@ -32,7 +32,7 @@ interface ITySubstitutor {
 class GenericAnalyzer(arg: ITy, private val par: ITy) : TyVisitor() {
     var cur: ITy = arg
 
-    var map:MutableMap<String, ITy>? = null
+    var map: MutableMap<String, ITy>? = null
 
     fun analyze(result: MutableMap<String, ITy>) {
         map = result
@@ -86,7 +86,7 @@ class GenericAnalyzer(arg: ITy, private val par: ITy) : TyVisitor() {
         warp(arg.returnTy) { par.returnTy.accept(this) }
     }
 
-    private fun warp(ty:ITy, action: () -> Unit) {
+    private fun warp(ty: ITy, action: () -> Unit) {
         if (Ty.isInvalid(ty))
             return
         val arg = cur
@@ -108,13 +108,18 @@ open class TySubstitutor : ITySubstitutor {
     }
 
     override fun substitute(function: ITyFunction): ITy {
-        return TySerializedFunction(function.mainSignature.substitute(this),
-                function.signatures.map { it.substitute(this) }.toTypedArray(),
-                function.flags)
+        return TySerializedFunction(
+            function.mainSignature.substitute(this),
+            function.signatures.map { it.substitute(this) }.toTypedArray(),
+            function.flags
+        )
     }
 }
 
+// cppcxy: 我对这里的递归爆栈感到绝望
 class TyAliasSubstitutor private constructor(val project: Project) : ITySubstitutor {
+    val walkedClassName = mutableSetOf<String>()
+
     companion object {
         fun substitute(ty: ITy, context: SearchContext): ITy {
             /*if (context.forStub)
@@ -124,12 +129,18 @@ class TyAliasSubstitutor private constructor(val project: Project) : ITySubstitu
     }
 
     override fun substitute(function: ITyFunction): ITy {
-        return TySerializedFunction(function.mainSignature.substitute(this),
-                function.signatures.map { it.substitute(this) }.toTypedArray(),
-                function.flags)
+        return TySerializedFunction(
+            function.mainSignature.substitute(this),
+            function.signatures.map { it.substitute(this) }.toTypedArray(),
+            function.flags
+        )
     }
 
     override fun substitute(clazz: ITyClass): ITy {
+        if (clazz.className in this.walkedClassName) {
+            return clazz
+        }
+        this.walkedClassName.add(clazz.className)
         return clazz.recoverAlias(SearchContext.get(project), this)
     }
 

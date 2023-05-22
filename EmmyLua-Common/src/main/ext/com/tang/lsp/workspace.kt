@@ -53,6 +53,5 @@ interface ILuaFile : IVirtualFile {
     fun didChange(params: DidChangeTextDocumentParams)
     fun getPosition(line:Int, char: Int): Int
     fun processWords(processor: (w: Word) -> Boolean)
-    fun getVersion(): Int
     fun lock(code: () -> Unit)
 }

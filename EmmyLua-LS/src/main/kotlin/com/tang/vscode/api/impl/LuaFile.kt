@@ -38,11 +38,8 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
     private var _words: List<Word>? = null
-    private var _version: Int = 0
     private var _rwl = ReentrantReadWriteLock()
     private var _isOpen = false
-
-    var workspaceDiagnosticResultId: String? = null
 
     override fun didChange(params: DidChangeTextDocumentParams) {
         _rwl.write {
@@ -120,7 +117,6 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     }
 
     private fun onChanged() {
-        ++_version
         updateLines()
         doParser()
     }
@@ -141,7 +137,6 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
         index()
     }
-
 
     /*private fun getLineStart(line: Int): Int {
         return _lines.firstOrNull { it.line == line } ?.startOffset ?: 0
@@ -186,10 +181,6 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
             pos = _text.length
         }
         return pos
-    }
-
-    override fun getVersion(): Int {
-        return _version
     }
 
     override fun lock(code: () -> Unit) {

@@ -77,6 +77,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                     removeFile(change.uri)
                     addFile(change.uri)
                 }
+
                 else -> {}
             }
         }
@@ -290,14 +291,26 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     fun loadWorkspace() {
         cleanWorkspace()
         loadWorkspace(object : IProgressMonitor {
-            override fun done() {
+            override fun start() {
                 if (VSCodeSettings.isVSCode)
+                    client?.setServerStatus(ServerStatusParams("ok", "load workspace", true))
+            }
+
+            override fun done() {
+                if (VSCodeSettings.isVSCode) {
                     client?.progressReport(ProgressReport("Finished!", 1f))
+                    client?.setServerStatus(ServerStatusParams("ok", "EmmyLua Language Server", false))
+                }
             }
 
             override fun setProgress(text: String, percent: Float) {
                 if (VSCodeSettings.isVSCode)
                     client?.progressReport(ProgressReport(text, percent))
+            }
+
+            override fun reportError(text: String) {
+                if (VSCodeSettings.isVSCode)
+                    client?.setServerStatus(ServerStatusParams("error", "load fail", false))
             }
         })
     }
@@ -318,6 +331,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
     private fun loadWorkspace(monitor: IProgressMonitor) {
         try {
+            monitor.start();
             monitor.setProgress("load workspace folders", 0f)
             val collections = fileManager.findAllFiles()
             var totalFileCount = 0f
@@ -330,7 +344,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                     val file = uri.toFile()
                     if (file != null) {
                         monitor.setProgress(
-                            "Emmy parse file[${(processedCount / totalFileCount * 100).toInt()}%]: ${file.name}",
+                            "indexing ${processedCount.toInt()} / ${totalFileCount.toInt()} (${file.name})",
                             processedCount / totalFileCount
                         )
                     }
@@ -338,7 +352,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
                 }
             }
         } catch (e: Exception) {
-            System.err.println("workspace parse error: $e")
+            monitor.reportError("workspace parse error: $e")
         }
 
         monitor.done()

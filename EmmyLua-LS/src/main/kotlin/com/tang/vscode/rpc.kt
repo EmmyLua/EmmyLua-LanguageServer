@@ -23,6 +23,13 @@ data class Annotator(val uri: String, val ranges: List<RenderRange>, val type: A
 
 data class ProgressReport(val text: String, val percent: Float)
 
+data class ServerStatusParams(
+    val health: String,
+    val message: String = "",
+    val loading: Boolean = false,
+    val command: String? = null,
+)
+
 enum class UpdateType {
     Created,
     Changed,
@@ -49,13 +56,15 @@ data class EmmyConfigurationSource(val uri: String, val workspace: String) {
         }
     }
 
-    val fileURI: FileURI get() {
-        return FileURI.uri(uri, false)
-    }
+    val fileURI: FileURI
+        get() {
+            return FileURI.uri(uri, false)
+        }
 
-    val workspaceURI: FileURI get() {
-        return FileURI.uri(workspace, true)
-    }
+    val workspaceURI: FileURI
+        get() {
+            return FileURI.uri(workspace, true)
+        }
 
     override fun equals(other: Any?): Boolean {
         return other is EmmyConfigurationSource && other.uri == uri
