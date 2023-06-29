@@ -38,40 +38,39 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     private var _lines = mutableListOf<Line>()
     private var _myPsi: LuaPsiFile? = null
     private var _words: List<Word>? = null
-    private var _rwl = ReentrantReadWriteLock()
     private var _isOpen = false
 
     override fun didChange(params: DidChangeTextDocumentParams) {
-        _rwl.write {
-            if (params.contentChanges.isEmpty())
-                return
+        if (params.contentChanges.isEmpty())
+            return
 
-            var sb = _text.toString()
-            var offset = 0
-            params.contentChanges.forEach {
-                when {
-                    // for TextDocumentSyncKind.Full
-                    it.range == null -> sb = it.text
-                    // incremental updating
-                    it.range.start.line >= _lines.size -> {
-                        sb += it.text
-                        _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character))
-                    }
-                    else -> {
-                        val sline = _lines[it.range.start.line]
-                        val eline = _lines[it.range.end.line]
-                        val spos = sline.startOffset + it.range.start.character
-                        val epos = eline.startOffset + it.range.end.character
-                        sb = sb.replaceRange(spos, epos, it.text)
+        var sb = _text.toString()
+        var offset = 0
+        params.contentChanges.forEach {
+            when {
+                // for TextDocumentSyncKind.Full
+                it.range == null -> sb = it.text
+                // incremental updating
+                it.range.start.line >= _lines.size -> {
+                    sb += it.text
+                    _lines.add(Line(it.range.start.line, it.range.start.character, it.range.end.character))
+                }
 
-                        val textSize = it.text.length
-                        offset += textSize - it.rangeLength
-                    }
+                else -> {
+                    val sline = _lines[it.range.start.line]
+                    val eline = _lines[it.range.end.line]
+                    val spos = sline.startOffset + it.range.start.character
+                    val epos = eline.startOffset + it.range.end.character
+                    sb = sb.replaceRange(spos, epos, it.text)
+
+                    val textSize = it.text.length
+                    offset += textSize - it.rangeLength
                 }
             }
-            _text = sb
-            onChanged()
         }
+        _text = sb
+        onChanged()
+
     }
 
     override fun getText(): CharSequence {
@@ -83,11 +82,9 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     }
 
     fun setText(str: CharSequence) {
-        _rwl.write {
-            _text = str
-            _isOpen = true
-            onChanged()
-        }
+        _text = str
+        _isOpen = true
+        onChanged()
     }
 
     private fun updateLines() {
@@ -126,9 +123,9 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
         unindex()
         val parser = LuaParser()
         val builder = PsiBuilderFactory.getInstance().createBuilder(
-            LuaParserDefinition(),
-            FlexAdapter(_LuaLexer(LuaLanguageLevel.LUA54)),
-            text
+                LuaParserDefinition(),
+                FlexAdapter(_LuaLexer(LuaLanguageLevel.LUA54)),
+                text
         )
         val node = parser.parse(LuaParserDefinition.FILE, builder)
         val psi = node.psi
@@ -184,9 +181,7 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     }
 
     override fun lock(code: () -> Unit) {
-        _rwl.read {
-            code()
-        }
+        code()
     }
 
     fun diagnostic(diagnostics: MutableList<Diagnostic>, checker: CancelChecker?) {
@@ -195,18 +190,6 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
 
     override val psi: PsiFile?
         get() = _myPsi
-
-    var opened: Boolean
-        get() {
-            _rwl.read {
-                return _isOpen
-            }
-        }
-        set(value) {
-            _rwl.write {
-                _isOpen = value
-            }
-        }
 
     override fun getPsiFile() = _myPsi
 
@@ -221,10 +204,10 @@ class LuaFile(override val uri: FileURI) : VirtualFileBase(uri), ILuaFile, Virtu
     override fun processWords(processor: (w: Word) -> Boolean) {
         if (_words == null) {
             val scanner = DefaultWordsScanner(
-                LuaLexer(),
-                TokenSet.EMPTY,
-                TokenSet.EMPTY,
-                TokenSet.EMPTY
+                    LuaLexer(),
+                    TokenSet.EMPTY,
+                    TokenSet.EMPTY,
+                    TokenSet.EMPTY
             )
             val list = mutableListOf<Word>()
             scanner.processWords(this._text) {

@@ -31,6 +31,8 @@ import java.io.File
 import java.net.URI
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * tangzx
@@ -44,7 +46,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val project: Project = WProject()
     private val fileManager = FileManager(project)
     private val fileScopeProvider = WorkspaceRootFileScopeProvider()
-    private var initWorkspace = true
+    private val rwl = ReentrantReadWriteLock()
 
     inner class WProject : UserDataHolderBase(), Project {
         override fun process(processor: Processor<PsiFile>) {
@@ -63,6 +65,14 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     init {
         project.putUserData(IWorkspace.KEY, this)
         fileManager.addProvider(fileScopeProvider)
+    }
+
+    fun <R> ready(code: () -> R): R {
+        return rwl.read(code)
+    }
+
+    fun canWrite(code: () -> Unit) {
+        rwl.write(code)
     }
 
     override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams) {
@@ -86,8 +96,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
         val settings = params.settings as? JsonObject ?: return
         val ret = VSCodeSettings.update(settings)
-        if (ret.associationChanged || initWorkspace) {
-            initWorkspace = false
+        if (ret.associationChanged) {
             loadWorkspace()
             refreshWorkspace()
         }
@@ -159,58 +168,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
         }
     }
 
-//    override fun diagnostic(params: WorkspaceDiagnosticParams): CompletableFuture<WorkspaceDiagnosticReport> {
-//        for (prev in params.previousResultIds) {
-//            val file = findFile(prev.uri)
-//            if (file is LuaFile) {
-//                file.workspaceDiagnosticResultId = prev.value
-//            }
-//        }
-//
-//        val files = mutableListOf<LuaFile>()
-//        project.process {
-//            val file = it.virtualFile
-//            if (file is LuaFile) {
-//                files.add(file)
-//            }
-//            true
-//        }
-//
-//        return computeAsync { checker ->
-//            for (luaFile in files) {
-//                luaFile.lock {
-//                    val documentReport = diagnoseFile(luaFile, luaFile.workspaceDiagnosticResultId, checker)
-//                    if (documentReport.isRelatedFullDocumentDiagnosticReport) {
-//                        val workspaceItemReport = WorkspaceFullDocumentDiagnosticReport(
-//                            documentReport.relatedFullDocumentDiagnosticReport.items,
-//                            luaFile.uri.toString(),
-//                            null
-//                        )
-//
-//                        workspaceItemReport.resultId = documentReport.relatedFullDocumentDiagnosticReport.resultId
-//                        val report = WorkspaceDiagnosticReportPartialResult(
-//                            listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
-//                        )
-//                        client?.notifyProgress(ProgressParams(params.partialResultToken, Either.forRight(report)))
-//                    } else if (documentReport.isRelatedUnchangedDocumentDiagnosticReport) {
-//                        val workspaceItemReport = WorkspaceUnchangedDocumentDiagnosticReport(
-//                            documentReport.relatedUnchangedDocumentDiagnosticReport.resultId,
-//                            luaFile.uri.toString(),
-//                            null
-//                        )
-//                        val report = WorkspaceDiagnosticReportPartialResult(
-//                            listOf(WorkspaceDocumentDiagnosticReport(workspaceItemReport))
-//                        )
-//                        client?.notifyProgress(ProgressParams(params.partialResultToken, Either.forRight(report)))
-//                    }
-//                }
-//            }
-//
-//            val empty = WorkspaceDiagnosticReport(emptyList())
-//            empty
-//        }
-//    }
-
     private fun getSchemeFolder(path: FileURI, autoCreate: Boolean): IFolder? {
         var folder: IFolder? = schemeMap[path.scheme]
         if (folder == null && autoCreate) {
@@ -243,7 +200,6 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
 
         val pair = findOrCreate(fileURI, true)
         val folder = pair.first!!
-//        if (pair.second)
         rootList.add(folder)
         return folder
     }
@@ -330,32 +286,34 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     }
 
     private fun loadWorkspace(monitor: IProgressMonitor) {
-        try {
-            monitor.start();
-            monitor.setProgress("load workspace folders", 0f)
-            val collections = fileManager.findAllFiles()
-            var totalFileCount = 0f
-            var processedCount = 0f
-            collections.forEach { totalFileCount += it.files.size }
-            for (collection in collections) {
-                addRoot(collection.root)
-                for (uri in collection.files) {
-                    processedCount++
-                    val file = uri.toFile()
-                    if (file != null) {
-                        monitor.setProgress(
-                            "indexing ${processedCount.toInt()} / ${totalFileCount.toInt()} (${file.name})",
-                            processedCount / totalFileCount
-                        )
+        rwl.write {
+            try {
+                monitor.start();
+                monitor.setProgress("load workspace folders", 0f)
+                val collections = fileManager.findAllFiles()
+                var totalFileCount = 0f
+                var processedCount = 0f
+                collections.forEach { totalFileCount += it.files.size }
+                for (collection in collections) {
+                    addRoot(collection.root)
+                    for (uri in collection.files) {
+                        processedCount++
+                        val file = uri.toFile()
+                        if (file != null) {
+                            monitor.setProgress(
+                                    "indexing ${processedCount.toInt()} / ${totalFileCount.toInt()} (${file.name})",
+                                    processedCount / totalFileCount
+                            )
+                        }
+                        addFile(uri, null)
                     }
-                    addFile(uri, null)
                 }
+            } catch (e: Exception) {
+                monitor.reportError("workspace parse error: $e")
             }
-        } catch (e: Exception) {
-            monitor.reportError("workspace parse error: $e")
-        }
 
-        monitor.done()
+            monitor.done()
+        }
     }
 
     override fun findFile(uri: String): IVirtualFile? {
