@@ -46,6 +46,7 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     private val project: Project = WProject()
     private val fileManager = FileManager(project)
     private val fileScopeProvider = WorkspaceRootFileScopeProvider()
+    private var initWorkspace = true
     private val rwl = ReentrantReadWriteLock()
 
     inner class WProject : UserDataHolderBase(), Project {
@@ -96,7 +97,8 @@ class LuaWorkspaceService : WorkspaceService, IWorkspace {
     override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
         val settings = params.settings as? JsonObject ?: return
         val ret = VSCodeSettings.update(settings)
-        if (ret.associationChanged) {
+        if (ret.associationChanged || initWorkspace) {
+            initWorkspace = false
             loadWorkspace()
             refreshWorkspace()
         }
