@@ -1,5 +1,7 @@
 # Emmy Lua Language Server
 
+Use [EmmyLuaAnalyzer](https://github.com/CppCXY/EmmyLuaAnalyzer) Please
+
 CI status  | Download
 ---------- | ----------
 [![Build status](https://ci.appveyor.com/api/projects/status/djgeh5fq4jhe5xc2?svg=true)](https://ci.appveyor.com/project/EmmyLua/emmylua-languageserver)|[EmmyLua-LS-all.jar](https://ci.appveyor.com/project/EmmyLua/emmylua-languageserver/build/artifacts)
